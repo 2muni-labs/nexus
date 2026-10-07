@@ -64,12 +64,27 @@ nexus_local() {
         NEXUS_LOCAL_STATE='local/repos.env loaded as literal data'
     fi
 }
+nexus_git_common_dir() {
+    local directory
+    directory=$(git -C "$1" rev-parse --git-common-dir 2>/dev/null) || return 1
+    [[ "$directory" == /* ]] || directory="$1/$directory"
+    (CDPATH= cd -- "$directory" 2>/dev/null && pwd -P)
+}
 nexus_selectors() {
-    local selector selected
+    local selector selected line selected_path='' root_common selected_common
     for selector in "$NEXUS_REPO_SELECTOR" "$BASECAMP_REPO_SELECTOR" "$FOUNDRY_REPO_SELECTOR"; do
         "$NEXUS_ORCA" repo show --repo "$selector" --json >/dev/null || nexus_fail 'Configured selector could not be resolved; check local/repos.env and repo list --json.'
     done
     # Reject a Nexus selector that resolves successfully to another repository.
     selected=$("$NEXUS_ORCA" repo show --repo "$NEXUS_REPO_SELECTOR") || nexus_fail 'Cannot inspect Nexus selector.'
-    [[ "$selected" == *"path: $NEXUS_ROOT"$'\n'* || "$selected" == *"path: $NEXUS_ROOT" ]] || nexus_fail 'Nexus selector does not resolve to this checkout; use its path: selector.'
+    while IFS= read -r line; do
+        case "$line" in
+            'path: '*) selected_path=${line#path: }; break ;;
+        esac
+    done <<< "$selected"
+    [[ -n "$selected_path" ]] || nexus_fail 'Cannot inspect Nexus selector path.'
+    # Linked worktrees share a Git common directory, not a checkout path.
+    root_common=$(nexus_git_common_dir "$NEXUS_ROOT") || nexus_fail 'Cannot resolve Nexus checkout Git identity.'
+    selected_common=$(nexus_git_common_dir "$selected_path") || nexus_fail 'Cannot resolve Nexus selector Git identity.'
+    [[ "$selected_common" == "$root_common" ]] || nexus_fail 'Nexus selector resolves to a different Git repository; check local/repos.env.'
 }
