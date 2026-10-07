@@ -5,7 +5,8 @@
 This is the permanent target. v0.2 is a document-driven Coordinator with read-only shell
 preflight; it has no background controller or project-state cache. The one-shot workflow policy
 evaluator proposes transitions without executing effects. GitHub operations now
-use a one-shot WorkItemProvider adapter; no automatic lifecycle synchronization exists.
+use a one-shot WorkItemProvider adapter; no automatic lifecycle synchronization exists. Reconciliation combines verified external
+snapshots without reading a local workflow store.
 The backend contract now separates asynchronous Coordinator operations and read-only
 shell preflight from Orca-native mechanics; no new automatic dispatcher is introduced.
 See [assessment and migration](workflow-migration.md) for evidence, stages and tests.

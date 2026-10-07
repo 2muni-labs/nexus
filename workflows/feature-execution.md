@@ -7,6 +7,12 @@ For architecture boundaries and phased GitHub adoption, apply docs/architecture.
 docs/workflow-migration.md. Use schemas/execution-backend.yaml and the selected adapter binding for execution;
 GitHub synchronization is not implemented by these preflight scripts.
 
+## Restart and reconciliation
+
+Apply docs/reconciliation.md at startup/resumption. Reconstruct intent from canonical
+Work Items/Projects/PRs and authoritative backend/Git observations; use scripts/reconcile.sh
+only on verified complete snapshots. Local cache loss cannot authorize duplicate execution.
+
 ## Intake and plan
 
 Read AGENTS, all four config policies, the execution-plan contract, Coordinator and Planner

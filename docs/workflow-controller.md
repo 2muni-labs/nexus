@@ -39,3 +39,7 @@ Tests cover readiness, stale approval, unknown/live activity, success without ac
 existing PR/no duplicate start, head changes, remediation, finite retry, human pause/cancel,
 required checks and exact authorized merge. Neither backend-native states nor provider API
 payloads appear in the decision policy; adapters normalize those at their boundaries.
+
+The policy library is `scripts/workflow-policy.jq`; ordinary evaluation and restart
+reconciliation reuse it. `scripts/reconcile.sh` verifies normalized external inventory
+consistency before proposing a workflow decision. See [recovery procedure](reconciliation.md).

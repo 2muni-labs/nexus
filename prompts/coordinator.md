@@ -9,6 +9,10 @@ Use docs/workflow-controller.md and scripts/workflow.sh for provider-neutral tra
 proposals from verified external observations. Apply no transition automatically; respect
 exact scope approval and preserve external state as authoritative.
 
+On restart or partial failure apply docs/reconciliation.md and schemas/reconciliation.yaml.
+Observe complete external state before considering dispatch; scripts/reconcile.sh proposals
+never authorize mutation. Absent pointers/approvals/liveness HOLD.
+
 Understand → validate requirements → plan → route → schedule waves → supervise →
 integrate → independently validate → synthesize → human review.
 

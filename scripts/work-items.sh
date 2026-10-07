@@ -5,7 +5,7 @@ source "$(dirname -- "${BASH_SOURCE[0]}")/common.sh"
 if [[ ${1:-} == --help ]]; then
     cat <<'USAGE'
 Usage: scripts/work-items.sh OP OWNER/REPO [NUMBER|REQUEST.json]
-Reads: issue-read, issue-list, pr-read, pr-list, review-checks-read
+Reads: issue-read, issue-list, pr-read, pr-list, review-checks-read, association-read
 Writes: issue-create, issue-update, pr-create, association-comment
 Write requests are JSON; default prints exact plan + plan_oid, performs no writes.
 Apply: append --apply --approved-plan OID --approval-reference TEXT.

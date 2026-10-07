@@ -11,7 +11,8 @@ coordination are first-class workflows.
 The permanent target is **Nexus owns the workflow; GitHub owns the state; Orca is an
 execution backend**. Current scripts still provide Orca-only read-only preflight; GitHub
 read/write operations are available through an explicit one-shot provider port; automatic
-synchronization and restart reconciliation are not implemented. See the
+synchronization is not implemented. Restart reconciliation is an explicit read-only
+Coordinator procedure using externally collected snapshots. See the
 [migration plan](docs/workflow-migration.md) for staged delivery and compatibility gates.
 
 ## Boundaries
@@ -103,3 +104,6 @@ verified external facts. It writes no state and invokes no backend/provider. See
 Projects: copy `local/github.json.example` to ignored `local/github.json` and configure
 a separate linked Project per repository. `scripts/projects.sh --help` supports canonical
 status/priority reads and reviewed updates. See [Project setup](docs/github-projects.md).
+
+Recovery: `scripts/reconcile.sh external-snapshot.json` proposes a decision from complete
+verified external state, without reading local runtime records. See [reconciliation](docs/reconciliation.md).

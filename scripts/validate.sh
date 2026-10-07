@@ -18,7 +18,8 @@ for file in README.md AGENTS.md .gitignore config/repositories.yaml config/routi
     docs/adapters/orca.md docs/workflow-migration.md scripts/work-items.sh \
     scripts/adapters/github.sh schemas/work-item-provider.yaml docs/adapters/github.md \
     config/workflow.json schemas/workflow-observation.yaml scripts/workflow.sh scripts/workflow.jq \
-    scripts/projects.sh scripts/adapters/github-projects.sh local/github.json.example docs/github-projects.md; do
+    scripts/projects.sh scripts/adapters/github-projects.sh local/github.json.example docs/github-projects.md \
+    scripts/reconcile.sh scripts/reconcile.jq scripts/workflow-policy.jq schemas/reconciliation.yaml docs/reconciliation.md; do
     [[ -s "$NEXUS_ROOT/$file" ]] || nexus_fail "Missing or empty required file: $file"
 done
 for script in "$NEXUS_ROOT"/scripts/*.sh "$NEXUS_ROOT"/scripts/adapters/*.sh; do

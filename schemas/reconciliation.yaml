@@ -1,0 +1,29 @@
+version: 1
+kind: nexus-external-reconciliation-contract
+input:
+  extends: schemas/workflow-observation.yaml
+  required: [sources, association_ref, executions, selected_execution_id, pull_requests, selected_pr_id]
+  sources:
+    required: [work_item, project, pull_requests, backend, git_refs]
+    each: complete_boolean_and_authoritative_fresh_reference
+  association_ref: sanitized_external_Work_Item_task_attempt_PR_mapping_not_local_runtime_file
+  executions: normalized_backend_observations_with_execution_id_and_work_item_id
+  selected_execution_id: current_durable_attempt_pointer_or_null_when_inventory_empty
+  pull_requests: normalized_associated_PR_observations_with_id_and_work_item_id
+  selected_pr_id: current_durable_PR_pointer_or_null_when_inventory_empty
+rules:
+  - missing_sources_or_associations_HOLD_never_guess_approval_or_work_identity
+  - duplicate_conflicting_identity_or_multiple_live_editors_HOLD
+  - any_unevidenced_unsettled_unknown_or_live_residual_attempt_blocks_conflicting_dispatch
+  - selected_attempt_and_PR_must_match_unique_external_inventory_records
+  - nonselected_PRs_require_observed_final_disposition_and_reference
+  - existing_PR_prevents_blind_implementation_restart
+  - current_exact_artifact_and_approval_refs_survive_local_loss
+  - backend_fencing_does_not_imply_editor_exit
+  - local_cache_is_disposable_never_authoritative
+  - human_overrides_and_pause_remain_external_intent
+output:
+  operation: observe_compare_propose_minimal_authorized_action
+  mutations: none
+  actual_transition: only_after_exact_authorized_provider_write_and_reobservation
+  events: proposals_not_completed_transitions

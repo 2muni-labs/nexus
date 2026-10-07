@@ -40,10 +40,14 @@ nexus_github_verify_write() {
 nexus_github_operation() {
     local op=$1 repo=$2 argument=$3 apply=$4 approved=$5 approval=$6 endpoint method payload plan oid temp marker found current number=''
     case "$op" in
-        issue-read|pr-read|review-checks-read)
+        issue-read|pr-read|review-checks-read|association-read)
             [[ "$argument" =~ ^[1-9][0-9]*$ ]] || nexus_fail 'Positive item number required.'
             [[ "$apply" == false && -z "$approved$approval" ]] || nexus_fail 'Read operations do not accept approval flags.'
-            if [[ "$op" == review-checks-read ]]; then
+            if [[ "$op" == association-read ]]; then
+                nexus_github_api "repos/$repo/issues/$argument/comments?per_page=100" --method GET --paginate --slurp |
+                    jq -e '[.[][]|{id:.html_url,body,author:.user.login,updated_at,
+                      metadata:{external_comment_id:.id,author_relationship:.author_association}}]'
+            elif [[ "$op" == review-checks-read ]]; then
                 GH_HOST=github.com "${NEXUS_GH_COMMAND:-gh}" pr view "$argument" --repo "$repo" \
                     --json url,headRefOid,reviewDecision,statusCheckRollup,mergedAt,isDraft |
                     jq -e '{url,head_revision:.headRefOid,merged:(.mergedAt != null),draft:.isDraft,

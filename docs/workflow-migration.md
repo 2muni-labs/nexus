@@ -95,7 +95,7 @@ all phases, external writes or future merge operations.
 | 2 — implemented GitHub Work Item port | WorkItemProvider contract and GitHub implementation in a separately approved implementation location; schema/examples and workflow association guidance | Remote writes and association duplication; legacy local runs cannot masquerade as canonical Issues | Read/create/update Issues, read/create PRs, labels and Issue/PR links; duplicate response recovery; stable repository/Issue/task/attempt identities; explicit write authority |
 | 3 — implemented workflow decision policy | Transition table and Coordinator/routing workflows; implementation location only if an executable controller is authorized | No scheduler daemon, routing inside adapters or competing state store; preserve approval gates | State/attempt separation; validation/CI/review remediation under same Issue; pause/cancel/resume/reassign; bounded retries after fencing; exact human gate approval |
 | 4 — implemented configurable GitHub Projects | Provider field configuration and workflow synchronization | Field option IDs, access failures, manual edits and stale observations; not present in phase 1 | Map all six states, priority and relationships; permissions/missing fields; idempotent updates and concurrent-edit conflict handling |
-| 5 — reconciliation | Observation/recovery contract and Coordinator workflow; backend/provider recovery capabilities | Lost local receipts, duplicate writers, changed refs, unavailable GitHub/backend | Restart from external associations; existing PR prevents redispatch; missing cache; stale/unknown attempts; paused/cancelled work; safe backend switch after prior settlement |
+| 5 — implemented explicit reconciliation | Observation/recovery contract and Coordinator workflow; backend/provider recovery capabilities | Lost local receipts, duplicate writers, changed refs, unavailable GitHub/backend | Restart from external associations; existing PR prevents redispatch; missing cache; stale/unknown attempts; paused/cancelled work; safe backend switch after prior settlement |
 | 6 — extend multi-agent behavior | Routing/planning policies and backend-independent assignments | Preserve current floors, real dependencies, isolation, independent validation and integrated baselines | Agent replacement leaves semantics unchanged; compatible fallback; parallel conflict checks; retry budgets; exact effective capability receipts |
 
 Do not add LocalGit, RemoteCodex, GitLab or Linear implementations now. Use a minimal
@@ -138,7 +138,8 @@ be disposable. Agents and backend adapters report facts; Nexus explains policy c
 2. Replace Codex: workflow transitions and acceptance remain unchanged; assignment and
    verified effective capability receipts change. Do not embed routing in either adapter.
 3. Delete Nexus local state: recover primarily from GitHub and backend observations;
-   ambiguous approval/liveness holds dispatch. Not implemented until phases 2–5.
+   ambiguous approval/liveness holds dispatch. The explicit reconciliation evaluator now uses only externally collected snapshots;
+   real managed work must publish reviewed associations before claiming operational recovery.
 
 ## Assessment outcome
 
