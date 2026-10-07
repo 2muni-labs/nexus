@@ -1,0 +1,58 @@
+version: 1
+kind: nexus-execution-backend-contract
+# Coordinator port, not a new runtime or automatic dispatcher.
+request:
+  required: [execution_id, task_id, work_item, repository, baseline, mutation_scope, assignment, backend, operation_id, authorization]
+  execution_id: nexus_attempt_identity_never_provider_id
+  work_item: canonical_provider_reference_or_explicit_legacy_local_identity
+  baseline: exact_immutable_ref_and_dirty_inclusion
+  assignment: policy_selected_agent_and_requested_verified_capabilities
+  operation_id: stable_for_one_operation_and_recovery_not_new_on_timeout
+  authorization: exact_task_scope_and_required_gate_approval_refs
+  metadata: opaque_adapter_owned_receipts_not_core_policy_input
+operations:
+  prepare:
+    mutation: no_worker_start
+    result: verified_repository_baseline_placement_setup_and_backend_capabilities
+  start:
+    requires: [ready_task, independent_mutable_placement, verified_assignment, resolved_gates, explicit_execution_authority]
+    result: execution_id_and_opaque_attempt_receipt_or_preserved_failure_receipt
+    timeout: unknown_until_authoritative_observation_not_replay
+  observe:
+    mutation: read_only
+    result: normalized_observation_with_evidence_source_and_observed_at
+  collect:
+    mutation: read_only
+    requires: explicit_active_attempt_outcome_and_exact_artifact_provenance
+    result: outcome_artifacts_tests_requested_effective_capabilities_and_residual_resources
+    does_not: accept_work_or_mark_work_item_Done
+  cancel:
+    requires: human_request_or_exact_authorized_coordinator_decision_and_proven_host_authority
+    result: requested_or_confirmed_or_unknown
+    unknown_liveness: HOLD_never_stop_abandon_or_release_from_absence
+    does_not: delete_checkout_or_imply_process_exit
+  release:
+    requires: accepted_explicit_settlement_and_no_immediate_next_owner
+    result: released_retained_or_unknown_with_resources_and_next_action
+    does_not: delete_worktree_or_branch
+  delete_checkout:
+    separate_optional_operation: true
+    requires: docs_worktree_lifecycle_exact_human_approval_and_eligibility
+observation:
+  required: [execution_id, state, liveness, evidence, observed_at, external_receipt]
+  state: [preparing, running, awaiting_input, succeeded, failed, cancelled, unknown]
+  liveness: [live, exited, unknown]
+  evidence: authoritative_execution_host_reference_or_explicit_missing_evidence
+  external_receipt: opaque_to_core_adapter_interprets_it
+capabilities:
+  required: [operations, asynchronous_observation, authoritative_liveness, settlement, recover_operation]
+  unsupported: explicit_error_no_silent_emulation_or_local_fallback
+relational_checks:
+  - one_execution_binds_one_task_one_repository_one_exact_assignment
+  - native_task_ready_does_not_replace_Nexus_gate_and_capability_checks
+  - liveness_and_task_outcome_are_distinct
+  - success_requires_explicit_outcome_not_idle_or_exit
+  - retry_switch_or_reassignment_requires_prior_settlement_or_proven_fencing
+  - fencing_does_not_imply_process_exit_or_safe_checkout_reuse
+  - release_and_delete_checkout_are_separate
+  - routing_and_work_item_transitions_are_never_adapter_policy

@@ -4,8 +4,8 @@ Use docs/review-principles.md for all review/confirmation gates, including self-
 of findings and the six-section final review summary. Preserve role-specific outcomes.
 
 For architecture boundaries and phased GitHub adoption, apply docs/architecture.md and
-docs/workflow-migration.md. The Orca dispatch steps below describe the current backend,
-not core Work Item semantics; GitHub synchronization is not implemented by these scripts.
+docs/workflow-migration.md. Use schemas/execution-backend.yaml and the selected adapter binding for execution;
+GitHub synchronization is not implemented by these preflight scripts.
 
 ## Intake and plan
 
@@ -15,7 +15,7 @@ Identify non-goals, ownership, acceptance criteria and dirty-state inclusion. Us
 only when every eligibility condition holds; otherwise use ORCHESTRATED, including
 single-repository work that benefits from multiple worktrees.
 
-Create a plan and routing record in `.runtime/runs/<run-id>/` using a Nexus-owned run namespace; record Orca run/attempt IDs separately as adapter receipts.
+Create a plan and routing record in `.runtime/runs/<run-id>/` using a Nexus-owned run namespace; record backend run/attempt IDs separately as opaque adapter receipts.
 Draft planning can stay in an explicitly supplied ignored local context. Classify each
 task, declare read-only/write scope and forbidden paths, assign one owner, immutable base,
 dependencies, acceptance and validation. Check unique IDs, acyclic DAG, complete waves
@@ -26,14 +26,14 @@ Plan templates/examples require real baselines and verified routing before dispa
 
 Apply all routing overrides monotonically. Resolve compatible agent/model/effort on the
 execution host and record fallback or missing capability. Hold high-risk/critical tasks
-with unknown floors. Inspect installed Orca status, guide and named references. Represent
-the plan through native Orca tasks/dependencies; dispatch ready independent tasks in
-parallel. Each independently mutable task gets its own worktree in its owning repository.
+with unknown floors. Prepare execution via schemas/execution-backend.yaml and the selected adapter binding.
+Translate logical tasks/dependencies behind that boundary; start ready independent tasks
+in parallel only after capabilities, placement and authorization are verified. Each independently mutable task gets its own worktree in its owning repository.
 Workers receive explicit objective, scope, base, acceptance, result format and boundaries.
 
 ## Supervise and integrate
 
-Wait for explicit completion through Orca. Terminal idle is insufficient. Inspect every
+Observe and collect explicit active-attempt completion through the selected backend. Terminal idle is insufficient. Inspect every
 message in a delivery batch, handle questions/escalations and accept or reject evidence.
 Release terminal workers when the installed lifecycle contract requires it, preserving
 their diffs; acknowledge delivery only after all messages and lifecycle decisions are handled.

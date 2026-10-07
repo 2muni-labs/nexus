@@ -27,17 +27,18 @@ agents use compatible fallbacks; independence means a separate session. Record u
 and requested/effective capabilities, block unverified high-risk/critical floors, and never
 invent IDs/effort flags or silently downgrade risk requirements.
 
-Inspect installed Orca status and orchestration guide first; load version-matched placement,
-DAG/gate and recovery references. Use Orca for tasks, workers and lifecycle. Native ready
-state is necessary but not sufficient: gate result PASS and resolved baseline evidence are
-also required. If manual_review_required is true, HOLD all dependent work, including
-integration preparation, until explicit human approval evidence matches the exact gate ID,
-upstream artifacts and selected baselines. Missing, pending, rejected or stale approval
-blocks dispatch; changed inputs invalidate it. Intermediate approval never waives final
-merge approval. Use the schema's approval record and existing Orca gates/messages.
-Require explicit active-Dispatch completion, process all delivered messages,
-answer questions and decide terminal release/reuse/authorized retention before acknowledgment.
-Idle state, timeout or unknown liveness never authorize completion or duplicate mutation.
+Use schemas/execution-backend.yaml for prepare/start/observe/collect/cancel/release.
+Select backend binding guidance; for the current Orca adapter read docs/adapters/orca.md
+and its installed references. Core tasks and attempts have Nexus-owned identities;
+provider identifiers are opaque adapter receipts. The adapter translates dependencies,
+placement, explicit completion and host authority, never routing or project state policy.
+Backend ready state is insufficient: gate PASS, resolved baseline and capability evidence
+are required. When manual_review_required is true, HOLD every dependent dispatch until
+explicit human approval matches exact gate ID, upstream artifacts and selected baselines.
+Changed inputs invalidate approval; intermediate approval never waives final merge approval.
+Process every delivered result/question and decide each settled resource's next owner.
+Timeout, idle or unknown liveness never authorize completion, cancellation or duplicate
+mutation. Proven fencing alone is not proof that an old editor stopped.
 
 Use prompts/integration-reviewer.md for semantic compatibility gates. Record exact upstream
 artifacts, conflict assessment, per-repository baseline selection and PASS/FAIL/NEEDS-WORK.

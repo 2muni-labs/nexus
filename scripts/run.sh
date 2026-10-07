@@ -39,13 +39,11 @@ nexus_root
 "$NEXUS_ROOT/scripts/validate.sh"
 nexus_local
 for repository in ${repositories[@]+"${repositories[@]}"}; do nexus_repository_known "$repository" || nexus_fail "Unknown logical repository: $repository"; done
-nexus_orca
-nexus_runtime
-nexus_guide
+nexus_backend_preflight
 # Current checkout identity is always checked; unrelated managed repositories are optional.
-nexus_selectors nexus
-for repository in ${repositories[@]+"${repositories[@]}"}; do [[ "$repository" == nexus ]] || nexus_selectors "$repository"; done
-printf '\nInstalled Orca orchestration guidance (%s)\n\n%s\n' "$NEXUS_ORCA" "$NEXUS_GUIDE"
+nexus_backend_repositories nexus
+for repository in ${repositories[@]+"${repositories[@]}"}; do [[ "$repository" == nexus ]] || nexus_backend_repositories "$repository"; done
+nexus_backend_context
 printf '\nCoordinator context\nRoot: %s\nWorkflow: %s/workflows/%s.md\nObjective: %s\nRequested mode: %s (Planner must validate eligibility)\nConfiguration: %s\n' "$NEXUS_ROOT" "$NEXUS_ROOT" "$workflow" "$objective" "$mode" "$NEXUS_LOCAL_STATE"
 if [[ ${#repositories[@]} -eq 0 ]]; then printf 'Repository ownership: unresolved; determine during intake.\n'; fi
 for repository in ${repositories[@]+"${repositories[@]}"}; do printf 'Repository: %s -> %s\n' "$repository" "$(nexus_repo_selector "$repository")"; done
@@ -61,7 +59,7 @@ Read AGENTS.md, docs/review-principles.md, all four config policies, schemas/exe
 prompts/coordinator.md, prompts/planner.md and the requested workflow.
 Validate requirements, scope and dirty-state inclusion; create a bounded plan and routing
 record under .runtime/runs/<run-id>/ only when execution is actually requested.
-Use installed Orca references before dispatch. Preserve one owner per mutable task,
+Use schemas/execution-backend.yaml and the selected adapter guidance before dispatch. Preserve one owner per mutable task,
 isolated mutable worktrees, explicit completion, integration PASS and separate validation.
 Provider models and effort are local verified choices; preserve capability floors on fallback.
 Generated reviews remain ignored. Human merge/push/PR approval remains mandatory.

@@ -10,6 +10,10 @@ plan:
   requirements: nonempty_observable_acceptance_list
   baselines: per_repository_immutable_ref_scope_and_dirty_state
   final_gate: human-review-required
+  execution_binding:
+    contract: schemas/execution-backend.yaml
+    task_identity: nexus_owned
+    native_ids_and_states: opaque_adapter_receipts_only
   task:
     required: [id, title, type, complexity, risk, context_size, parallelizable, repository, dependencies, mutation_scope, base, acceptance, routing, architecture_sensitive]
     id: unique_in_plan

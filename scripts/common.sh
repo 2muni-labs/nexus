@@ -80,6 +80,9 @@ nexus_git_common_dir() {
     [[ "$directory" == /* ]] || directory="$1/$directory"
     (CDPATH= cd -- "$directory" 2>/dev/null && pwd -P)
 }
-# Compatibility loading only: existing CLI entrypoints retain their helper API.
-# Provider-specific preflight lives in the adapter; loading it performs no CLI calls.
-source "$(dirname -- "${BASH_SOURCE[0]}")/adapters/orca.sh"
+# Load the provider-neutral preflight port. Legacy helper names are lazy shims.
+source "$(dirname -- "${BASH_SOURCE[0]}")/execution-backend.sh"
+nexus_orca() { nexus_backend_load; nexus_orca "$@"; }
+nexus_runtime() { nexus_backend_load; nexus_runtime "$@"; }
+nexus_guide() { nexus_backend_load; nexus_guide "$@"; }
+nexus_selectors() { nexus_backend_load; nexus_selectors "$@"; }

@@ -14,12 +14,13 @@ for file in README.md AGENTS.md .gitignore config/repositories.yaml config/routi
     local/capabilities.yaml.example scripts/run.sh \
     reviews/README.md reviews/_template/summary.md scripts/common.sh \
     scripts/doctor.sh scripts/status.sh scripts/validate.sh scripts/weekly-review.sh \
-    scripts/adapters/orca.sh docs/workflow-migration.md; do
+    scripts/adapters/orca.sh scripts/execution-backend.sh schemas/execution-backend.yaml \
+    docs/adapters/orca.md docs/workflow-migration.md; do
     [[ -s "$NEXUS_ROOT/$file" ]] || nexus_fail "Missing or empty required file: $file"
 done
 for script in "$NEXUS_ROOT"/scripts/*.sh "$NEXUS_ROOT"/scripts/adapters/*.sh; do
     bash -n "$script" || nexus_fail "Shell syntax invalid: $script"
-    if [[ "$script" != "$NEXUS_ROOT/scripts/common.sh" && "$script" != "$NEXUS_ROOT"/scripts/adapters/* ]]; then
+    if [[ "$script" != "$NEXUS_ROOT/scripts/common.sh" && "$script" != "$NEXUS_ROOT/scripts/execution-backend.sh" && "$script" != "$NEXUS_ROOT"/scripts/adapters/* ]]; then
         [[ -x "$script" ]] || nexus_fail "Script is not executable: $script"
     fi
 done

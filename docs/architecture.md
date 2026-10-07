@@ -4,7 +4,8 @@
 
 This is the permanent target. v0.2 is a document-driven Coordinator with read-only shell
 preflight; it has no executable domain/controller, GitHub adapter or project-state cache.
-The initial adapter extraction preserves Orca behavior, not full backend replaceability.
+The backend contract now separates asynchronous Coordinator operations and read-only
+shell preflight from Orca-native mechanics; no new automatic dispatcher is introduced.
 See [assessment and migration](workflow-migration.md) for evidence, stages and tests.
 
 ```text
@@ -50,9 +51,12 @@ result, request cancellation, and settle/release resources. Cancellation is asyn
 unknown observation cannot prove exit. Separate worker release from checkout deletion,
 which requires its own human-authorized operation. Unsupported operations fail explicitly;
 never silently emulate unavailable fencing or cancel by deleting a checkout.
-The current `scripts/adapters/orca.sh` implements only legacy read-only preflight helpers.
-`common.sh` loads it for compatibility; `status.sh` still issues Orca-specific diagnostic
-calls. This is a partial extraction, not a completed execution port.
+The lifecycle port is `schemas/execution-backend.yaml`, implemented by the Coordinator
+using the selected backend binding (`docs/adapters/orca.md`). Read-only shell entrypoints
+use `scripts/execution-backend.sh`; all direct Orca CLI calls and native diagnostic views
+live in `scripts/adapters/orca.sh`. Existing helpers remain compatible lazy shims.
+The shell port is preflight/status only; lifecycle operations remain explicit supervised
+Coordinator actions, preserving this repository's no-runtime/no-dispatch-script boundary.
 
 WorkItemProvider initially needs Issue read/create/update, Issue/PR association, PR
 read/create, review/check reads, labels and Project field updates. Implement each capability

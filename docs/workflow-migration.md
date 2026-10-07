@@ -91,7 +91,7 @@ all phases, external writes or future merge operations.
 | Phase | Changes / affected files | Risk and compatibility | Required verification |
 | --- | --- | --- | --- |
 | 1a — implemented first step | `AGENTS.md`, architecture/migration docs, README, adapter extraction from `scripts/common.sh`, structural checks, `tests/orca-preflight.sh`, neutral run-ID/receipt wording | Preserve CLI/helper API, existing local mappings and dirty changes; partial boundary only | Helper-body equality; Bash syntax and structure; mock readiness, guide and selector success/failure; independent exact-candidate review |
-| 1b — complete execution boundary | Coordinator/workflow contracts, plan schema/examples, backend operation/result contract, adapter-specific status/placement/lifecycle guidance | No invented CLI, unsafe cancellation or loss of attempt provenance; existing tools stay compatible until callers migrate | Asynchronous start/observe/result/cancel/settle fixtures; unknown liveness HOLD; logical policy independent of native task states; backend contract conformance |
+| 1b — implemented Coordinator execution boundary | Coordinator/workflow contracts, plan schema/examples, backend operation/result contract, adapter-specific status/placement/lifecycle guidance | No invented CLI, unsafe cancellation or loss of attempt provenance; existing tools stay compatible until callers migrate | Asynchronous start/observe/result/cancel/settle fixtures; unknown liveness HOLD; logical policy independent of native task states; backend contract conformance |
 | 2 — GitHub Work Items | WorkItemProvider contract and GitHub implementation in a separately approved implementation location; schema/examples and workflow association guidance | Remote writes and association duplication; legacy local runs cannot masquerade as canonical Issues | Read/create/update Issues, read/create PRs, labels and Issue/PR links; duplicate response recovery; stable repository/Issue/task/attempt identities; explicit write authority |
 | 3 — workflow controller policy | Transition table and Coordinator/routing workflows; implementation location only if an executable controller is authorized | No scheduler daemon, routing inside adapters or competing state store; preserve approval gates | State/attempt separation; validation/CI/review remediation under same Issue; pause/cancel/resume/reassign; bounded retries after fencing; exact human gate approval |
 | 4 — GitHub Projects | Provider field configuration and workflow synchronization | Field option IDs, access failures, manual edits and stale observations; not present in phase 1 | Map all six states, priority and relationships; permissions/missing fields; idempotent updates and concurrent-edit conflict handling |
@@ -133,7 +133,8 @@ be disposable. Agents and backend adapters report facts; Nexus explains policy c
 ## Architectural acceptance tests
 
 1. Remove Orca: replace its execution adapter without redesigning plans, Work Items,
-   routing, workflow states or GitHub integration. v0.2 preflight cannot yet pass this test.
+   routing, workflow states or GitHub integration. The Coordinator lifecycle contract and shell preflight port are now independent of
+   Orca-native operations; a replacement adapter still needs conformance evidence.
 2. Replace Codex: workflow transitions and acceptance remain unchanged; assignment and
    verified effective capability receipts change. Do not embed routing in either adapter.
 3. Delete Nexus local state: recover primarily from GitHub and backend observations;
