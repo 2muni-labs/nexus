@@ -8,17 +8,18 @@ done
 for file in README.md AGENTS.md .gitignore config/repositories.yaml config/routing.yaml \
     config/review.yaml config/planning.yaml schemas/execution-plan.yaml \
     schemas/examples/single-repository.yaml schemas/examples/cross-repository.yaml \
-    docs/architecture.md docs/routing.md docs/review-principles.md prompts/planner.md prompts/coordinator.md \
+    docs/architecture.md docs/routing.md docs/review-principles.md docs/worktree-lifecycle.md prompts/planner.md prompts/coordinator.md \
     prompts/basecamp-reviewer.md prompts/foundry-reviewer.md prompts/integration-reviewer.md \
     prompts/validator.md workflows/weekly-review.md workflows/feature-execution.md local/repos.env.example \
     local/capabilities.yaml.example scripts/run.sh \
     reviews/README.md reviews/_template/summary.md scripts/common.sh \
-    scripts/doctor.sh scripts/status.sh scripts/validate.sh scripts/weekly-review.sh; do
+    scripts/doctor.sh scripts/status.sh scripts/validate.sh scripts/weekly-review.sh \
+    scripts/adapters/orca.sh docs/workflow-migration.md; do
     [[ -s "$NEXUS_ROOT/$file" ]] || nexus_fail "Missing or empty required file: $file"
 done
-for script in "$NEXUS_ROOT"/scripts/*.sh; do
+for script in "$NEXUS_ROOT"/scripts/*.sh "$NEXUS_ROOT"/scripts/adapters/*.sh; do
     bash -n "$script" || nexus_fail "Shell syntax invalid: $script"
-    if [[ "$script" != "$NEXUS_ROOT/scripts/common.sh" ]]; then
+    if [[ "$script" != "$NEXUS_ROOT/scripts/common.sh" && "$script" != "$NEXUS_ROOT"/scripts/adapters/* ]]; then
         [[ -x "$script" ]] || nexus_fail "Script is not executable: $script"
     fi
 done

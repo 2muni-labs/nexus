@@ -60,7 +60,7 @@ cat <<'CONTEXT'
 Read AGENTS.md, docs/review-principles.md, all four config policies, schemas/execution-plan.yaml,
 prompts/coordinator.md, prompts/planner.md and the requested workflow.
 Validate requirements, scope and dirty-state inclusion; create a bounded plan and routing
-record under .runtime/runs/<Orca-run-id>/ only when execution is actually requested.
+record under .runtime/runs/<run-id>/ only when execution is actually requested.
 Use installed Orca references before dispatch. Preserve one owner per mutable task,
 isolated mutable worktrees, explicit completion, integration PASS and separate validation.
 Provider models and effort are local verified choices; preserve capability floors on fallback.

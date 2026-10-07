@@ -9,30 +9,6 @@ nexus_root() {
     actual=$(CDPATH= cd -- "$actual" && pwd -P)
     [[ "$actual" == "$NEXUS_ROOT" ]] || nexus_fail 'Script root is not the Nexus Git root.'
 }
-nexus_orca() {
-    if [[ -n "${ORCA_CLI_COMMAND:-}" ]]; then
-        NEXUS_ORCA=$ORCA_CLI_COMMAND
-    elif [[ -n "${ORCA_DEV_REPO_ROOT:-}" ]]; then
-        NEXUS_ORCA=orca-dev
-    elif [[ $(uname -s) == Linux ]]; then
-        NEXUS_ORCA=orca-ide
-    else
-        NEXUS_ORCA=orca
-    fi
-    command -v "$NEXUS_ORCA" >/dev/null 2>&1 || nexus_fail "Selected Orca executable unavailable: $NEXUS_ORCA (no fallback)."
-}
-nexus_runtime() {
-    local reply compact
-    reply=$("$NEXUS_ORCA" status --json) || nexus_fail 'Orca status --json failed; start/check Orca manually.'
-    compact=$(printf '%s' "$reply" | tr -d '[:space:]')
-    # Readiness fields verified against the installed status contract.
-    [[ "$compact" == *'"ok":true'* && "$compact" == *'"reachable":true'* ]] ||
-        nexus_fail 'Orca did not report a successful, reachable runtime; inspect status --json.'
-}
-nexus_guide() {
-    NEXUS_GUIDE=$("$NEXUS_ORCA" skills get orchestration) || nexus_fail 'Version-matched orchestration guidance unavailable; check/update the selected Orca.'
-    [[ -n "$NEXUS_GUIDE" ]] || nexus_fail 'Orca returned empty orchestration guidance.'
-}
 # Registry keys use one documented, dependency-free YAML layout, not a general parser.
 nexus_repository_keys() {
     local keys
@@ -104,23 +80,6 @@ nexus_git_common_dir() {
     [[ "$directory" == /* ]] || directory="$1/$directory"
     (CDPATH= cd -- "$directory" 2>/dev/null && pwd -P)
 }
-nexus_selectors() {
-    local repository selector selected line selected_path='' root_common selected_common
-    if [[ $# -eq 0 ]]; then
-        while IFS= read -r repository; do nexus_selectors "$repository"; done <<< "$NEXUS_REPOSITORIES"
-        return
-    fi
-    for repository in "$@"; do
-        selector=$(nexus_repo_selector "$repository")
-        "$NEXUS_ORCA" repo show --repo "$selector" --json >/dev/null || nexus_fail "Cannot resolve $repository selector; check local/repos.env and Orca repo list."
-        [[ "$repository" == nexus ]] || continue
-        selected=$("$NEXUS_ORCA" repo show --repo "$selector") || nexus_fail 'Cannot inspect Nexus selector.'
-        while IFS= read -r line; do
-            case "$line" in 'path: '*) selected_path=${line#path: }; break ;; esac
-        done <<< "$selected"
-        [[ -n "$selected_path" ]] || nexus_fail 'Cannot inspect Nexus selector path.'
-        root_common=$(nexus_git_common_dir "$NEXUS_ROOT") || nexus_fail 'Cannot resolve Nexus checkout Git identity.'
-        selected_common=$(nexus_git_common_dir "$selected_path") || nexus_fail 'Cannot resolve Nexus selector Git identity.'
-        [[ "$selected_common" == "$root_common" ]] || nexus_fail 'Nexus selector resolves to a different Git repository; check local/repos.env.'
-    done
-}
+# Compatibility loading only: existing CLI entrypoints retain their helper API.
+# Provider-specific preflight lives in the adapter; loading it performs no CLI calls.
+source "$(dirname -- "${BASH_SOURCE[0]}")/adapters/orca.sh"

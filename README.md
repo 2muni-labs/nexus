@@ -8,12 +8,18 @@ supervises Orca workers, checks integration readiness, and prepares results for 
 review. Both single-repository work across multiple worktrees and cross-repository
 coordination are first-class workflows.
 
+The permanent target is **Nexus owns the workflow; GitHub owns the state; Orca is an
+execution backend**. Current scripts still provide Orca-only read-only preflight; GitHub
+synchronization and restart reconciliation are not implemented. See the
+[migration plan](docs/workflow-migration.md) for staged delivery and compatibility gates.
+
 ## Boundaries
 
 | Layer | Responsibility |
 | --- | --- |
 | Nexus | Requirements, planning, Task DAGs, policy, routing, gates, normalized decisions |
-| Orca | Worktrees, terminals, dispatch, lifecycle, isolation, runtime supervision |
+| GitHub (target) | Authoritative Issues, PRs, Projects, reviews, checks and project history |
+| Execution backend (currently Orca) | Worktrees, terminals, dispatch, attempt lifecycle, isolation, runtime supervision |
 | Basecamp | macOS host provisioning, packages, shell/PATH, developer tools, host prerequisites |
 | Foundry | Docker/Compose runtime, bootstrap, containers, project-local environment |
 
@@ -43,6 +49,7 @@ Run from a Nexus Git checkout with Bash, Git and the locally installed Orca CLI:
 
 ```bash
 ./scripts/validate.sh
+./tests/orca-preflight.sh             # mock adapter checks; no live backend needed
 ./scripts/doctor.sh                  # all registered repository selectors
 ./scripts/doctor.sh nexus            # only Nexus
 ./scripts/status.sh

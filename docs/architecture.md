@@ -1,32 +1,64 @@
 # Architecture
 
-Nexus is the control plane; Orca is the execution plane. Basecamp, Foundry and future
-managed repositories remain independent implementation domains.
+**Nexus owns the workflow. GitHub owns the state. Orca is an execution backend.**
+
+This is the permanent target. v0.2 is a document-driven Coordinator with read-only shell
+preflight; it has no executable domain/controller, GitHub adapter or project-state cache.
+The initial adapter extraction preserves Orca behavior, not full backend replaceability.
+See [assessment and migration](workflow-migration.md) for evidence, stages and tests.
 
 ```text
-                         User requirements
-                                │
-                                ▼
-                              Nexus
-                   Intake / Planner / Router
-                    wave planning / Supervisor
-                                │
-                                ▼
-                              Orca
-                   ┌────────────┼────────────┐
-                   ▼            ▼            ▼
-                 WT A         WT B         WT C
-                 Agent        Agent        Agent
-                   └────────────┼────────────┘
-                                ▼
-                       Structured completion
-                                ▼
-                         Integration gate
-                                ▼
-                       Independent validation
-                                ▼
-                       Human review / decision
+Requirements → Nexus Coordinator: planning / workflow policy / routing / gates
+                          │                         │
+                   WorkItemProvider           ExecutionBackend
+                          │                         │
+                   GitHub adapter              Orca adapter
+                          │                         │
+                Issues / PRs / Projects       worktrees / agents
+                persistent project truth      attempt observations
+                          └──────────┬──────────────┘
+                               Reconciliation
+                                     │
+                      validation / review / human merge
 ```
+
+The diagram describes contracts, not new services. Workflow state and policy belong to
+Nexus; GitHub persists externally visible decisions. Execution backends own attempt
+mechanics and observations. GitHub is the only planned work provider and Orca the only
+current backend; other adapters are extension possibilities, not deliverables.
+
+## Dependency boundary
+
+Domain concepts and policy depend on no provider. Application coordination consumes
+provider-neutral contracts. Adapters implement those contracts and call external APIs/CLI.
+The entrypoint/composition boundary selects adapters. Neither core policy nor an execution
+adapter decides model routing based on provider-native project states.
+
+Allowed: entrypoint → application → domain/contracts; adapters → contracts;
+Orca adapter → Orca CLI; GitHub adapter → GitHub API. Forbidden: domain/policy → Orca CLI,
+workspace IDs or native states; domain/policy → GitHub API payloads; adapters → routing
+policy decisions. An opaque external ID is an association, never a Work Item identity.
+
+Initially these are declarative contracts: no class hierarchy or framework is necessary.
+A future ExecutionContext contains stable workItem/task/execution IDs, logical repository,
+base revision, working branch, selected backend, assignment and normalized observations.
+Keep external execution IDs and provider metadata opaque to core consumers; the adapter
+interprets them and verifies authoritative host/repository/attempt identity.
+
+Derive the execution port from real callers: prepare, start, observe, collect an explicit
+result, request cancellation, and settle/release resources. Cancellation is asynchronous;
+unknown observation cannot prove exit. Separate worker release from checkout deletion,
+which requires its own human-authorized operation. Unsupported operations fail explicitly;
+never silently emulate unavailable fencing or cancel by deleting a checkout.
+The current `scripts/adapters/orca.sh` implements only legacy read-only preflight helpers.
+`common.sh` loads it for compatibility; `status.sh` still issues Orca-specific diagnostic
+calls. This is a partial extraction, not a completed execution port.
+
+WorkItemProvider initially needs Issue read/create/update, Issue/PR association, PR
+read/create, review/check reads, labels and Project field updates. Implement each capability
+only at its migration phase with authorization, observable errors and duplicate prevention.
+Provider writes require the existing explicit publication authority; this architecture
+request does not authorize creating Issues/PRs, pushing or merging unseen changes.
 
 The same graph applies to multiple tasks within Foundry or to tasks in separate
 repositories. A worker never mutates another repository. Cross-repository reasoning
@@ -42,7 +74,7 @@ JSON Schema. Examples are draft plans with placeholder baselines, not launchable
 
 The Coordinator checks IDs, acyclicity, ownership, conflict-free waves, acceptance criteria,
 validation requirements and baseline provenance. Scheduler means the Coordinator choosing
-ready waves and using Orca's task dependencies. Nexus contains no scheduler process,
+ready waves and using the selected execution adapter (currently Orca native task dependencies). Nexus contains no scheduler process,
 queue, daemon, retry engine or agent subprocess framework.
 
 ## Integration is a decision
@@ -79,7 +111,8 @@ Explicit `worker_done` is evidence to inspect, not automatic acceptance. Infrast
 configuration, implementation and unknown failures receive different diagnoses. Retry
 requires a settled/fenced prior worker, a concrete recoverable cause, bounded budget and
 recorded Coordinator decision. Unknown live workers are preserved; no duplicate mutation.
-Orca owns completion delivery, recovery and terminal release.
+The execution backend owns completion delivery, recovery primitives and terminal release;
+Nexus decides acceptance and recovery policy.
 
 No credentials, machine paths, Orca IDs or permanent provider model IDs in tracked policy.
 Runtime plans/results are ignored; generated reviews remain ignored. Curated durable

@@ -3,6 +3,10 @@
 Use docs/review-principles.md for all review/confirmation gates, including self-review
 of findings and the six-section final review summary. Preserve role-specific outcomes.
 
+For architecture boundaries and phased GitHub adoption, apply docs/architecture.md and
+docs/workflow-migration.md. The Orca dispatch steps below describe the current backend,
+not core Work Item semantics; GitHub synchronization is not implemented by these scripts.
+
 ## Intake and plan
 
 Read AGENTS, all four config policies, the execution-plan contract, Coordinator and Planner
@@ -11,7 +15,7 @@ Identify non-goals, ownership, acceptance criteria and dirty-state inclusion. Us
 only when every eligibility condition holds; otherwise use ORCHESTRATED, including
 single-repository work that benefits from multiple worktrees.
 
-Create a plan and routing record in `.runtime/runs/<Orca-run-id>/` after a real run exists.
+Create a plan and routing record in `.runtime/runs/<run-id>/` using a Nexus-owned run namespace; record Orca run/attempt IDs separately as adapter receipts.
 Draft planning can stay in an explicitly supplied ignored local context. Classify each
 task, declare read-only/write scope and forbidden paths, assign one owner, immutable base,
 dependencies, acceptance and validation. Check unique IDs, acyclic DAG, complete waves
@@ -61,3 +65,17 @@ Synthesize result/diff, checks, remaining risks and gate/baseline provenance. Ea
 implementation result receives exactly one final human review decision. Keep transient
 plans/results and generated reviews ignored; preserve only explicitly curated durable
 policy decisions in Git. No automatic merge, push, PR or branch deletion.
+
+## Completed worktrees
+
+Apply docs/worktree-lifecycle.md after final disposition. Release settled workers
+without deleting their checkout. Preserve upstream worktrees through integration
+and required validation. Deletion is a separate human-authorized operation after
+all eligibility checks; record per-worktree cleanup evidence outside deletion targets.
+
+At instruction intake, reconcile relevant previously retained workspaces. At closure,
+perform already authorized eligible removals after final disposition and before the
+final report; otherwise report retention/HOLD and the next trigger. Result delivery
+while awaiting human review does not close the workspace lifecycle. Follow-up messages
+continue the objective unless they explicitly replace it; new instructions do not
+implicitly authorize deletion of prior work.

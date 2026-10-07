@@ -5,6 +5,56 @@ workflows, reviews and validation. Read this contract before every structured wo
 then all four `config/` policies, `schemas/execution-plan.yaml`, the requested workflow,
 and relevant prompts. The user's proposal is intake, not an automatically valid plan.
 
+## Permanent workflow architecture
+
+**Nexus owns the workflow. GitHub owns the state. Orca is an execution backend.**
+
+Nexus owns planning, decomposition, priorities, routing, logical transitions, validation,
+completion criteria, recovery decisions and human-control policy. Agents perform assigned
+work; neither agents nor execution backends own project state or workflow semantics.
+GitHub Issues, PRs and Projects are the authoritative persistent project record, including
+relationships, priorities, milestones, labels, reviews, checks and merge history.
+Local plans, receipts and caches are operational evidence, never a competing project store.
+Durable workflow associations and decisions needed after local loss must be recoverable
+from external records; private reports/credentials must not be published implicitly.
+
+Core concepts and contracts are provider-neutral: WorkItem, Task, Dependency, Execution,
+AgentAssignment, ExecutionContext, ValidationResult and ReviewResult. Nexus policy depends
+on ExecutionBackend and WorkItemProvider contracts; adapters depend on these contracts.
+Orca CLI behavior, IDs, native states, naming and workspace metadata belong to the Orca
+adapter. Backend identifiers are opaque receipts; core policy must not interpret them.
+GitHub access likewise belongs to its provider adapter. Implement only currently needed
+capabilities; no speculative providers, runtime, scheduler, database or event-sourcing layer.
+
+Default to one GitHub Issue / Work Item / mutable worktree / PR. Independently reviewable
+changes may be split with recorded reasons and links; avoid fragmenting small work. Multiple
+attempts or read-only validations do not require new Issues. Visible states are Backlog,
+Ready, In Progress, Blocked, Review and Done; backend execution states remain separate.
+Worker completion cannot imply Done. For implementation work Done requires observed merge
+and acceptance; non-code work requires an explicit accepted disposition.
+
+Reconcile by observing GitHub, backend attempts and applicable Git refs, comparing intent
+with evidence, and applying the smallest authorized action. A known PR must prevent blind
+redispatch; unknown attempt liveness means HOLD. Retries, reassignment or backend switching
+preserve Work Item identity and require proven prior settlement/fencing, a concrete cause
+and finite budget. Validation/CI/review feedback returns to bounded remediation under the
+same Issue unless a separately reviewable scope warrants a linked Issue.
+
+Preserve human pause, cancel, resume, reprioritization, reassignment and review overrides.
+Cancellation requests are not proof of termination. Prefer idempotent operations and
+structured lifecycle evidence with stable work/attempt/artifact associations; keep routing
+reasons and validation provenance inspectable. Merge, publication and deletion retain
+explicit human authorization boundaries.
+
+Apply changes incrementally. The current v0.2 shell tools are read-only Orca preflight,
+not a GitHub-backed controller. Existing Orca operational guidance applies only when using
+that backend and cannot define core semantics. See docs/architecture.md and
+docs/workflow-migration.md for current limitations, contracts and acceptance gates.
+Architecture tests: removing Orca changes its adapter, not workflow/planning/work identity;
+changing agents preserves workflow semantics; loss of Nexus local state permits recovery
+primarily from GitHub and execution backends. These are required target properties,
+not claims that the current implementation already passes them.
+
 ## Shared review principles
 
 Read docs/review-principles.md for every substantive review, confirmation and self-review,
@@ -25,8 +75,9 @@ change its baseline; record the exact revisions. Cross-repository analysis is al
 preferably through normalized inputs. Cross-repository mutation and commits are forbidden.
 
 Nexus owns intake, plans, routing, policies, prompts, workflows, gate decisions, normalized
-findings, validation requirements and lightweight diagnostics. Orca owns worktrees,
-terminals, dispatch, lifecycle, supervision, completion and recovery. Basecamp owns host
+findings, validation requirements, workflow/recovery decisions and lightweight diagnostics.
+The selected execution backend owns execution mechanics. For Orca these include worktrees,
+terminals, dispatch, attempt supervision, completion delivery and recovery primitives. Basecamp owns host
 provisioning, package management (including MacPorts where applicable), shell/PATH,
 developer tools, agent CLI prerequisites and host runtime prerequisites. Foundry owns
 Docker/Compose, bootstrap, project-local runtime, containers and worktree-safe contracts.
@@ -47,10 +98,10 @@ embed repositories as submodules, subtrees, copied source directories or monorep
   fallback and independent-validation requirement. Apply all matching rules by maximum
   profile rank and logical OR for validation. Record concise operational reasons and
   requested versus verified effective capabilities; never fabricate model availability.
-- **Scheduler (wave planning):** translate the DAG into Orca ready waves. Start independent
+- **Scheduler (wave planning):** translate the DAG into backend-independent ready waves. Start independent
   work together; serialize real dependencies and conflicting mutation scopes. This is a
   Coordinator responsibility, not a Nexus scheduling process, queue or daemon.
-- **Supervisor:** use Orca's exact attempt/lifecycle authority. Require explicit outcomes
+- **Supervisor:** use the selected backend's exact attempt/lifecycle authority. Require explicit outcomes
   and structured results; idle terminals, heartbeat, timeout or contact loss are not
   completion. Process questions, preserve failure evidence, prevent duplicate mutation
   attempts, and choose release/reuse/user-requested retention after accepted settlement.
@@ -63,6 +114,20 @@ Nexus. A directly assigned Nexus maintenance task may use the user's current che
 as its sole mutable workspace; never share that checkout with another mutation worker.
 Independent validation must use a separate session. A plan, review or validation task
 must not silently become an implementation task; create a new task for changed authority.
+
+## Completed worktrees
+
+Follow docs/worktree-lifecycle.md before retiring any checkout. Worker release and
+worktree deletion are separate. Default to retaining the worktree after terminal
+cleanup; deletion requires settled activity, final disposition, preserved results
+and local data, no consumers, exact identity and explicit human deletion approval.
+Merge approval alone does not authorize deletion. Unknown liveness/data or changed
+approval scope means HOLD. Use Orca removal with verified host/version semantics;
+account for possible branch deletion and archive hooks. No automatic age-based cleanup.
+Check relevant prior retention at instruction intake. The normal deletion window is
+post-disposition and pre-closure-report, with separate exact deletion approval.
+Report delivered work and workspace cleanup separately; unresolved cleanup is retained
+or HOLD with a next trigger, never an indefinite wait or implicit deletion authority.
 
 ## Modes and plans
 
@@ -95,7 +160,8 @@ rejected, absent or stale approval cannot release work. Changed inputs/baselines
 prior approval. This intermediate authorization is separate from final merge approval;
 a user instruction to fix a finding does not approve future unseen gate results. When
 manual review is not required, record approval as not-required with null evidence/scope.
-Orca carries gate/message decisions; Nexus adds policy checks, not an approval engine.
+The backend carries execution gate/message receipts; Nexus owns policy checks and
+authorization decisions. Durable approval evidence must be externally recoverable.
 
 Independent validation is mandatory for P0/P1, high risk, critical complexity,
 architecture-sensitive changes, and integration changes with multiple mutable upstream

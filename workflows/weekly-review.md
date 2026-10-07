@@ -48,3 +48,17 @@ Use ignored `reviews/<ISO-week-year>/W<week>/` for normalized summaries and repo
 integration findings, using the tracked template. Runtime plan/routing/gates stay in
 `.runtime/runs/<run-id>/`. Record evidence, counts, decisions, validation and unresolved
 risks; no full transcripts or automatic promotion to Git history.
+
+## Completed worktrees
+
+Apply docs/worktree-lifecycle.md after final disposition. Release settled workers
+without deleting their checkout. Preserve upstream worktrees through integration
+and required validation. Deletion is a separate human-authorized operation after
+all eligibility checks; record per-worktree cleanup evidence outside deletion targets.
+
+At instruction intake, reconcile relevant previously retained workspaces. At closure,
+perform already authorized eligible removals after final disposition and before the
+final report; otherwise report retention/HOLD and the next trigger. Result delivery
+while awaiting human review does not close the workspace lifecycle. Follow-up messages
+continue the objective unless they explicitly replace it; new instructions do not
+implicitly authorize deletion of prior work.

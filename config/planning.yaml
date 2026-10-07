@@ -60,7 +60,7 @@ planning:
     classes: [infrastructure, configuration, implementation, unknown]
     automatic_retries: false
     retry_requires:
-      - prior_attempt_definitively_settled_or_fenced_per_orca
+      - prior_attempt_definitively_settled_or_fenced_per_execution_backend
       - concrete_recoverable_cause
       - coordinator_decision_and_attempt_budget
     unknown_liveness: preserve_and_investigate

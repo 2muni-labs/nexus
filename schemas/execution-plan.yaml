@@ -58,7 +58,7 @@ plan:
       approval:
         required: [status, evidence, scope]
         status: [not-required, pending, approved, rejected]
-        evidence: explicit_human_message_or_orca_gate_decision_reference_or_null
+        evidence: explicit_human_message_or_backend_gate_decision_reference_or_null
         scope: exact_gate_id_upstream_artifact_refs_and_selected_baselines_or_null
         when_required: approved_with_nonempty_evidence_and_matching_scope_before_dispatch
         when_not_required: not-required_with_null_evidence_and_scope
