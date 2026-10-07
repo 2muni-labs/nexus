@@ -1,0 +1,35 @@
+version: 1
+
+routing:
+  coordinator:
+    agent: codex
+    repository: nexus
+  architecture-review:
+    primary: codex
+    secondary: antigravity
+    mode: read-only
+  implementation:
+    primary: codex
+    mode: write
+  validation:
+    primary: codex
+    secondary: antigravity
+    mode: read-only
+  low-risk-check:
+    primary: opencode
+    mode: read-only
+
+policies:
+  parallelize-independent-tasks: true
+  optional-secondary-agents: true
+  unavailable-agent: available-compatible-agent
+  independent-validation:
+    required_for:
+      - P0
+      - P1
+    separate-session: true
+  implementation:
+    automatically-eligible:
+      - P0
+      - P1
+  human-merge-required: true

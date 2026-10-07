@@ -1,0 +1,42 @@
+version: 1
+
+severity:
+  P0: Critical correctness, security, data-loss, or architecture-breaking defect.
+  P1: Meaningful operational, reliability, recovery, or portability risk.
+  P2: Maintainability, testability, developer-experience, or design issue.
+  P3: Optional improvement with low urgency.
+
+findings:
+  standard:
+    required:
+      - id
+      - severity
+      - repository
+      - area
+      - evidence
+      - problem
+      - impact
+      - recommendation
+      - confidence
+  cross-repository:
+    required:
+      - id
+      - severity
+      - owner
+      - affected_repository
+      - contract
+      - evidence
+      - problem
+      - impact
+      - recommendation
+      - confidence
+    implementation-owner-count: 1
+
+conventions:
+  id: Stable identifier, for example BASECAMP-001 or CONTRACT-001.
+  repository: Logical key from repositories.yaml.
+  owner: Exactly one logical repository key; split multi-owner fixes into separate findings/tasks.
+  affected_repository: One consumer repository key; split additional affected contracts as needed.
+  evidence: Revision plus file/line, test, or reproducible observation; label unverified assumptions.
+  confidence: high, medium, or low, with a brief justification.
+  decisions: accepted, deferred, or rejected, each with rationale.

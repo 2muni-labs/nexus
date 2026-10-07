@@ -1,0 +1,30 @@
+version: 1
+
+repositories:
+  nexus:
+    role: control-plane
+    responsibilities:
+      - orchestration
+      - routing
+      - policies
+      - workflows
+      - cross-repository-review
+  basecamp:
+    role: host-environment
+    responsibilities:
+      - macos
+      - package-management
+      - shell
+      - path
+      - developer-tools
+      - agent-cli
+      - host-prerequisites
+  foundry:
+    role: project-runtime
+    responsibilities:
+      - docker
+      - compose
+      - containers
+      - project-bootstrap
+      - development-runtime
+      - worktree-isolation
