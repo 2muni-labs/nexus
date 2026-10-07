@@ -95,3 +95,7 @@ DAG, routing and integration semantics. No external YAML library is required.
 GitHub Work Items: `scripts/work-items.sh --help` uses authenticated `gh` and `jq`,
 independent of Orca. Writes default to an exact reviewable plan; applying requires a
 matching digest and real human publication approval. See [provider binding](docs/adapters/github.md).
+
+Workflow decisions: `scripts/workflow.sh observation.json` proposes status/actions from
+verified external facts. It writes no state and invokes no backend/provider. See
+[controller policy](docs/workflow-controller.md).

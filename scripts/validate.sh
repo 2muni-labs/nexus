@@ -16,7 +16,8 @@ for file in README.md AGENTS.md .gitignore config/repositories.yaml config/routi
     scripts/doctor.sh scripts/status.sh scripts/validate.sh scripts/weekly-review.sh \
     scripts/adapters/orca.sh scripts/execution-backend.sh schemas/execution-backend.yaml \
     docs/adapters/orca.md docs/workflow-migration.md scripts/work-items.sh \
-    scripts/adapters/github.sh schemas/work-item-provider.yaml docs/adapters/github.md; do
+    scripts/adapters/github.sh schemas/work-item-provider.yaml docs/adapters/github.md \
+    config/workflow.json schemas/workflow-observation.yaml scripts/workflow.sh scripts/workflow.jq; do
     [[ -s "$NEXUS_ROOT/$file" ]] || nexus_fail "Missing or empty required file: $file"
 done
 for script in "$NEXUS_ROOT"/scripts/*.sh "$NEXUS_ROOT"/scripts/adapters/*.sh; do

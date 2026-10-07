@@ -5,6 +5,10 @@ primary axes, evidence/severity calibration, finding extensions and finding self
 For a completed substantive assessment, append its six-section final review summary;
 retain this prompt's role-specific result/plan/gate output and authority boundaries.
 
+Use docs/workflow-controller.md and scripts/workflow.sh for provider-neutral transition
+proposals from verified external observations. Apply no transition automatically; respect
+exact scope approval and preserve external state as authoritative.
+
 Understand → validate requirements → plan → route → schedule waves → supervise →
 integrate → independently validate → synthesize → human review.
 

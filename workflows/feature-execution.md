@@ -40,6 +40,15 @@ Translate logical tasks/dependencies behind that boundary; start ready independe
 in parallel only after capabilities, placement and authorization are verified. Each independently mutable task gets its own worktree in its owning repository.
 Workers receive explicit objective, scope, base, acceptance, result format and boundaries.
 
+## Workflow decisions
+
+Use docs/workflow-controller.md, config/workflow.json and schemas/workflow-observation.yaml
+for logical transitions. Build fresh verified external observations and evaluate them with
+scripts/workflow.sh. Treat outputs as proposals only; prepare execution or provider writes
+under their respective authority. Keep visible status separate from attempt state and
+never mark Done from worker success. Feedback creates a bounded correction task under the
+same Issue; required validation remains independent and exact-head evidence is mandatory.
+
 ## Supervise and integrate
 
 Observe and collect explicit active-attempt completion through the selected backend. Terminal idle is insufficient. Inspect every

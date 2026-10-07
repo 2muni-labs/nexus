@@ -1,0 +1,33 @@
+version: 1
+kind: nexus-workflow-observation-contract
+# Input to the pure one-shot decision evaluator, not persistent project state.
+required: [work_item_id, kind, status, observed_at, observation_ref, inventory_complete, inventory_ref, backend, human, gates]
+kind: [implementation, non-code]
+status: config_workflow_json_states
+human:
+  required: [paused, cancel_requested]
+  cancellation_reference: exact_human_or_authorized_coordinator_request
+  non_code_acceptance_reference: exact_accepted_artifact_or_report_disposition
+  non_code_acceptance_revision: must_equal_artifact_revision
+backend:
+  required: [state, liveness, settled]
+  state: [none, preparing, running, awaiting_input, succeeded, failed, cancelled, unknown]
+  liveness: [live, exited, unknown]
+  evidence_ref: authoritative_active_attempt_observation_not_terminal_idle
+readiness:
+  required_for_start: [requirements_validated, ownership_verified, baseline_resolved, capabilities_verified, dependencies_accepted, execution_authorized, evidence_ref]
+  independent_validation_required: preserve_classification_and_routing_floor
+gates:
+  each: [result, manual_review_required, expected_scope, approval]
+  approved_scope: exact_gate_id_upstream_refs_and_baselines_equal_expected_scope
+validation:
+  pass: result_PASS_nonempty_evidence_ref_and_candidate_head_equals_PR_head_or_artifact_revision_and_independent_session_when_required
+pull_request:
+  optional: [exists, head_revision, review_state, checks, checks_complete, required_checks, merged, merge_evidence_ref, merge_approval_reference, merge_approval_head, review_head]
+  checks: normalized_name_state_observations_bound_to_head_revision
+retry:
+  required: explicit_approved_decision_reference_positive_budget_and_readiness
+result:
+  required: [work_item_id, observed_at, source_observation, decision, proposed_status, action, reasons, proposed_events]
+  decision: [PROPOSE, HOLD]
+  effects: none

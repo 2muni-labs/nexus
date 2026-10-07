@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "states": ["Backlog", "Ready", "In Progress", "Blocked", "Review", "Done"],
+  "policy": {
+    "writer": "one Coordinator per Work Item",
+    "execution": "recommendations only; no scheduler, daemon or automatic dispatcher",
+    "done": "observed merge and exact acceptance or explicit accepted non-code disposition",
+    "retry": "explicit bounded decision after prior settlement and proven exit",
+    "cancel": "request only; never infer termination",
+    "human_override": "preserve safety and capability floors",
+    "checks": "missing or incomplete evidence is never PASS"
+  }
+}

@@ -3,7 +3,8 @@
 **Nexus owns the workflow. GitHub owns the state. Orca is an execution backend.**
 
 This is the permanent target. v0.2 is a document-driven Coordinator with read-only shell
-preflight; it has no executable domain/controller or project-state cache. GitHub operations now
+preflight; it has no background controller or project-state cache. The one-shot workflow policy
+evaluator proposes transitions without executing effects. GitHub operations now
 use a one-shot WorkItemProvider adapter; no automatic lifecycle synchronization exists.
 The backend contract now separates asynchronous Coordinator operations and read-only
 shell preflight from Orca-native mechanics; no new automatic dispatcher is introduced.
