@@ -10,6 +10,12 @@ plan:
   requirements: nonempty_observable_acceptance_list
   baselines: per_repository_immutable_ref_scope_and_dirty_state
   final_gate: human-review-required
+  work_item_binding:
+    optional_for: explicit_legacy_local_run
+    required_for: github_managed_work
+    fields: [provider, repository, issue_url]
+    contract: schemas/work-item-provider.yaml
+    identity: canonical_Issue_not_execution_or_run_ID
   execution_binding:
     contract: schemas/execution-backend.yaml
     task_identity: nexus_owned

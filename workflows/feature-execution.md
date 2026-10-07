@@ -22,6 +22,15 @@ dependencies, acceptance and validation. Check unique IDs, acyclic DAG, complete
 and conflicts; serialize overlapping mutations unless decomposition proves independence.
 Plan templates/examples require real baselines and verified routing before dispatch.
 
+## Canonical work association
+
+For GitHub-managed work, read the Issue through schemas/work-item-provider.yaml and
+scripts/work-items.sh. Bind canonical Issue identity to the logical tasks, execution
+attempts and eventual PR. Explicit local-only runs remain legacy and cannot claim
+external recovery. Issue/PR/comment write plans require exact publication authority;
+implementation or local commit authority does not grant it. Record reviewed sanitized
+associations externally before relying on recovery; never publish private reports.
+
 ## Route and dispatch
 
 Apply all routing overrides monotonically. Resolve compatible agent/model/effort on the

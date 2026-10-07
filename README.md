@@ -10,6 +10,7 @@ coordination are first-class workflows.
 
 The permanent target is **Nexus owns the workflow; GitHub owns the state; Orca is an
 execution backend**. Current scripts still provide Orca-only read-only preflight; GitHub
+read/write operations are available through an explicit one-shot provider port; automatic
 synchronization and restart reconciliation are not implemented. See the
 [migration plan](docs/workflow-migration.md) for staged delivery and compatibility gates.
 
@@ -90,3 +91,7 @@ See [architecture](docs/architecture.md), [routing](docs/routing.md),
 [feature execution](workflows/feature-execution.md), [weekly review](workflows/weekly-review.md)
 and [plan examples](schemas/examples/). Validation is structural; the Coordinator checks
 DAG, routing and integration semantics. No external YAML library is required.
+
+GitHub Work Items: `scripts/work-items.sh --help` uses authenticated `gh` and `jq`,
+independent of Orca. Writes default to an exact reviewable plan; applying requires a
+matching digest and real human publication approval. See [provider binding](docs/adapters/github.md).

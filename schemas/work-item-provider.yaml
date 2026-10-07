@@ -1,0 +1,31 @@
+version: 1
+kind: nexus-work-item-provider-contract
+work_item:
+  required: [id, provider, repository, kind, number, url, title, body, record_state, updated_at]
+  id: canonical_external_URL_not_local_run_or_execution_identity
+  repository: explicit_provider_repository_with_logical_owner_mapping
+  kind: [issue, pull-request]
+  record_state: provider_record_open_closed_or_merged_not_workflow_status
+  workflow_status: external_lifecycle_metadata_or_Project_field_not_inferred_from_record_state
+  metadata: adapter_owned_opaque_external_identifiers
+operations: [issue-read, issue-list, issue-create, issue-update, pr-read, pr-list, pr-create, review-checks-read, labels-via-issue-update, association-comment]
+authority:
+  reads: no_local_state_dependency
+  writes: default_prepared_plan_only_apply_requires_exact_plan_digest_and_human_reference
+  merge_push_delete: unsupported
+associations:
+  work_item: canonical_Issue_identity
+  execution: stable_Nexus_task_and_attempt_ids_with_backend_receipt_reference
+  pull_request: canonical_PR_URL_and_exact_head_revision
+  durable_record: sanitized_structured_Issue_comment_with_operation_identity
+  default_cardinality: one_Issue_one_mutable_worktree_one_PR
+  exceptions: explicit_linked_split_or_remediation_reason
+concurrency:
+  ownership: one_Coordinator_writer_per_Work_Item
+  updates: compare_expected_updated_at_before_write_not_atomic_CAS
+  creates: exact_operation_marker_lookup_across_all_pages_before_write
+  unknown_write_response: preserve_plan_and_lookup_never_automatic_replay
+  changed_payload_or_target: new_exact_human_approval
+privacy:
+  publish: reviewed_sanitized_metadata_only
+  never_publish: [credentials, machine_paths, raw_transcripts, private_reports]
