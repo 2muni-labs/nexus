@@ -80,3 +80,12 @@ operation walkthroughs below, not executable mutators or claims of live remote t
 
 Independent validation reviews these walkthroughs against the port contract. Live
 mutation/cancellation is intentionally not exercised against user workers.
+
+## Assignment capability limits
+
+Installed CLI observations do not constitute a general agent/model availability catalog.
+Verify launcher/account readiness, user-authorized model choice and observed launch receipts;
+PATH presence and requested args alone cannot certify the required floor. On inspected
+1.4.222, OpenCode model overrides require existing-worktree placement and do not support
+reasoning-effort overrides. Never weaken isolated mutable placement to obtain an override;
+use verified inheritance or a compatible agent. Always recheck installed guidance.

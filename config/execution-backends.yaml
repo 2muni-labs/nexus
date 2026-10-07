@@ -1,0 +1,16 @@
+version: 1
+# Policy registry, not executable configuration or a model/availability catalog.
+default: orca
+backends:
+  orca:
+    binding: docs/adapters/orca.md
+    execution_contract: schemas/execution-backend.yaml
+    shell_port: scripts/execution-backend.sh
+selection:
+  owner: Nexus_Router
+  required: [owning_repository, assignment_compatibility, verified_lifecycle_operations, authoritative_host, exact_baseline_and_placement]
+  unknown_required_capability: HOLD
+  unavailable_backend: explicit_failure_no_silent_fallback
+  fallback: only_verified_compatible_configured_backend_after_prior_settlement_and_editor_exit
+  current_second_backend: none
+  preserve: [work_item_identity, task_identity, workflow_semantics, capability_floor, validation_requirement, human_approval_scope]

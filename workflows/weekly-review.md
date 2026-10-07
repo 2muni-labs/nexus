@@ -5,7 +5,9 @@ of findings and the six-section final review summary. Preserve role-specific out
 
 Read AGENTS, all four config policies, plan contract and Coordinator prompt. This is
 ORCHESTRATED cross-repository reasoning; review is read-only. Use `weekly-review.sh` for
-preflight/context only. Create the review DAG through Orca after validating the scope.
+preflight/context only. Prepare the review DAG through the selected ExecutionBackend after validating the scope.
+Use schemas/agent-assignment.yaml and docs/multi-agent.md; backend-native dependency and
+lifecycle details belong to its binding.
 
 ## Wave 1 — Independent reviews
 
@@ -42,7 +44,7 @@ producer/consumer dependencies need explicit compatibility and baseline decision
 P0/P1, high-risk, critical-complexity, architecture-sensitive and multi-upstream integration
 changes require independent validation. P2 is risk-based. Validator returns PASS, FAIL or
 NEEDS-WORK against the exact candidate; corrections are new tasks. Humans inspect final
-diffs and approve merge in Orca. Nexus never merges automatically.
+diffs and authorize exact merge through the selected execution environment. Nexus never merges automatically.
 
 Use ignored `reviews/<ISO-week-year>/W<week>/` for normalized summaries and repository /
 integration findings, using the tracked template. Runtime plan/routing/gates stay in

@@ -94,6 +94,18 @@ routing_rules:
   - when: {type: integration, mutation_mode: write, minimum_upstream_mutations: 2}
     override: {model_profile: deep, independent_validation: true}
 
+assignment_roles:
+  implementer: explicitly_scoped_mutation
+  reviewer: read_only_findings
+  validator: read_only_exact_candidate_verification
+  planner: read_only_plan
+backend_selection:
+  registry: config/execution-backends.yaml
+  owner: Nexus_Router_not_adapter
+  after: task_classification_agent_capability_and_validation_requirements
+  preserves: [work_item_identity, workflow_semantics, capability_floor, validation_requirement]
+  reassignment: finite_explicit_decision_after_settlement_and_editor_exit
+  adapter_authority: execute_exact_assignment_report_effective_capabilities_never_choose_policy
 policies:
   profile_order: [fast, standard, deep, critical]
   integration_upstream_count: distinct_mutable_inputs_including_through_prerequisite_gates

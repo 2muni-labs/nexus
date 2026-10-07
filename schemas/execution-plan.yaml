@@ -20,6 +20,8 @@ plan:
     contract: schemas/execution-backend.yaml
     task_identity: nexus_owned
     native_ids_and_states: opaque_adapter_receipts_only
+    backend_registry: config/execution-backends.yaml
+    assignment_contract: schemas/agent-assignment.yaml
   task:
     required: [id, title, type, complexity, risk, context_size, parallelizable, repository, dependencies, mutation_scope, base, acceptance, routing, architecture_sensitive]
     id: unique_in_plan
@@ -56,6 +58,10 @@ plan:
         status: [pending, verified, inherit-with-uncertainty, blocked]
         model: local_runtime_value_or_null
         effort: supported_local_runtime_value_or_null
+    assignment:
+      required_when: execution_is_requested
+      fields: [id, role, session_ref, backend, requested, effective, evidence]
+      role_and_isolation: schemas/agent-assignment.yaml
     upstream_mutations:
       required_when: mutable_integration_consumes_multiple_upstream_results
       value: distinct_mutable_input_task_ids_including_inputs_carried_through_prerequisite_gates
@@ -92,3 +98,5 @@ relational_checks:
   - pending_gate_baselines_are_resolved_before_dispatch
   - cross_repository_inputs_never_become_a_cross_repository_mutation_task
   - final_human_decision_maps_each_implementation_result_once
+  - agent_or_backend_replacement_preserves_policy_floor_and_validation
+  - every_dispatched_assignment_has_exact_logical_identity_and_observed_effective_receipt

@@ -2,7 +2,7 @@
 
 Nexus is a requirements-to-execution control plane for repositories, agents, models,
 workflows, reviews and validation. Read this contract before every structured workflow,
-then all four `config/` policies, `schemas/execution-plan.yaml`, the requested workflow,
+then the four governance `config/` policies and relevant workflow/backend configuration, `schemas/execution-plan.yaml`, the requested workflow,
 and relevant prompts. The user's proposal is intake, not an automatically valid plan.
 
 ## Permanent workflow architecture
@@ -46,8 +46,9 @@ structured lifecycle evidence with stable work/attempt/artifact associations; ke
 reasons and validation provenance inspectable. Merge, publication and deletion retain
 explicit human authorization boundaries.
 
-Apply changes incrementally. The current v0.2 shell tools are read-only Orca preflight,
-not a GitHub-backed controller. Existing Orca operational guidance applies only when using
+Apply changes incrementally. Current tools provide backend preflight, exact-reviewed
+provider operations and pure workflow/reconciliation proposals; there is no background
+runtime, automatic dispatcher or automatic publication. Existing Orca operational guidance applies only when using
 that backend and cannot define core semantics. See docs/architecture.md and
 docs/workflow-migration.md for current limitations, contracts and acceptance gates.
 Architecture tests: removing Orca changes its adapter, not workflow/planning/work identity;

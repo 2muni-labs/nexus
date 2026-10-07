@@ -2,8 +2,7 @@
 
 **Nexus owns the workflow. GitHub owns the state. Orca is an execution backend.**
 
-This is the permanent target. v0.2 is a document-driven Coordinator with read-only shell
-preflight; it has no background controller or project-state cache. The one-shot workflow policy
+This is the permanent target. Nexus is a document-driven Coordinator with one-shot shell ports and pure decision tools; it has no background controller or project-state cache. The one-shot workflow policy
 evaluator proposes transitions without executing effects. GitHub operations now
 use a one-shot WorkItemProvider adapter; no automatic lifecycle synchronization exists. Reconciliation combines verified external
 snapshots without reading a local workflow store.

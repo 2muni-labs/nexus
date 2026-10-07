@@ -29,6 +29,11 @@ planning:
     enabled: true
     require_independence: true
     conflicting_mutation_scopes: serialize_or_split
+  assignments:
+    contract: schemas/agent-assignment.yaml
+    mutable_parallelism: one_isolated_owner_worktree_per_independently_mutable_task
+    issue_split: prefer_linked_independently_reviewable_work_items_over_shared_mutable_workspace
+    backend_replacement: preserve_work_identity_and_reverify_host_placement_capabilities
   baselines:
     require_immutable_revision: true
     uncommitted_changes: preserve_and_explicitly_include_or_exclude

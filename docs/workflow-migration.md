@@ -96,7 +96,7 @@ all phases, external writes or future merge operations.
 | 3 — implemented workflow decision policy | Transition table and Coordinator/routing workflows; implementation location only if an executable controller is authorized | No scheduler daemon, routing inside adapters or competing state store; preserve approval gates | State/attempt separation; validation/CI/review remediation under same Issue; pause/cancel/resume/reassign; bounded retries after fencing; exact human gate approval |
 | 4 — implemented configurable GitHub Projects | Provider field configuration and workflow synchronization | Field option IDs, access failures, manual edits and stale observations; not present in phase 1 | Map all six states, priority and relationships; permissions/missing fields; idempotent updates and concurrent-edit conflict handling |
 | 5 — implemented explicit reconciliation | Observation/recovery contract and Coordinator workflow; backend/provider recovery capabilities | Lost local receipts, duplicate writers, changed refs, unavailable GitHub/backend | Restart from external associations; existing PR prevents redispatch; missing cache; stale/unknown attempts; paused/cancelled work; safe backend switch after prior settlement |
-| 6 — extend multi-agent behavior | Routing/planning policies and backend-independent assignments | Preserve current floors, real dependencies, isolation, independent validation and integrated baselines | Agent replacement leaves semantics unchanged; compatible fallback; parallel conflict checks; retry budgets; exact effective capability receipts |
+| 6 — implemented backend-independent assignments | Routing/planning policies and backend-independent assignments | Preserve current floors, real dependencies, isolation, independent validation and integrated baselines | Agent replacement leaves semantics unchanged; compatible fallback; parallel conflict checks; retry budgets; exact effective capability receipts |
 
 Do not add LocalGit, RemoteCodex, GitLab or Linear implementations now. Use a minimal
 contract and an explicitly unsupported-capability response until a real second consumer
@@ -155,3 +155,17 @@ Deferred / optional: other providers/backends, executable controller, Projects a
 reconciliation and expanded orchestration await separately scoped follow-up phases.
 Remaining uncertainty: live dispatch/cancellation and GitHub remote behavior are untested;
 existing native diagnostic/capability guidance still needs adapter-scoped migration.
+
+## Delivered scope after the six stages
+
+The repository now has a provider-neutral Coordinator execution/assignment contract, an
+Orca operation binding and preflight/observation port, explicit GitHub Work Item/Project
+operations, pure workflow proposals and cache-independent external-snapshot reconciliation.
+Independent validation and local commits settle each stage separately. Current-state
+assessment above records the original intake, not a claim that all tools remain absent.
+
+No runtime, daemon, automatic dispatcher, event-sourcing store or speculative providers
+were introduced. Coordinator lifecycle actions remain supervised installed backend
+operations. Provider writes require exact publication authority; live Issue/PR creation,
+worker mutation/cancellation and operational recovery of real managed work have not been
+exercised. Synthetic conformance fixtures are not installed-agent/backend availability.

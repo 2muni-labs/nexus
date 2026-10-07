@@ -17,6 +17,10 @@ context_size, parallelizable, dependencies, mutation_scope, base, acceptance and
 List independent waves and real ordering constraints. Avoid unnecessary sequential
 chains, same-file parallel edits, false independence and speculative new abstractions.
 
+Read config/execution-backends.yaml and schemas/agent-assignment.yaml for execution-bound
+assignments. Choose logical role/session/backend after capability classification; native
+placement/attempt identifiers remain opaque adapter metadata. Do not invent availability.
+
 For non-trivial tasks record agent/class/profile/effort intent, fallback, concise reasons,
 validation requirement and capability resolution. Profiles only increase under overrides;
 validation combines by OR. Flag missing capabilities and ambiguous requirements.

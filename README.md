@@ -4,7 +4,7 @@ Requirements-to-execution control plane for repositories, agents, models, workfl
 reviews, and validation across the development environment.
 
 Nexus turns requirements into bounded Execution Plans, chooses ownership and routing,
-supervises Orca workers, checks integration readiness, and prepares results for human
+supervises workers through the selected backend (currently Orca), checks integration readiness, and prepares results for human
 review. Both single-repository work across multiple worktrees and cross-repository
 coordination are first-class workflows.
 
@@ -47,11 +47,13 @@ workflows reference this common standard rather than maintaining separate checkl
 
 ## Start
 
-Run from a Nexus Git checkout with Bash, Git and the locally installed Orca CLI:
+Run from a Nexus Git checkout with Bash and Git. Orca preflight uses the installed Orca CLI;
+structured decision/provider tools additionally require jq, and GitHub operations require
+authenticated gh. The development test suite uses Python 3 standard library only:
 
 ```bash
 ./scripts/validate.sh
-./tests/orca-preflight.sh             # mock adapter checks; no live backend needed
+./tests/run.sh                       # offline full suite; no live backend writes
 ./scripts/doctor.sh                  # all registered repository selectors
 ./scripts/doctor.sh nexus            # only Nexus
 ./scripts/status.sh
@@ -107,3 +109,7 @@ status/priority reads and reviewed updates. See [Project setup](docs/github-proj
 
 Recovery: `scripts/reconcile.sh external-snapshot.json` proposes a decision from complete
 verified external state, without reading local runtime records. See [reconciliation](docs/reconciliation.md).
+
+Backend-independent assignments: [coordination policy](docs/multi-agent.md),
+[assignment contract](schemas/agent-assignment.yaml) and [backend registry](config/execution-backends.yaml).
+Only current configured capabilities are advertised; unknown replacement support holds work.

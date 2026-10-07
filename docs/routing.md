@@ -38,7 +38,7 @@ integration task declares these input IDs as `upstream_mutations` in its plan.
 
 Fast means low reasoning/latency priority; standard is balanced; deep favors high reasoning;
 critical requires the strongest verified suitable capability. Profile reasoning labels are
-policy intents. `maximum` is **not** an Orca effort flag. Never send abstract profile names
+policy intents. `maximum` is **not** a backend CLI effort flag. Never send abstract profile names
 as model IDs. A mechanical task cannot lower a critical/high-risk override.
 
 Optional agent absence alone never fails a workflow. Fallback must preserve the required
@@ -54,30 +54,28 @@ validation. Unknown floors for high-risk/critical work hold dispatch. Unsupporte
 may use an equivalent supported setting or inherit with a reason only when the required
 floor remains verified. A fallback below the floor is blocked.
 
-## Installed Orca contract
+## Backend selection and assignment
 
-Inspect `orca status --json` and `orca skills get orchestration` before depending on
-Orca behavior. Respect `ORCA_CLI_COMMAND` / development override; Linux outside managed
-sessions uses `orca-ide` to avoid launching the system screen reader. Read version-matched
-references and command help before using conditional flags.
+Use config/execution-backends.yaml and schemas/agent-assignment.yaml after task/agent
+classification. The Router chooses the backend; adapters execute the exact assignment
+and report effective capabilities. Native state/IDs never choose policy or task priority.
+Only Orca is currently configured; unavailable capability/backend holds work rather than
+inventing LocalGit/remote fallbacks. For its installed operations and launch restrictions,
+read docs/adapters/orca.md and current version guidance.
 
-On inspected Orca 1.4.222, the relevant mechanisms are run creation, native dependency
-tasks, worker-start, task-list readiness, gate-create/gate-resolve, explicit worker_done
-messages through check, and worker-release. Exact flags belong to the installed guide,
-not a Nexus command wrapper. Native readiness is necessary but gate/baseline evidence
-must also satisfy policy before dispatch.
+A reviewer/validator/planner has read-only authority. Independent validation has a separate
+logical session and exact candidate; agent family diversity is preferred, not mandatory.
+Each concurrent mutable assignment gets one owning repository and its own isolated worktree.
+Split separately reviewable changes into linked Issues when parallel isolation benefits the
+work; never share an editor workspace merely to preserve default Issue/worktree cardinality.
+After parallel results require exact compatibility gates and integrated validation before
+consumers, including conditional intermediate human approval.
 
-Current launch preferences have agent/placement constraints: model overrides require a
-user-chosen supported model; effort overrides require that model and verified support.
-OpenCode model overrides are limited to existing-worktree placement and do not support
-reasoning-effort overrides. An independently mutable task still requires its own isolated
-worktree; never weaken isolation to obtain a model override. Prefer verified inherited
-settings or an appropriate compatible agent.
-
-The inspected CLI advertises no general live agent/model catalog query. `agent-context`
-provides command context, not model discovery. PATH presence alone does not prove agent
-availability. Use host launcher/account verification, local mappings and observed launch
-receipts; record pending resolution until verified. No invented discovery command.
+Retry/reassignment/backend replacement is a finite explicit Coordinator decision after
+settlement and proven editor exit. Fencing without termination does not permit conflicting
+mutation. Preserve Work Item/task identity, immutable artifacts, floors and validation;
+reverify assignment/placement on the new host. Human overrides cannot silently waive these
+safety requirements. See docs/multi-agent.md for scenario evidence and limits.
 
 ## Decision record
 

@@ -29,6 +29,10 @@ observable acceptance and explainable routing. Start independent ready waves tog
 serialize scope conflicts and real ordering constraints. Read-only contexts may be reused
 only without concurrent mutation. Every independently mutable task receives its own worktree.
 
+Use docs/multi-agent.md and schemas/agent-assignment.yaml for bounded roles and independent
+sessions. Router selects configured compatible backend after preserving agent/profile floors;
+retry/reassignment/switch is never adapter policy or automatic recovery.
+
 Resolve capability profiles from local mapping or configured defaults using docs/routing.md.
 Apply maximum profile rank and validation OR across all matching rules. Missing secondary
 agents use compatible fallbacks; independence means a separate session. Record uncertainty

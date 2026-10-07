@@ -1,0 +1,24 @@
+version: 1
+kind: nexus-agent-assignment-contract
+required: [id, work_item_id, task_id, repository, role, agent, model_profile, effort_intent, session_ref, backend, requested, effective, evidence, validation]
+role: [implementer, reviewer, validator, planner]
+agent: configured_catalog_key_not_provider_model_ID
+session_ref: logical_assignment_session_not_native_terminal_or_workspace_ID
+backend: configured_execution_backend_not_a_workflow_state
+requested: user_authorized_agent_model_and_abstract_capability_intent
+model_profile: monotonic_floor_from_classification_and_all_matching_rules
+effective: verified_host_receipt_or_explicit_inherited_uncertainty
+evidence: verification_source_and_fallback_reason_not_raw_transcript
+validation:
+  required: classification_and_policy_OR_never_lowered_by_fallback
+  independent_session: fresh_session_distinct_from_implementation
+  candidate: exact_immutable_revision_or_patch_digest
+relational_checks:
+  - backend_receipts_and_native_identifiers_are_opaque_adapter_metadata
+  - reviewer_validator_planner_are_read_only_unless_new_explicit_authority_task
+  - mutable_assignments_each_have_one_owner_one_repository_one_isolated_worktree
+  - concurrent_mutable_scopes_are_independent_or_serialized
+  - alternative_agent_family_is_preferred_not_required_for_independence
+  - unsupported_agent_model_effort_or_backend_never_silently_downgrades_capability
+  - reassignment_retry_or_switch_requires_finite_decision_prior_settlement_and_proven_editor_exit
+  - multiple_mutable_results_require_compatibility_and_integrated_validation_before_consumers
