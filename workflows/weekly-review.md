@@ -63,5 +63,7 @@ Orca contract before reporting completion; uncertainty never authorizes duplicat
 
 Store normalized history under the ISO week-year `reviews/YYYY/WNN/`: `summary.md`,
 `basecamp.md`, `foundry.md`, `integration.md`. Use `reviews/_template/summary.md`.
+Generated reports and patches remain local and ignored by Git; only review instructions
+and templates are tracked. Do not force-add generated artifacts.
 Keep evidence refs, decisions, validation and unresolved risks; exclude raw transcripts,
 secrets and machine state. No review is performed merely by running the preparation script.

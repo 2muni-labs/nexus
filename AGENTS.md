@@ -106,4 +106,6 @@ Each result names task ID, repository, scope, outcome, evidence/checks, diff or 
 reference, limitations and remaining risks. Findings follow `config/review.yaml`.
 An empty review reports scope and checks, not an unexplained “no issues”. Normalize
 history under `reviews/YYYY/WNN/`; store decisions, validation and unresolved risks,
-not full raw transcripts. Human diff review and merge approval remain mandatory.
+not full raw transcripts. Generated review reports and patches stay local and must
+not be committed or force-added; only `reviews/README.md` and `reviews/_template/`
+are tracked. Human diff review and merge approval remain mandatory.

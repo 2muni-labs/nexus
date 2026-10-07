@@ -26,16 +26,18 @@ done
 # Check the index: ignored files force-staged into Git must still fail.
 git -C "$NEXUS_ROOT" ls-files -z | while IFS= read -r -d '' file; do
     case "$file" in
+        reviews/README.md|reviews/_template/*) ;;
+        reviews/*) nexus_fail "Generated review artifact is tracked: $file" ;;
         local/repos.env|.runtime/*|.env|.env.local|*/.env|*/.env.local|.DS_Store|*/.DS_Store)
             nexus_fail "Local/runtime state is tracked: $file" ;;
     esac
 done
-for file in local/repos.env .runtime/probe .env .env.local .DS_Store; do
+for file in local/repos.env .runtime/probe .env .env.local .DS_Store reviews/2026/W41/summary.md reviews/report.md; do
     git -C "$NEXUS_ROOT" check-ignore --no-index -q -- "$file" || nexus_fail "Missing ignore rule: $file"
 done
 for file in local/repos.env.example reviews/_template/summary.md; do
     if git -C "$NEXUS_ROOT" check-ignore --no-index -q -- "$file"; then
-        nexus_fail "Example configuration or review history is ignored: $file"
+        nexus_fail "Example configuration or review template is ignored: $file"
     fi
 done
 printf 'PASS: Nexus structure, shell syntax, executability, policy headers and local-state boundaries.\n'

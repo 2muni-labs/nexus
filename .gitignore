@@ -3,3 +3,8 @@ local/repos.env
 .env
 .env.local
 .DS_Store
+
+# Generated review artifacts stay local; retain instructions and templates.
+/reviews/*
+!/reviews/README.md
+!/reviews/_template/

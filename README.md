@@ -43,7 +43,9 @@ it does not start workers or perform the review. Give that output to a Coordinat
 and follow [weekly-review.md](workflows/weekly-review.md).
 
 Read [AGENTS.md](AGENTS.md) before agent work. Policies live in `config/`, reusable
-instructions in `prompts/`, and normalized history in `reviews/`.
+instructions in `prompts/`, and local normalized history in `reviews/`. Generated
+review reports and patches are ignored by Git; review instructions and templates
+remain tracked.
 See [architecture.md](docs/architecture.md) for boundaries and extension rules.
 
 Optional: copy `local/repos.env.example` to `local/repos.env` and set selectors matching

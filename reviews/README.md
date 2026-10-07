@@ -23,4 +23,6 @@ findings once. Repeated runs in the same week update the summary with dated entr
 preserve earlier decisions rather than silently replacing them.
 
 Do not store full raw agent transcripts, credentials, machine paths, Orca internal IDs or
-runtime snapshots by default. Review history is intended for Git; `.runtime/` is ignored.
+runtime snapshots by default. Generated review history stays local and is ignored by Git. Only this README and
+`_template/` are tracked; do not force-add generated reports or patches. `.runtime/`
+is also ignored.
