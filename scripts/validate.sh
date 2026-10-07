@@ -17,7 +17,8 @@ for file in README.md AGENTS.md .gitignore config/repositories.yaml config/routi
     scripts/adapters/orca.sh scripts/execution-backend.sh schemas/execution-backend.yaml \
     docs/adapters/orca.md docs/workflow-migration.md scripts/work-items.sh \
     scripts/adapters/github.sh schemas/work-item-provider.yaml docs/adapters/github.md \
-    config/workflow.json schemas/workflow-observation.yaml scripts/workflow.sh scripts/workflow.jq; do
+    config/workflow.json schemas/workflow-observation.yaml scripts/workflow.sh scripts/workflow.jq \
+    scripts/projects.sh scripts/adapters/github-projects.sh local/github.json.example docs/github-projects.md; do
     [[ -s "$NEXUS_ROOT/$file" ]] || nexus_fail "Missing or empty required file: $file"
 done
 for script in "$NEXUS_ROOT"/scripts/*.sh "$NEXUS_ROOT"/scripts/adapters/*.sh; do
@@ -39,14 +40,14 @@ git -C "$NEXUS_ROOT" ls-files -z | while IFS= read -r -d '' file; do
     case "$file" in
         reviews/README.md|reviews/_template/*) ;;
         reviews/*) nexus_fail "Generated review artifact is tracked: $file" ;;
-        local/repos.env|local/capabilities.yaml|.runtime/*|.env|.env.local|*/.env|*/.env.local|.DS_Store|*/.DS_Store)
+        local/repos.env|local/capabilities.yaml|local/github.json|.runtime/*|.env|.env.local|*/.env|*/.env.local|.DS_Store|*/.DS_Store)
             nexus_fail "Local/runtime state is tracked: $file" ;;
     esac
 done
-for file in local/repos.env local/capabilities.yaml .runtime/probe .env .env.local .DS_Store reviews/2026/W41/summary.md reviews/report.md; do
+for file in local/repos.env local/capabilities.yaml local/github.json .runtime/probe .env .env.local .DS_Store reviews/2026/W41/summary.md reviews/report.md; do
     git -C "$NEXUS_ROOT" check-ignore --no-index -q -- "$file" || nexus_fail "Missing ignore rule: $file"
 done
-for file in local/repos.env.example local/capabilities.yaml.example reviews/_template/summary.md; do
+for file in local/repos.env.example local/capabilities.yaml.example local/github.json.example reviews/_template/summary.md; do
     if git -C "$NEXUS_ROOT" check-ignore --no-index -q -- "$file"; then
         nexus_fail "Example configuration or review template is ignored: $file"
     fi

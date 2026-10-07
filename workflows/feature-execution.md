@@ -49,6 +49,11 @@ under their respective authority. Keep visible status separate from attempt stat
 never mark Done from worker success. Feedback creates a bounded correction task under the
 same Issue; required validation remains independent and exact-head evidence is mandatory.
 
+For repository-specific Projects apply docs/github-projects.md. Read the configured
+canonical lifecycle field, compare fresh human edits and prepare only exact authorized
+single-field changes with scripts/projects.sh. An evaluator proposal does not write state.
+Missing Project mapping/permission is a visible blocker, never an invented local status.
+
 ## Supervise and integrate
 
 Observe and collect explicit active-attempt completion through the selected backend. Terminal idle is insufficient. Inspect every

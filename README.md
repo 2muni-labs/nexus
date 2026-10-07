@@ -99,3 +99,7 @@ matching digest and real human publication approval. See [provider binding](docs
 Workflow decisions: `scripts/workflow.sh observation.json` proposes status/actions from
 verified external facts. It writes no state and invokes no backend/provider. See
 [controller policy](docs/workflow-controller.md).
+
+Projects: copy `local/github.json.example` to ignored `local/github.json` and configure
+a separate linked Project per repository. `scripts/projects.sh --help` supports canonical
+status/priority reads and reviewed updates. See [Project setup](docs/github-projects.md).

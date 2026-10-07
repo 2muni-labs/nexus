@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "repositories": {
+    "nexus": {
+      "repository": "2muni/nexus",
+      "project": {
+        "owner_kind": "user",
+        "owner": "2muni",
+        "number": null,
+        "fields": {
+          "status": {"name": "Workflow", "options": {"Backlog":"Backlog", "Ready":"Ready", "In Progress":"In Progress", "Blocked":"Blocked", "Review":"Review", "Done":"Done"}},
+          "priority": {"name": "Priority", "options": {"P0":"P0", "P1":"P1", "P2":"P2", "P3":"P3"}}
+        }
+      }
+    }
+  }
+}

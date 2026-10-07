@@ -8,7 +8,7 @@ work_item:
   record_state: provider_record_open_closed_or_merged_not_workflow_status
   workflow_status: external_lifecycle_metadata_or_Project_field_not_inferred_from_record_state
   metadata: adapter_owned_opaque_external_identifiers
-operations: [issue-read, issue-list, issue-create, issue-update, pr-read, pr-list, pr-create, review-checks-read, labels-via-issue-update, association-comment]
+operations: [issue-read, issue-list, issue-create, issue-update, pr-read, pr-list, pr-create, review-checks-read, labels-via-issue-update, association-comment, project-read, project-field-update]
 authority:
   reads: no_local_state_dependency
   writes: default_prepared_plan_only_apply_requires_exact_plan_digest_and_human_reference

@@ -1,5 +1,6 @@
 local/repos.env
 local/capabilities.yaml
+local/github.json
 .runtime/
 .env
 .env.local
