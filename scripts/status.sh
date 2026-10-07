@@ -11,7 +11,11 @@ printf '\nOrca runtime\n'
 "$NEXUS_ORCA" status || nexus_fail 'Primary Orca runtime connection failed.'
 # Probe optional commands; these views never perform lifecycle mutations.
 if "$NEXUS_ORCA" worktree list --help >/dev/null 2>&1; then
-    for selector in "$NEXUS_REPO_SELECTOR" "$BASECAMP_REPO_SELECTOR" "$FOUNDRY_REPO_SELECTOR"; do
+    if [[ $# -eq 0 ]]; then
+        while IFS= read -r repository; do set -- "$@" "$repository"; done <<< "$NEXUS_REPOSITORIES"
+    fi
+    for repository in "$@"; do
+        selector=$(nexus_repo_selector "$repository")
         printf '\nWorktrees (%s, up to 10; snapshot only)\n' "$selector"
         "$NEXUS_ORCA" worktree list --repo "$selector" --limit 10 || nexus_warn 'Optional worktree view unavailable.'
     done

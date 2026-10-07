@@ -1,0 +1,195 @@
+# Draft only. Replace every scope, acceptance and baseline placeholder; verify routing.
+# Gate PASS selects inputs; I1 materializes the combined baseline; V1 certifies it.
+version: 1
+objective: "Cross-platform bootstrap in one repository"
+mode: "ORCHESTRATED"
+repositories: ["foundry"]
+requirements: ["Preserve isolated ownership and compatibility", "All candidate changes pass observable tests and human review"]
+baselines:
+  foundry: {"ref": "REPLACE_WITH_IMMUTABLE_REVISION", "scope": "committed snapshot", "dirty_state": "exclude and preserve; record inspected changes"}
+tasks:
+  -
+    id: "T1"
+    title: "Inspect bootstrap requirements"
+    type: "research"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: false
+    repository: "foundry"
+    dependencies: []
+    mutation_scope: {"mode": "read-only", "targets": ["explicit-scope-to-be-inspected"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "initial", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: false
+    routing:
+      task_class: "research"
+      agent: "codex"
+      fallback_agent: "antigravity"
+      model_profile: "standard"
+      effort: "medium"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+  -
+    id: "T2"
+    title: "Implement macOS bootstrap"
+    type: "implementation"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: true
+    repository: "foundry"
+    dependencies: ["T1"]
+    mutation_scope: {"mode": "write", "targets": ["bootstrap/macos"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "initial", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: false
+    routing:
+      task_class: "implementation-standard"
+      agent: "codex"
+      fallback_agent: "opencode"
+      model_profile: "standard"
+      effort: "medium"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+  -
+    id: "T3"
+    title: "Implement Windows bootstrap"
+    type: "implementation"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: true
+    repository: "foundry"
+    dependencies: ["T1"]
+    mutation_scope: {"mode": "write", "targets": ["bootstrap/windows"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "initial", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: false
+    routing:
+      task_class: "implementation-standard"
+      agent: "codex"
+      fallback_agent: "opencode"
+      model_profile: "standard"
+      effort: "medium"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+  -
+    id: "G1"
+    title: "Check parallel candidate compatibility"
+    type: "integration"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: false
+    repository: "foundry"
+    dependencies: ["T2", "T3"]
+    mutation_scope: {"mode": "read-only", "targets": ["explicit-scope-to-be-inspected"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "initial", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: false
+    routing:
+      task_class: "integration"
+      agent: "codex"
+      fallback_agent: "antigravity"
+      model_profile: "deep"
+      effort: "high"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+    gate:
+      kind: "integration"
+      upstream: ["T2", "T3"]
+      result: "pending"
+      evidence: []
+      baselines:
+        foundry: "PENDING_INPUT_OR_COMBINED_BASELINE_DECISION"
+      manual_review_required: false
+      approval: {"status": "not-required", "evidence": null, "scope": null}
+  -
+    id: "I1"
+    upstream_mutations: ["T2", "T3"]
+    title: "Prepare combined candidate and run integration tests"
+    type: "integration"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: false
+    repository: "foundry"
+    dependencies: ["G1"]
+    mutation_scope: {"mode": "write", "targets": ["bootstrap/macos", "bootstrap/windows", "integration tests"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "G1", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: true
+    routing:
+      task_class: "integration"
+      agent: "codex"
+      fallback_agent: "antigravity"
+      model_profile: "deep"
+      effort: "high"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": true, "independent_session": true, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+  -
+    id: "V1"
+    title: "Independently validate exact combined candidate"
+    type: "validation"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: false
+    repository: "foundry"
+    dependencies: ["I1"]
+    mutation_scope: {"mode": "read-only", "targets": ["explicit-scope-to-be-inspected"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "I1", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: false
+    routing:
+      task_class: "validation"
+      agent: "antigravity"
+      fallback_agent: "codex"
+      model_profile: "deep"
+      effort: "high"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+  -
+    id: "R1"
+    title: "Synthesize results for human review"
+    type: "review"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: false
+    repository: "foundry"
+    dependencies: ["V1"]
+    mutation_scope: {"mode": "read-only", "targets": ["explicit-scope-to-be-inspected"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "I1", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: false
+    routing:
+      task_class: "independent-review"
+      agent: "antigravity"
+      fallback_agent: "codex"
+      model_profile: "deep"
+      effort: "high"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+waves:
+  - id: W1
+    tasks: ["T1"]
+  - id: W2
+    tasks: ["T2", "T3"]
+  - id: W3
+    tasks: ["G1"]
+  - id: W4
+    tasks: ["I1"]
+  - id: W5
+    tasks: ["V1"]
+  - id: W6
+    tasks: ["R1"]
+final_gate: human-review-required

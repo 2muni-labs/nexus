@@ -1,0 +1,172 @@
+# Draft only. Host-owned fix is hypothetical; reject if evidence does not justify it.
+# Validator consumes normalized Foundry contract evidence; no cross-repository mutation.
+version: 1
+objective: "Review host/runtime contract and fix only its owning repository"
+mode: "ORCHESTRATED"
+repositories: ["nexus", "basecamp", "foundry"]
+requirements: ["Preserve isolated ownership and compatibility", "All candidate changes pass observable tests and human review"]
+baselines:
+  nexus: {"ref": "REPLACE_WITH_IMMUTABLE_REVISION", "scope": "committed snapshot", "dirty_state": "exclude and preserve; record inspected changes"}
+  basecamp: {"ref": "REPLACE_WITH_IMMUTABLE_REVISION", "scope": "committed snapshot", "dirty_state": "exclude and preserve; record inspected changes"}
+  foundry: {"ref": "REPLACE_WITH_IMMUTABLE_REVISION", "scope": "committed snapshot", "dirty_state": "exclude and preserve; record inspected changes"}
+tasks:
+  -
+    id: "R1"
+    title: "Review host producer contract"
+    type: "review"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: true
+    repository: "basecamp"
+    dependencies: []
+    mutation_scope: {"mode": "read-only", "targets": ["explicit-scope-to-be-inspected"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "initial", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: false
+    routing:
+      task_class: "independent-review"
+      agent: "antigravity"
+      fallback_agent: "codex"
+      model_profile: "deep"
+      effort: "high"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+  -
+    id: "R2"
+    title: "Review runtime consumer contract"
+    type: "review"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: true
+    repository: "foundry"
+    dependencies: []
+    mutation_scope: {"mode": "read-only", "targets": ["explicit-scope-to-be-inspected"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "initial", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: false
+    routing:
+      task_class: "independent-review"
+      agent: "antigravity"
+      fallback_agent: "codex"
+      model_profile: "deep"
+      effort: "high"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+  -
+    id: "G1"
+    title: "Identify one-owner contract fix from normalized results"
+    type: "integration"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: false
+    repository: "nexus"
+    dependencies: ["R1", "R2"]
+    mutation_scope: {"mode": "read-only", "targets": ["explicit-scope-to-be-inspected"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "initial", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: false
+    routing:
+      task_class: "integration"
+      agent: "codex"
+      fallback_agent: "antigravity"
+      model_profile: "deep"
+      effort: "high"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+    gate:
+      kind: "integration"
+      upstream: ["R1", "R2"]
+      result: "pending"
+      evidence: []
+      baselines:
+        basecamp: "PENDING_INPUT_OR_COMBINED_BASELINE_DECISION"
+        foundry: "PENDING_INPUT_OR_COMBINED_BASELINE_DECISION"
+      manual_review_required: false
+      approval: {"status": "not-required", "evidence": null, "scope": null}
+  -
+    id: "I1"
+    title: "Implement accepted host-owned contract fix"
+    type: "implementation"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: false
+    repository: "basecamp"
+    dependencies: ["G1"]
+    mutation_scope: {"mode": "write", "targets": ["accepted host contract component"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "G1", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: true
+    routing:
+      task_class: "implementation-complex"
+      agent: "codex"
+      fallback_agent: "antigravity"
+      model_profile: "deep"
+      effort: "high"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": true, "independent_session": true, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+  -
+    id: "V1"
+    title: "Independently validate host fix and consumer contract"
+    type: "validation"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: false
+    repository: "basecamp"
+    dependencies: ["I1"]
+    mutation_scope: {"mode": "read-only", "targets": ["explicit-scope-to-be-inspected"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "I1", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: false
+    routing:
+      task_class: "validation"
+      agent: "antigravity"
+      fallback_agent: "codex"
+      model_profile: "deep"
+      effort: "high"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+  -
+    id: "R3"
+    title: "Synthesize contract evidence for human review"
+    type: "review"
+    complexity: "medium"
+    risk: "low"
+    context_size: "medium"
+    parallelizable: false
+    repository: "nexus"
+    dependencies: ["V1"]
+    mutation_scope: {"mode": "read-only", "targets": ["explicit-scope-to-be-inspected"], "do_not_touch": ["other repositories", "source/main branches", "unrelated user changes"]}
+    base: {"source": "initial", "ref": "REPLACE_WITH_IMMUTABLE_REF_OR_EXACT_PATCH_DIGEST"}
+    acceptance: ["Replace with task-specific observable acceptance before dispatch"]
+    architecture_sensitive: false
+    routing:
+      task_class: "independent-review"
+      agent: "antigravity"
+      fallback_agent: "codex"
+      model_profile: "deep"
+      effort: "high"
+      reasons: ["Draft capability intent; verify before dispatch"]
+      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      resolution: {"status": "pending", "model": null, "effort": null}
+waves:
+  - id: W1
+    tasks: ["R1", "R2"]
+  - id: W2
+    tasks: ["G1"]
+  - id: W3
+    tasks: ["I1"]
+  - id: W4
+    tasks: ["V1"]
+  - id: W5
+    tasks: ["R3"]
+final_gate: human-review-required

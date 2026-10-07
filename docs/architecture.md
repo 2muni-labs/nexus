@@ -1,71 +1,88 @@
 # Architecture
 
+Nexus is the control plane; Orca is the execution plane. Basecamp, Foundry and future
+managed repositories remain independent implementation domains.
+
 ```text
-                     User
-                       │
-                       ▼
-                Nexus Coordinator
-                       │
-                       ▼
-                     Orca
-                       │
-             ┌─────────┴─────────┐
-             ▼                   ▼
-      Basecamp Worker      Foundry Worker
-             │                   │
-             ▼                   ▼
-       isolated WT          isolated WT
-             │                   │
-             └─────────┬─────────┘
-                       ▼
-              Structured Results
-                       │
-                       ▼
-                  Coordinator
-                       │
-              ┌────────┴────────┐
-              ▼                 ▼
-       implementation         backlog
-              │
-              ▼
-          validation
-              │
-              ▼
-          human review
+                         User requirements
+                                │
+                                ▼
+                              Nexus
+                   Intake / Planner / Router
+                    wave planning / Supervisor
+                                │
+                                ▼
+                              Orca
+                   ┌────────────┼────────────┐
+                   ▼            ▼            ▼
+                 WT A         WT B         WT C
+                 Agent        Agent        Agent
+                   └────────────┼────────────┘
+                                ▼
+                       Structured completion
+                                ▼
+                         Integration gate
+                                ▼
+                       Independent validation
+                                ▼
+                       Human review / decision
 ```
 
-| Plane/domain | Owner | Contract |
-| --- | --- | --- |
-| Control plane | Nexus | Intent, metadata, ownership, routing, policy, prompts, workflows, normalized findings/decisions/history |
-| Execution plane | Orca | Worktrees, terminals, dispatch, supervision, lifecycle, signalling, recovery |
-| Host environment | Basecamp | macOS, MacPorts, packages, shell/PATH, tools, agent CLI and Docker host prerequisites |
-| Project runtime | Foundry | Docker/Compose, bootstrap, containers, project-local environment and worktree-safe runtime |
-| Future implementation domains | Future managed repositories | Explicitly assigned responsibility and producer/consumer contracts |
+The same graph applies to multiple tasks within Foundry or to tasks in separate
+repositories. A worker never mutates another repository. Cross-repository reasoning
+uses normalized outputs and contract inventories; it does not require a worker to mount
+all repositories. Each cross-repository finding has exactly one implementation owner.
 
-One task = one owner = one repository = one isolated worktree = one diff = one review decision.
-Review outputs may have no diff. Integration review works from normalized results in
-Nexus; access to both implementation repositories from one worker is unnecessary.
-A cross-repository objective creates independently owned tasks, never a combined commit.
+## Planning and scheduling
 
-Nexus policy deliberately requires stronger checkout isolation than Orca's generic
-shared-workspace default. Use the installed placement guide to realize it. Orca owns
-all task execution state; Nexus history records the evidence and review decisions.
-There is no scheduler, task database, application runtime, submodule, subtree, or
-custom worker framework here.
+The user's proposal is validated against repository context before becoming an Execution
+Plan. `config/planning.yaml` defines DIRECT eligibility and ORCHESTRATED triggers.
+`schemas/execution-plan.yaml` is a declarative field/semantic contract, not executable
+JSON Schema. Examples are draft plans with placeholder baselines, not launchable jobs.
 
-`config/` holds portable policy. `local/repos.env` holds ignored machine selectors.
-`scripts/common.sh` shares only root discovery, data parsing, CLI selection and read-only
-preflight helpers across four entrypoints. It performs no dispatch or lifecycle action.
-Scripts are Bash for `pipefail`, with portable Unix utilities and macOS Bash 3.2 support.
-Validation is structural, not a full YAML parser or semantic policy checker.
+The Coordinator checks IDs, acyclicity, ownership, conflict-free waves, acceptance criteria,
+validation requirements and baseline provenance. Scheduler means the Coordinator choosing
+ready waves and using Orca's task dependencies. Nexus contains no scheduler process,
+queue, daemon, retry engine or agent subprocess framework.
 
-The weekly-review entrypoint exposes the installed guide and execution brief. The
-Coordinator reads policy, selects available agent capabilities, launches parallel waves
-when independent, and applies the acceptance/validation gates. Optional secondaries
-are not prerequisites. Independent validation requires a separate session even when
-only one agent family is available. Human review controls every merge.
+## Integration is a decision
 
-To add a repository, add its ownership entry, reviewer prompt and workflow scope.
-Add a local selector only where needed; the core architecture does not change.
-The current helper scripts diagnose the three v0.1 repositories explicitly; extending
-that diagnostic list is a small manual edit, not a new orchestration engine.
+Orca task completion or idle terminals cannot prove compatibility. After parallel mutation,
+a gate reviews all accepted upstream results, overlapping changes, semantics, tests and
+contract compatibility. Record PASS/FAIL/NEEDS-WORK, immutable inputs and baseline per
+repository. FAIL and NEEDS-WORK hold dependent work. Native gate resolution carries the
+decision; resolving it without evidence cannot waive Nexus policy.
+
+manual_review_required means human review before any dependent dispatch, including candidate
+integration preparation. Record approval status, explicit human message/gate decision
+reference and its exact gate/input/baseline scope. PASS with pending, missing, rejected or
+stale approval remains HOLD. Changing those inputs invalidates approval. A generic request
+to implement fixes is not approval of future gate outputs. If manual review is unnecessary,
+record not-required and null evidence/scope. This uses Orca's existing decisions and is
+separate from the mandatory human final merge gate; Nexus implements no approval engine.
+
+If parallel branches need combining, gate PASS selects compatible inputs. It does not
+create a combined baseline. Dispatch a distinct, explicitly scoped integration task in
+one owning repository's isolated non-main worktree. It may prepare a candidate from the
+selected inputs, preserving source branches and recording provenance. Test and independently
+validate the combined result before consumers use it. Never silently merge into main.
+Cross-repository baselines remain separate revisions; there is no combined Git tree.
+
+## Safety, failures and state
+
+Record committed revisions and explicitly included/excluded dirty state. Preserve user
+changes. Mutable tasks each receive an isolated worktree; read-only tasks may reuse an
+immutable context without concurrent mutation. Review, implementation and validation
+have separate responsibilities; independent validation uses a separate session.
+
+Explicit `worker_done` is evidence to inspect, not automatic acceptance. Infrastructure,
+configuration, implementation and unknown failures receive different diagnoses. Retry
+requires a settled/fenced prior worker, a concrete recoverable cause, bounded budget and
+recorded Coordinator decision. Unknown live workers are preserved; no duplicate mutation.
+Orca owns completion delivery, recovery and terminal release.
+
+No credentials, machine paths, Orca IDs or permanent provider model IDs in tracked policy.
+Runtime plans/results are ignored; generated reviews remain ignored. Curated durable
+rationale belongs in docs/config only when explicitly requested. Scripts are read-only
+preflight/status tools and do not dispatch or write runtime state. Human approval governs
+merge, publishing, destructive operations and ownership policy changes.

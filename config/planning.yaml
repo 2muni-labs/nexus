@@ -1,0 +1,73 @@
+version: 1
+
+planning:
+  default_mode: auto
+  modes: [DIRECT, ORCHESTRATED]
+  direct:
+    max_tasks: 1
+    max_risk: low
+    dependencies_allowed: false
+    require_obvious_owner: true
+    independent_validation_required: false
+  orchestrated:
+    trigger_if:
+      - multiple_tasks
+      - dependencies
+      - risk_medium_or_higher
+      - architecture_required
+      - multiple_worktrees_useful
+      - multiple_agents_useful
+      - independent_validation_required
+      - cross_repository_reasoning
+  task_types: [architecture, implementation, debugging, testing, review, documentation, research, mechanical, integration, validation]
+  classification:
+    complexity: [low, medium, high, critical]
+    risk: [low, medium, high]
+    context_size: [small, medium, large]
+    mutation_modes: [read-only, write]
+  parallelization:
+    enabled: true
+    require_independence: true
+    conflicting_mutation_scopes: serialize_or_split
+  baselines:
+    require_immutable_revision: true
+    uncommitted_changes: preserve_and_explicitly_include_or_exclude
+    read_only_context_reuse: allowed_if_no_concurrent_mutation
+  integration_gate:
+    required_after_parallel_mutation: true
+    required_for_cross_repository_contracts: true
+    results: [PASS, FAIL, NEEDS-WORK]
+    dependent_dispatch_requires: PASS
+    task_completion_alone_is_sufficient: false
+    manual_review:
+      scope: before_any_dependent_dispatch_including_integration_preparation
+      required_when: gate_manual_review_required_is_true
+      missing_pending_rejected_or_stale_approval: HOLD
+      evidence: explicit_human_decision_bound_to_exact_gate_inputs_and_baselines
+      changed_gate_inputs_or_baselines: invalidate_and_request_new_approval
+      final_merge_approval_is_separate: true
+  controlled_integration:
+    allowed: true
+    conditions:
+      - explicit_single_owner_mutable_task
+      - passed_compatibility_gate
+      - immutable_inputs_and_recorded_provenance
+      - isolated_non_main_worktree
+      - preserve_upstream_worktrees
+      - no_automatic_main_merge_or_publish
+    cross_repository_baseline: separate_revision_per_repository
+  failure:
+    classes: [infrastructure, configuration, implementation, unknown]
+    automatic_retries: false
+    retry_requires:
+      - prior_attempt_definitively_settled_or_fenced_per_orca
+      - concrete_recoverable_cause
+      - coordinator_decision_and_attempt_budget
+    unknown_liveness: preserve_and_investigate
+  records:
+    plans: .runtime/runs/<run-id>/plan.yaml
+    routing: .runtime/runs/<run-id>/routing.yaml
+    gate_evidence: .runtime/runs/<run-id>/state/
+    generated_reviews: reviews/YYYY/WNN/
+    durable_policy_and_rationale: config_and_docs
+    promote_generated_records_to_git: never_automatically

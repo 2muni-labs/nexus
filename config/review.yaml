@@ -1,8 +1,8 @@
 version: 1
 
 severity:
-  P0: Critical correctness, security, data-loss, or architecture-breaking defect.
-  P1: Meaningful operational, reliability, recovery, or portability risk.
+  P0: Rare critical issue with destructive mutation, data loss, security compromise, uncontrolled destructive Git behavior, or fundamental orchestration corruption.
+  P1: Meaningful correctness or operational risk, including ownership/isolation errors, capability bypass, invalid integration baseline, or false validation PASS.
   P2: Maintainability, testability, developer-experience, or design issue.
   P3: Optional improvement with low urgency.
 
@@ -18,6 +18,10 @@ findings:
       - impact
       - recommendation
       - confidence
+      - observed_behavior
+      - expected_behavior
+      - recommendation_reason
+      - trade_off
   cross-repository:
     required:
       - id
@@ -30,7 +34,24 @@ findings:
       - impact
       - recommendation
       - confidence
+      - observed_behavior
+      - expected_behavior
+      - recommendation_reason
+      - trade_off
     implementation-owner-count: 1
+
+framework:
+  governing_document: docs/review-principles.md
+  applies_to: all_substantive_reviews_confirmations_and_self_reviews
+  finding_extensions_apply_to: new_reports_only
+
+finding_extensions:
+  routing:
+    required:
+      - required_capability
+      - selected_agent_profile
+      - fallback_behavior
+      - validation_impact
 
 conventions:
   id: Stable identifier, for example BASECAMP-001 or CONTRACT-001.
@@ -40,3 +61,23 @@ conventions:
   evidence: Revision plus file/line, test, or reproducible observation; label unverified assumptions.
   confidence: high, medium, or low, with a brief justification.
   decisions: accepted, deferred, or rejected, each with rationale.
+
+validation:
+  required_for:
+    - P0
+    - P1
+    - high-risk
+    - critical-complexity
+    - architecture-sensitive
+    - integration-with-multiple-upstream-mutations
+  independent_session: true
+  results: [PASS, FAIL, NEEDS-WORK]
+  P2: risk-based
+  P3: record-only-by-default
+
+implementation_decisions:
+  P0: required
+  P1: normally-required
+  P2: benefit-must-clearly-exceed-complexity
+  P3: record-only-by-default
+  final_gate: human-review-required

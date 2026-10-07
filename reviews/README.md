@@ -1,28 +1,18 @@
-# Review history
+# Review records
 
-Store portable normalized results under the ISO week-year and week:
+Apply [review principles](../docs/review-principles.md) to new assessments and findings,
+including common finding extensions and the six-section final summary.
 
-```text
-reviews/YYYY/WNN/
-  summary.md
-  basecamp.md
-  foundry.md
-  integration.md
-```
+Generated reviews are local, ignored artifacts by user policy. Only this guide and
+`_template/summary.md` are tracked. Use `YYYY/WNN/summary.md`, `basecamp.md`, `foundry.md`
+and `integration.md`, where YYYY and WNN use the ISO week-year and week.
 
-Start the summary from `_template/summary.md`. Repository/integration reports use
-`config/review.yaml`, including stable finding IDs, severity, revision/file/check evidence,
-confidence and exactly one implementation owner for contract findings. Record reviewed
-scope and limitations even for no findings. Keep references logical and portable.
+Persist normalized findings with severity, revision/file/test evidence, accepted/deferred/
+rejected decisions, validation results and unresolved risks. Include run/plan references,
+routing exceptions and integration decisions/baseline provenance when relevant. Do not
+archive complete raw agent transcripts or credentials.
 
-Persist accepted decisions, deferred decisions, rejected recommendations (with rationale),
-validation results and unresolved risks. Link each accepted finding to its single-repository
-proposal and independent validation evidence. Distinguish accepted work from approved merge.
-Track human decisions per diff. Counts refer to deduplicated findings, including contract
-findings once. Repeated runs in the same week update the summary with dated entries and
-preserve earlier decisions rather than silently replacing them.
-
-Do not store full raw agent transcripts, credentials, machine paths, Orca internal IDs or
-runtime snapshots by default. Generated review history stays local and is ignored by Git. Only this README and
-`_template/` are tracked; do not force-add generated reports or patches. `.runtime/`
-is also ignored.
+Transient plans and routing receipts belong under `.runtime/runs/<run-id>/`. Important
+architecture/policy rationale may be curated into docs/config only on explicit instruction;
+review generation never automatically changes Git history. These local records need a
+user-chosen backup mechanism if retention across machines is required.

@@ -1,0 +1,84 @@
+version: 1
+kind: nexus-execution-plan-contract
+# Declarative contract for the Coordinator; not a JSON Schema or a YAML interpreter.
+# validate.sh checks repository structure. The Planner checks all relational rules.
+plan:
+  required: [version, objective, mode, repositories, requirements, baselines, tasks, waves, final_gate]
+  version: 1
+  mode: [DIRECT, ORCHESTRATED]
+  repositories: unique_logical_keys_from_config_repositories
+  requirements: nonempty_observable_acceptance_list
+  baselines: per_repository_immutable_ref_scope_and_dirty_state
+  final_gate: human-review-required
+  task:
+    required: [id, title, type, complexity, risk, context_size, parallelizable, repository, dependencies, mutation_scope, base, acceptance, routing, architecture_sensitive]
+    id: unique_in_plan
+    type: [architecture, implementation, debugging, testing, review, documentation, research, mechanical, integration, validation]
+    complexity: [low, medium, high, critical]
+    risk: [low, medium, high]
+    context_size: [small, medium, large]
+    parallelizable: boolean
+    repository: exactly_one_declared_repository
+    dependencies: unique_existing_task_ids_without_self_or_cycles
+    mutation_scope:
+      required: [mode, targets, do_not_touch]
+      mode: [read-only, write]
+      targets: explicit_bounded_paths_or_components
+      do_not_touch: explicit_repository_and_behavior_boundaries
+    base:
+      required: [source, ref]
+      source: initial_or_completed_dependency_or_passed_gate_task_id
+      ref: immutable_revision_or_placeholder_pending_gate
+    acceptance: nonempty_observable_checks
+    architecture_sensitive: boolean
+    routing:
+      required: [task_class, agent, fallback_agent, model_profile, effort, reasons, validation, resolution]
+      task_class: key_from_config_routing_task_classes
+      agent: key_from_agent_catalog
+      fallback_agent: compatible_catalog_key_or_null
+      model_profile: [fast, standard, deep, critical]
+      effort: abstract_intent_not_a_literal_cli_flag
+      reasons: concise_operational_justification_not_private_chain_of_thought
+      validation:
+        required: [required, independent_session, preferred_agent]
+      resolution:
+        required: [status, model, effort]
+        status: [pending, verified, inherit-with-uncertainty, blocked]
+        model: local_runtime_value_or_null
+        effort: supported_local_runtime_value_or_null
+    upstream_mutations:
+      required_when: mutable_integration_consumes_multiple_upstream_results
+      value: distinct_mutable_input_task_ids_including_inputs_carried_through_prerequisite_gates
+    gate:
+      required_when: integration_compatibility_gate
+      fields: [kind, upstream, result, evidence, baselines, manual_review_required, approval]
+      kind: integration
+      result: [pending, PASS, FAIL, NEEDS-WORK]
+      baselines: separate_immutable_ref_or_patch_digest_per_repository
+      approval:
+        required: [status, evidence, scope]
+        status: [not-required, pending, approved, rejected]
+        evidence: explicit_human_message_or_orca_gate_decision_reference_or_null
+        scope: exact_gate_id_upstream_artifact_refs_and_selected_baselines_or_null
+        when_required: approved_with_nonempty_evidence_and_matching_scope_before_dispatch
+        when_not_required: not-required_with_null_evidence_and_scope
+        changed_inputs_or_baselines: approval_becomes_pending_until_new_human_decision
+  wave:
+    required: [id, tasks]
+    tasks: ready_task_ids_only
+relational_checks:
+  - declared_repositories_and_baselines_cover_all_tasks
+  - every_task_appears_in_exactly_one_wave
+  - dependencies_precede_consumers_and_graph_is_acyclic
+  - same_wave_tasks_are_independent_and_have_compatible_mutation_scopes
+  - every_independently_mutable_task_has_one_owner_and_its_own_worktree
+  - direct_mode_meets_all_planning_policy_conditions
+  - routing_profiles_and_validation_requirements_merge_monotonically
+  - high_risk_critical_architecture_sensitive_and_mutable_multi_upstream_integration_require_independent_validation
+  - parallel_mutations_have_a_compatibility_gate_before_any_shared_consumer
+  - gate_task_success_does_not_release_consumers_without_gate_PASS
+  - manual_review_required_gates_HOLD_all_dependents_until_explicit_human_approval_matches_exact_scope
+  - changed_gate_inputs_or_baselines_invalidate_prior_manual_approval
+  - pending_gate_baselines_are_resolved_before_dispatch
+  - cross_repository_inputs_never_become_a_cross_repository_mutation_task
+  - final_human_decision_maps_each_implementation_result_once

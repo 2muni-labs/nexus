@@ -1,64 +1,85 @@
-# Nexus
+# Nexus v0.2
 
-Control plane for orchestrating agents, workflows, reviews, and cross-repository tasks across the development environment.
+Requirements-to-execution control plane for repositories, agents, models, workflows,
+reviews, and validation across the development environment.
 
-Nexus coordinates the development environment through ownership, orchestration intent,
-policies, routing, prompts, workflows, review history, and cross-repository reasoning.
+Nexus turns requirements into bounded Execution Plans, chooses ownership and routing,
+supervises Orca workers, checks integration readiness, and prepares results for human
+review. Both single-repository work across multiple worktrees and cross-repository
+coordination are first-class workflows.
 
-| Repository | Ownership |
+## Boundaries
+
+| Layer | Responsibility |
 | --- | --- |
-| Nexus | Control plane |
-| Basecamp | macOS host development environment |
-| Foundry | Project/container runtime |
+| Nexus | Requirements, planning, Task DAGs, policy, routing, gates, normalized decisions |
+| Orca | Worktrees, terminals, dispatch, lifecycle, isolation, runtime supervision |
+| Basecamp | macOS host provisioning, packages, shell/PATH, developer tools, host prerequisites |
+| Foundry | Docker/Compose runtime, bootstrap, containers, project-local environment |
 
-Nexus does not own Basecamp or Foundry implementation, application source code,
-cross-repository commits, or execution infrastructure already provided by Orca.
+Future repositories are added to `config/repositories.yaml`. No embedded source,
+submodules, cross-repository commits, application framework or custom scheduler.
 
 ```text
-User → Nexus Coordinator → Orca orchestration → Repository-specific workers
-     → Structured findings / implementation → Coordinator synthesis
-     → Independent validation → Human review and merge decision
+Requirements → Nexus intake / plan / route → Orca repository workers
+            → structured completion → integration gate → validation → human decision
 ```
 
-One task = one owner = one repository = one isolated worktree = one diff = one review decision.
-Reviews are read-only; accepted findings become separate implementation tasks.
-A cross-repository objective becomes multiple bounded tasks, each with one owner.
+Each mutable task has one owner, one repository, one isolated worktree and one diff.
+Read-only work can reuse a safe context. Each implementation result receives one final
+review decision. Reviewers report; a separate task implements accepted findings.
 
-## Operate
+## Shared review standard
 
-Requires Git, Bash (including macOS Bash 3.2), and a running Orca with version-matched
-skills guidance. No package installation is required. From the Nexus checkout:
+[Review principles](docs/review-principles.md) govern all substantive reviews and
+confirmations: evidence, minimal change, Orca boundaries, capability floors and integration
+correctness come first. Findings require operational impact, the smallest justified
+correction and proportional severity; absent evidence is never PASS. AGENTS, prompts and
+workflows reference this common standard rather than maintaining separate checklists.
 
-```sh
+## Start
+
+Run from a Nexus Git checkout with Bash, Git and the locally installed Orca CLI:
+
+```bash
 ./scripts/validate.sh
-./scripts/doctor.sh
+./scripts/doctor.sh                  # all registered repository selectors
+./scripts/doctor.sh nexus            # only Nexus
 ./scripts/status.sh
+./scripts/run.sh --objective 'Improve Foundry bootstrap' --repository foundry
 ./scripts/weekly-review.sh
 ```
 
-`validate.sh` checks local structure without Orca. `doctor.sh` checks prerequisites
-and repository selectors. `status.sh` displays bounded operational snapshots.
-`weekly-review.sh` prints the installed orchestration guide and a Coordinator brief;
-it does not start workers or perform the review. Give that output to a Coordinator
-and follow [weekly-review.md](workflows/weekly-review.md).
+`run.sh` prints preflight results, installed orchestration guidance and a Coordinator
+context. It **does not execute the objective**, approve a plan, create a run or start
+workers. Give that context to the Coordinator, which reads `AGENTS.md`, the four policies,
+the execution-plan contract and selected workflow before acting. `--help` lists options.
+`--plan PATH` is an input reference, not semantic validation or permission to execute it.
 
-Read [AGENTS.md](AGENTS.md) before agent work. Policies live in `config/`, reusable
-instructions in `prompts/`, and local normalized history in `reviews/`. Generated
-review reports and patches are ignored by Git; review instructions and templates
-remain tracked.
-See [architecture.md](docs/architecture.md) for boundaries and extension rules.
+DIRECT is for one obvious-owner, low-risk task without dependencies or mandatory
+independent validation. All other work uses ORCHESTRATED planning. Independent tasks
+form parallel waves; dependency edges and explicit integration PASS constrain dispatch.
+No automatic merge, push or PR creation. Humans review and approve final changes in Orca.
 
-Optional: copy `local/repos.env.example` to `local/repos.env` and set selectors matching
-`orca repo list --json`. Defaults are `name:nexus`, `name:basecamp`, `name:foundry`.
-Names are case-sensitive; exact `id:` selectors resolve ambiguity. The local file
-accepts only literal double-quoted assignments, comments, and blank lines; it is parsed
-as data and never sourced. Do not put credentials there. See the example for syntax.
+## Configuration and records
 
-Orca CLI selection follows `ORCA_CLI_COMMAND`, then `ORCA_DEV_REPO_ROOT` (`orca-dev`),
-then `orca-ide` on Linux when no override is supplied, otherwise `orca`. An explicitly
-selected executable is never replaced on failure. Diagnostics do not start Orca;
-start it yourself if unavailable. Scripts reload its guide on every Orca-dependent run.
+Tracked policy lives in `config/`; capability profiles have no permanent provider model
+IDs. Optional `local/repos.env` maps logical repositories to Orca selectors; optional
+`local/capabilities.yaml` records host-verified, user-chosen agent/model mappings. Copy
+and edit the corresponding examples when needed. These are local data, without secrets;
+they are ignored and never executed as shell configuration.
 
-A newly initialized checkout needs a human-approved initial Nexus commit before Orca
-can create isolated implementation worktrees from it. Scripts never commit,
-merge, push, open PRs, or write runtime state.
+Logical registry keys use lowercase letters/digits/hyphens and exactly two-space
+indentation in a block mapping. Inline comments and trailing whitespace on these keys
+are allowed; quoted keys, inline repository values and unsupported direct-key indentation
+fail explicitly rather than disappearing from diagnostics. A key `my-tools` maps to `MY_TOOLS_REPO_SELECTOR`, default `name:my-tools`.
+Only selected repositories are required for feature preflight; Nexus identity is always
+checked. Agent availability includes launcher/account readiness, not just PATH presence.
+
+Plans, routing receipts and gate evidence stay under ignored `.runtime/runs/<run-id>/`.
+Generated reviews also stay ignored, preserving the user's review-storage preference.
+Only curated, explicitly requested durable policy/architecture decisions enter Git.
+See [architecture](docs/architecture.md), [routing](docs/routing.md),
+[feature execution](workflows/feature-execution.md), [weekly review](workflows/weekly-review.md)
+and [plan examples](schemas/examples/). Validation is structural; the Coordinator checks
+DAG, routing and integration semantics. No external YAML library is required.

@@ -1,35 +1,109 @@
 version: 1
 
+agent_catalog:
+  codex:
+    role: general-reasoning-and-implementation
+  antigravity:
+    role: independent-review
+    optional: true
+  opencode:
+    role: mechanical-and-documentation
+    optional: true
+
+model_profiles:
+  fast:
+    reasoning: low
+    latency_priority: high
+  standard:
+    reasoning: medium
+    quality_priority: balanced
+  deep:
+    reasoning: high
+    quality_priority: high
+  critical:
+    reasoning: maximum
+    quality_priority: highest
+
 routing:
   coordinator:
     agent: codex
     repository: nexus
-  architecture-review:
-    primary: codex
-    secondary: antigravity
-    mode: read-only
-  implementation:
-    primary: codex
-    mode: write
-  validation:
-    primary: codex
-    secondary: antigravity
-    mode: read-only
-  low-risk-check:
-    primary: opencode
-    mode: read-only
+  task_classes:
+    architecture:
+      preferred_agent: codex
+      fallback_agent: antigravity
+      model_profile: deep
+      independent_validation: true
+    implementation-complex:
+      preferred_agent: codex
+      fallback_agent: antigravity
+      model_profile: deep
+    implementation-standard:
+      preferred_agent: codex
+      fallback_agent: opencode
+      model_profile: standard
+    implementation-mechanical:
+      preferred_agent: opencode
+      fallback_agent: codex
+      model_profile: fast
+    debugging:
+      preferred_agent: codex
+      fallback_agent: antigravity
+      model_profile: deep
+    testing:
+      preferred_agent: codex
+      fallback_agent: opencode
+      model_profile: standard
+    documentation:
+      preferred_agent: opencode
+      fallback_agent: codex
+      model_profile: fast
+    research:
+      preferred_agent: codex
+      fallback_agent: antigravity
+      model_profile: standard
+    integration:
+      preferred_agent: codex
+      fallback_agent: antigravity
+      model_profile: deep
+    independent-review:
+      preferred_agent: antigravity
+      fallback_agent: codex
+      model_profile: deep
+      independent_session: true
+    validation:
+      preferred_agent: antigravity
+      fallback_agent: codex
+      model_profile: deep
+
+routing_rules:
+  - when: {complexity: high}
+    override: {model_profile: deep}
+  - when: {context_size: large}
+    override: {model_profile: deep}
+  - when: {risk: high}
+    override: {model_profile: deep, independent_validation: true}
+  - when: {complexity: critical}
+    override: {model_profile: critical, independent_validation: true}
+  - when: {type: architecture}
+    override: {model_profile: deep, independent_validation: true}
+  - when: {architecture_sensitive: true}
+    override: {model_profile: deep, independent_validation: true}
+  - when: {severity: [P0, P1]}
+    override: {model_profile: deep, independent_validation: true}
+  - when: {type: integration, mutation_mode: write, minimum_upstream_mutations: 2}
+    override: {model_profile: deep, independent_validation: true}
 
 policies:
-  parallelize-independent-tasks: true
-  optional-secondary-agents: true
-  unavailable-agent: available-compatible-agent
-  independent-validation:
-    required_for:
-      - P0
-      - P1
-    separate-session: true
-  implementation:
-    automatically-eligible:
-      - P0
-      - P1
-  human-merge-required: true
+  profile_order: [fast, standard, deep, critical]
+  integration_upstream_count: distinct_mutable_inputs_including_through_prerequisite_gates
+  override_merge: highest_matching_profile_and_validation_logical_or
+  optional_agents: available_compatible_fallback
+  fallback_must_preserve_capability_floor: true
+  local_capabilities: local/capabilities.yaml
+  no_local_model_mapping: inherit_configured_default_and_record_uncertainty
+  unverified_high_risk_or_critical_capability: hold_until_verified
+  unsupported_effort: verified_supported_equivalent_or_inherit_with_recorded_reason
+  reject_below_required_capability: true
+  independent_session_required: true
+  human_merge_required: true

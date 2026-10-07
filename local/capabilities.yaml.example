@@ -1,0 +1,29 @@
+version: 1
+# Copy to ignored local/capabilities.yaml only if local mappings are needed.
+# Data for the Coordinator to read; scripts never source or execute this YAML.
+# No credentials. Null means inherit, not a certified capability profile.
+# Set an opaque model ID only when explicitly chosen/authorized by the user;
+# verify availability and supported effort values on the actual execution host.
+agents:
+  codex:
+    availability: unverified
+    default_profile: null
+    supported_efforts: []
+    profiles:
+      fast: {model: null, effort: null, verified: false}
+      standard: {model: null, effort: null, verified: false}
+      deep: {model: null, effort: null, verified: false}
+      critical: {model: null, effort: null, verified: false}
+  antigravity:
+    availability: unverified
+    default_profile: null
+    supported_efforts: []
+    profiles:
+      deep: {model: null, effort: null, verified: false}
+  opencode:
+    availability: unverified
+    default_profile: null
+    supported_efforts: []
+    profiles:
+      fast: {model: null, effort: null, verified: false}
+      standard: {model: null, effort: null, verified: false}

@@ -1,4 +1,5 @@
 local/repos.env
+local/capabilities.yaml
 .runtime/
 .env
 .env.local

@@ -1,69 +1,50 @@
 # Weekly review
 
-Objective: assess host/runtime architecture and contracts with evidence, minimizing
-unnecessary churn. Read the operating contract and all policies before execution.
-Run `scripts/weekly-review.sh` for preflight and installed guidance. It only prepares
-context; the Coordinator and Orca perform the workflow. Record exact reviewed revisions.
+Use docs/review-principles.md for all review/confirmation gates, including self-review
+of findings and the six-section final review summary. Preserve role-specific outcomes.
 
-## Wave 1 — Independent repository reviews
+Read AGENTS, all four config policies, plan contract and Coordinator prompt. This is
+ORCHESTRATED cross-repository reasoning; review is read-only. Use `weekly-review.sh` for
+preflight/context only. Create the review DAG through Orca after validating the scope.
 
-Prefer parallel Basecamp and Foundry architecture reviews, both read-only, using their
-reviewer prompts. Each task has one owner and isolated Orca worktree. Read the installed
-placement reference; explicitly bind the repository and request isolated placement.
-Use the configured primary agent or an available compatible fallback. Optional
-secondaries are additional capabilities, never required prerequisites.
+## Wave 1 — Independent reviews
 
-Require scope, checks, complete findings and producer/consumer inventories. Missing
-reports or blocked placements remain outstanding; do not claim an empty successful review.
+Review Basecamp and Foundry in parallel with their prompts. Record immutable revisions,
+checks, included/excluded dirty state, limitations and producer/consumer contracts. Safe
+read-only contexts can be reused; never share a context undergoing concurrent mutation.
 
-## Wave 2 — Coordinator synthesis
+## Wave 2 — Synthesis and contract review
 
-Normalize findings, remove duplicates while preserving evidence, compare assumptions,
-detect cross-repository contract issues and classify P0–P3. Use
-`prompts/integration-reviewer.md` with normalized outputs for additional read-only
-integration review in Nexus; no worker needs to mount/edit both managed repositories.
-Resolve conflicting claims or record uncertainty. Every contract finding has one
-implementation owner. Separate multiple-owner fixes into independently scoped tasks.
+Normalize findings to review schema; remove duplicates and identify conflicts. Compare
+host/runtime assumptions using integration-reviewer. Every cross-repository finding has
+one owner, affected repository, contract and evidence. Classify P0–P3 without promoting
+stylistic preference into defects. No review task implements its findings.
 
 ## Decision gate
 
-| Severity | Decision |
-| --- | --- |
-| P0 | Implementation required |
-| P1 | Implementation normally required |
-| P2 | Implement only when expected benefit clearly exceeds complexity |
-| P3 | Record only by default |
+P0: implementation required. P1: normally required. P2: benefit must clearly exceed added
+complexity. P3: record only by default. Record accepted/deferred/rejected rationale and
+unresolved assumptions. Only concrete accepted findings produce implementation tasks.
 
-Record accepted, deferred and rejected decisions with rationale and evidence. Avoid
-architecture churn, preference-only fixes and speculative abstractions. Automatic
-eligibility permits Coordinator dispatch, never automatic merge. A blocked required
-fix remains an unresolved risk with a concrete blocker.
+## Wave 3 — Accepted implementation
 
-## Wave 3 — Implementation
+Replan accepted findings as bounded single-owner tasks, each with an isolated worktree,
+immutable base, scope and acceptance criteria. Parallelize independent work, serialize
+conflicts. Resolve agent/profile/effort with compatible fallback; preserve capability floors.
+Parallel mutation requires an integration gate before dependent work; combined baselines
+need a separately scoped integration task and independent validation. Manual-review gates
+HOLD all dependents until explicit human approval matches exact gate/input/baseline scope;
+changed inputs invalidate approval. This does not replace final merge approval. Cross-repository
+producer/consumer dependencies need explicit compatibility and baseline decisions.
 
-One accepted finding → one owning repository → one isolated worktree → one implementation task.
-Provide target/change/constraints/ownership/observable acceptance. Start independent
-tasks in parallel when practical. Contract ordering is a real dependency; each change
-must remain reviewable on its own with compatibility or staging requirements documented.
-Require actual check outcomes and exact diff/revision references. Reviewers do not
-implement their findings within their existing review tasks.
+## Wave 4 — Validation and human decision
 
-## Wave 4 — Validation
+P0/P1, high-risk, critical-complexity, architecture-sensitive and multi-upstream integration
+changes require independent validation. P2 is risk-based. Validator returns PASS, FAIL or
+NEEDS-WORK against the exact candidate; corrections are new tasks. Humans inspect final
+diffs and approve merge in Orca. Nexus never merges automatically.
 
-P0 and P1 changes require independent validation; P2 is risk-based, with the decision
-recorded. Use `prompts/validator.md` in a separate session against the precise proposal.
-Missing optional agents do not waive independence. Record PASS/FAIL/NEEDS-WORK; failed
-validation returns to the Coordinator for a new bounded implementation task.
-
-## Human gate and history
-
-The user reviews each diff and approves merge in Orca. Nexus never automatically merges,
-pushes or creates PRs. Account for dispatch settlement and cleanup using the installed
-Orca contract before reporting completion; uncertainty never authorizes duplicate workers.
-
-Store normalized history under the ISO week-year `reviews/YYYY/WNN/`: `summary.md`,
-`basecamp.md`, `foundry.md`, `integration.md`. Use `reviews/_template/summary.md`.
-Generated reports and patches remain local and ignored by Git; only review instructions
-and templates are tracked. Do not force-add generated artifacts.
-Keep evidence refs, decisions, validation and unresolved risks; exclude raw transcripts,
-secrets and machine state. No review is performed merely by running the preparation script.
+Use ignored `reviews/<ISO-week-year>/W<week>/` for normalized summaries and repository /
+integration findings, using the tracked template. Runtime plan/routing/gates stay in
+`.runtime/runs/<run-id>/`. Record evidence, counts, decisions, validation and unresolved
+risks; no full transcripts or automatic promotion to Git history.

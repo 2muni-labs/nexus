@@ -10,8 +10,8 @@ nexus_orca
 nexus_runtime
 nexus_guide
 nexus_local
-nexus_selectors
-printf 'PASS: Git root, Orca runtime, installed guidance and all v0.1 repository selectors.\n'
+nexus_selectors "$@"
+printf 'PASS: Git root, Orca runtime, installed guidance and requested v0.2 repository selectors.\n'
 printf 'Orca executable: %s\nConfiguration: %s\n' "$NEXUS_ORCA" "$NEXUS_LOCAL_STATE"
 if ! git -C "$NEXUS_ROOT" rev-parse --verify HEAD >/dev/null 2>&1; then
     nexus_warn 'No initial commit: isolated Nexus workers need a human-approved base commit.'
