@@ -4,6 +4,16 @@
 provider. `scripts/work-items.sh` is a one-operation CLI binding, not a workflow daemon.
 It uses installed `gh` authentication and `jq` for structured JSON; it never loads Orca.
 Issue identity is its canonical GitHub URL. Native node IDs remain adapter metadata.
+Single reads bind repository, record kind and number to the returned canonical URL;
+lists enforce repository/kind and positive number for every record. Comment and PR
+review/check reads verify their canonical targets too. Update/comment applies validate
+Issue identity before lookup/recovery or writes; timestamp freshness is additionally
+required before a new write. Empty comment lists do not prove target identity.
+Transferred Issues, renames and case-only aliases are rejected rather than silently
+adopting new ownership. Reobserve the canonical repository/name/number, explicitly
+remap the Work Item and prepare a newly approved target plan. Use canonical spelling;
+this intentionally fails closed even though GitHub accepts case-insensitive names.
+The read/write race still requires one Coordinator writer; identity checks are not CAS.
 
 Read: `issue-read`, `issue-list`, `pr-read`, `pr-list`, `review-checks-read` with explicit
 OWNER/REPO and (for item reads) a positive number. List results are complete paginated

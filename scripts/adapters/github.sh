@@ -4,8 +4,13 @@ nexus_github_api() {
     "${NEXUS_GH_COMMAND:-gh}" api --hostname github.com "$@"
 }
 nexus_github_normalize() {
-    jq -e --arg repository "$1" --arg kind "$2" '
-      def item: if .html_url == null or .number == null then error("Missing item identity") else
+    jq -e --arg repository "$1" --arg kind "$2" --arg number "${3:-}" '
+      def item: if ((.number|type == "number" and floor == . and .>0) and
+        .html_url == ("https://github.com/"+$repository+
+          (if $kind == "issue" then "/issues/" else "/pull/" end)+(.number|tostring)) and
+        (if $number == "" then true else (.number|tostring) == $number end) and
+        (if $kind == "issue" then (has("pull_request")|not) else true end)) | not
+        then error("Canonical item identity mismatch; reobserve ownership and approve an explicit remapping") else
       {id:.html_url, provider:"github", repository:$repository, kind:$kind,
        number:.number,url:.html_url,title:.title,body:(.body // ""),
        record_state:(if .merged_at != null then "merged" else .state end),
@@ -44,26 +49,35 @@ nexus_github_operation() {
             [[ "$argument" =~ ^[1-9][0-9]*$ ]] || nexus_fail 'Positive item number required.'
             [[ "$apply" == false && -z "$approved$approval" ]] || nexus_fail 'Read operations do not accept approval flags.'
             if [[ "$op" == association-read ]]; then
+                current=$(nexus_github_api "repos/$repo/issues/$argument" --method GET)
+                nexus_github_normalize "$repo" issue "$argument" <<< "$current" >/dev/null || nexus_fail 'Association target identity changed; reobserve ownership.'
                 nexus_github_api "repos/$repo/issues/$argument/comments?per_page=100" --method GET --paginate --slurp |
-                    jq -e '[.[][]|{id:.html_url,body,author:.user.login,updated_at,
-                      metadata:{external_comment_id:.id,author_relationship:.author_association}}]'
+                    jq -e --arg repo "$repo" --arg number "$argument" '
+                      [.[][] | if ((.id|type == "number" and floor == . and .>0) and
+                        .issue_url == ("https://api.github.com/repos/"+$repo+"/issues/"+$number) and
+                        .html_url == ("https://github.com/"+$repo+"/issues/"+$number+"#issuecomment-"+(.id|tostring))) then
+                        {id:.html_url,body,author:.user.login,updated_at,
+                         metadata:{external_comment_id:.id,author_relationship:.author_association}}
+                        else error("Association comment identity mismatch") end]'
             elif [[ "$op" == review-checks-read ]]; then
                 GH_HOST=github.com "${NEXUS_GH_COMMAND:-gh}" pr view "$argument" --repo "$repo" \
                     --json url,headRefOid,reviewDecision,statusCheckRollup,mergedAt,isDraft |
-                    jq -e '{url,head_revision:.headRefOid,merged:(.mergedAt != null),draft:.isDraft,
+                    jq -e --arg repo "$repo" --arg number "$argument" '
+                      if .url != ("https://github.com/"+$repo+"/pull/"+$number) then error("PR observation identity mismatch") else
+                      {url,head_revision:.headRefOid,merged:(.mergedAt != null),draft:.isDraft,
                       review_state:(if .reviewDecision == "APPROVED" then "approved" elif .reviewDecision == "CHANGES_REQUESTED" then "changes-requested" elif .reviewDecision == "REVIEW_REQUIRED" then "pending" else "unknown" end),
                       checks:[.statusCheckRollup[]? | {name:(.name // .context),
                         state:(if (.conclusion // .state) == "SUCCESS" then "pass"
                           elif ((.conclusion // .state) as $s | ["FAILURE","ERROR","TIMED_OUT","CANCELLED","ACTION_REQUIRED"]|index($s)) != null then "fail"
                           elif (.status == "IN_PROGRESS" or .status == "QUEUED" or .state == "PENDING") then "pending"
-                          else "unknown" end),metadata:{status,conclusion,state}}]}' 
+                          else "unknown" end),metadata:{status,conclusion,state}}]} end'
             else
                 endpoint=issues; [[ "$op" != pr-read ]] || endpoint=pulls
                 current=$(nexus_github_api "repos/$repo/$endpoint/$argument" --method GET)
                 if [[ "$op" == issue-read ]]; then
                     jq -e 'has("pull_request") | not' <<< "$current" >/dev/null || nexus_fail 'Requested Issue is a PR.'
                 fi
-                printf '%s\n' "$current" | nexus_github_normalize "$repo" "$(if [[ "$op" == issue-read ]]; then printf issue; else printf pull-request; fi)"
+                printf '%s\n' "$current" | nexus_github_normalize "$repo" "$(if [[ "$op" == issue-read ]]; then printf issue; else printf pull-request; fi)" "$argument"
             fi
             return ;;
         issue-list|pr-list)
@@ -124,6 +138,10 @@ nexus_github_operation() {
         return
     fi
     [[ "$approved" == "$oid" && -n "$approval" && "$approval" == *[![:space:]]* ]] || nexus_fail 'Exact prepared plan digest and explicit human approval reference required.'
+    if [[ "$op" == issue-update || "$op" == association-comment ]]; then
+        current=$(nexus_github_api "repos/$repo/issues/$number" --method GET)
+        nexus_github_normalize "$repo" issue "$number" <<< "$current" >/dev/null || nexus_fail 'Item identity changed; reobserve ownership and approve a new target.'
+    fi
     # Lookup only after exact approval. No automatic retry after an ambiguous API write.
     if [[ "$op" == issue-create || "$op" == pr-create ]]; then
         found=$(nexus_github_api "$endpoint?state=all&per_page=100" --method GET --paginate --slurp |
@@ -146,7 +164,6 @@ nexus_github_operation() {
         return
     fi
     if [[ "$op" == issue-update || "$op" == association-comment ]]; then
-        current=$(nexus_github_api "repos/$repo/issues/$(jq -r .number "$argument")" --method GET)
         jq -e --arg expected "$(jq -r .expected_updated_at "$argument")" '.updated_at == $expected and (has("pull_request") | not)' <<< "$current" >/dev/null || nexus_fail 'Item changed or is a PR; reobserve and approve a new plan.'
     fi
     if [[ "$op" == pr-create ]]; then

@@ -14,6 +14,8 @@ from pathlib import Path
 args=sys.argv[1:]
 with open(os.environ["MOCK_CALLS"],"a") as f: f.write(json.dumps(args)+"\\n")
 if "pr" in args:
+ if os.environ.get("MOCK_CHECKS") is not None:
+  print(os.environ["MOCK_CHECKS"]); sys.exit()
  print(json.dumps({"url":"https://github.com/a/b/pull/2","headRefOid":"abc","reviewDecision":"APPROVED","statusCheckRollup":[{"name":"test","conclusion":"SUCCESS"},{"name":"build","conclusion":"FAILURE"}],"mergedAt":None,"isDraft":False})); sys.exit()
 if "--input" in args:
  if os.environ.get("MOCK_FAIL"): sys.exit(1)
@@ -42,6 +44,8 @@ if "/git/ref/heads/" in endpoint:
  print(json.dumps({"ref":"refs/heads/"+branch,"url":"https://api.github.com/repos/"+source+"/git/refs/heads/"+branch,"object":{"type":"commit","sha":revision,"url":"https://api.github.com/repos/"+source+"/git/commits/"+revision}})); sys.exit()
 if "--slurp" in args:
  print(json.dumps([json.loads(os.environ.get("MOCK_FOUND","[]"))])); sys.exit()
+if os.environ.get("MOCK_READ") is not None:
+ print(os.environ["MOCK_READ"]); sys.exit()
 print(json.dumps({"html_url":"https://github.com/a/b/issues/1","number":1,"node_id":"I_1","title":"Issue","body":"Body","state":"open","updated_at":"t1","labels":[{"name":"ready"}]}))
 '''
 
@@ -195,6 +199,67 @@ class ProviderTests(unittest.TestCase):
         self.env["MOCK_FOUND"] = json.dumps([bad])
         self.apply(plan,"pr-create",good=False)
         self.assertEqual(len(self.write_calls()),1)
+
+    def issue_record(self, **changes):
+        record = dict(html_url="https://github.com/a/b/issues/1", number=1, node_id="I_1",
+                      title="Issue", body="Body", state="open", updated_at="t1", labels=[])
+        record.update(changes)
+        return record
+
+    def test_single_reads_reject_wrong_repo_number_kind_and_identity(self):
+        for record in [self.issue_record(html_url="https://github.com/c/d/issues/2",number=2),
+                       self.issue_record(html_url="https://github.com/a/b/issues/2",number=2),
+                       self.issue_record(html_url="https://github.com/A/b/issues/1"),
+                       self.issue_record(number=None), self.issue_record(number=1.5),
+                       self.issue_record(pull_request={}), self.issue_record(html_url="https://github.com/a/b/pull/1")]:
+            self.env["MOCK_READ"] = json.dumps(record)
+            self.run_cli("issue-read","a/b","1",good=False)
+        self.env["MOCK_READ"] = json.dumps(self.issue_record(html_url="https://github.com/a/b/pull/1"))
+        self.assertEqual(self.run_cli("pr-read","a/b","1")["kind"], "pull-request")
+        self.run_cli("pr-read","a/b","2",good=False)
+        self.assertEqual(self.write_calls(), [])
+
+    def test_lists_check_ownership_and_positive_identity(self):
+        self.env["MOCK_FOUND"] = json.dumps([self.issue_record()])
+        self.assertEqual(len(self.run_cli("issue-list","a/b")),1)
+        for record in [self.issue_record(html_url="https://github.com/c/d/issues/1"), self.issue_record(number=0)]:
+            self.env["MOCK_FOUND"] = json.dumps([record])
+            self.run_cli("issue-list","a/b",good=False)
+        self.env["MOCK_FOUND"] = json.dumps([self.issue_record(html_url="https://github.com/a/b/pull/1")])
+        self.assertEqual(len(self.run_cli("pr-list","a/b")),1)
+        self.env["MOCK_FOUND"] = json.dumps([self.issue_record(html_url="https://github.com/c/d/pull/1")])
+        self.run_cli("pr-list","a/b",good=False)
+        self.assertEqual(self.write_calls(), [])
+
+    def test_transferred_issue_blocks_updates_comments_and_recovery_before_write(self):
+        for op in ["issue-update", "association-comment"]:
+            for record in [self.issue_record(html_url="https://github.com/c/d/issues/2",number=2),
+                           self.issue_record(html_url="https://github.com/a/b/issues/2",number=2),
+                           self.issue_record(pull_request={})]:
+                plan = self.prepare(op, number=1, expected_updated_at="t1", changes={"title":"New"})
+                self.env["MOCK_READ"] = json.dumps(record)
+                self.apply(plan,op,good=False)
+                self.assertEqual(self.write_calls(), [])
+        plan = self.prepare("association-comment",number=1,expected_updated_at="t1")
+        self.env["MOCK_FOUND"] = json.dumps([dict(plan["plan"]["payload"],id=3,
+            html_url="https://github.com/a/b/issues/1#issuecomment-3",issue_url="https://api.github.com/repos/a/b/issues/1")])
+        self.apply(plan,"association-comment",good=False)
+        self.env["MOCK_READ"] = json.dumps(self.issue_record(updated_at="newer"))
+        self.assertTrue(self.apply(plan,"association-comment")["recovered"])
+        self.assertEqual(self.write_calls(), [])
+
+    def test_association_read_and_review_checks_verify_target(self):
+        self.env["MOCK_READ"] = json.dumps(self.issue_record(html_url="https://github.com/c/d/issues/2",number=2))
+        self.run_cli("association-read","a/b","1",good=False)
+        self.env["MOCK_READ"] = json.dumps(self.issue_record())
+        self.env["MOCK_FOUND"] = json.dumps([dict(id=3,body="link",user={"login":"human"},
+            html_url="https://github.com/a/b/issues/1#issuecomment-3",issue_url="https://api.github.com/repos/a/b/issues/1")])
+        self.assertEqual(len(self.run_cli("association-read","a/b","1")),1)
+        self.env["MOCK_FOUND"] = json.dumps([dict(id=3,html_url="https://github.com/c/d/issues/1#issuecomment-3",issue_url="https://api.github.com/repos/c/d/issues/1")])
+        self.run_cli("association-read","a/b","1",good=False)
+        self.env["MOCK_CHECKS"] = json.dumps(dict(url="https://github.com/c/d/pull/2"))
+        self.run_cli("review-checks-read","a/b","2",good=False)
+        self.assertEqual(self.write_calls(), [])
 
     def test_invalid_target_and_unsupported_operation(self):
         self.run_cli("issue-list","../b",good=False)
