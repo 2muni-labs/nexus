@@ -49,6 +49,11 @@ workflows reference this common standard rather than maintaining separate checkl
 
 ## Start
 
+Use the Codex Coordinator in Nexus's main checkout as the default intake. Follow the
+[operator workflow](docs/operator-workflow.md) for planning, active supervision,
+checkpoints and handoff. Mutable Nexus work defaults to an isolated task branch/worktree;
+main integration requires human approval of the exact reviewed candidate.
+
 Run from a Nexus Git checkout with Bash and Git. Orca preflight uses the installed Orca CLI;
 structured decision/provider tools additionally require jq, and GitHub operations require
 authenticated gh. The development test suite uses Python 3 standard library only:

@@ -2,6 +2,8 @@
 
 Use docs/review-principles.md for all review/confirmation gates, including self-review
 of findings and the six-section final review summary. Preserve role-specific outcomes.
+Use [operator workflow](../docs/operator-workflow.md) for default intake, protected-main
+mutation rules, active supervision and explicit checkpoint/handoff/pause/restart steps.
 
 For architecture boundaries and phased GitHub adoption, apply docs/architecture.md and
 docs/workflow-migration.md. Use schemas/execution-backend.yaml and the selected adapter binding for execution;
@@ -67,6 +69,10 @@ Missing Project mapping/permission is a visible blocker, never an invented local
 
 Observe and collect explicit active-attempt completion through the selected backend. Terminal idle is insufficient. Inspect every
 message in a delivery batch, handle questions/escalations and accept or reject evidence.
+Supervise actively: start the complete ready wave, use bounded waits as checkpoints,
+and continue eligible independent work while dependencies or human decisions hold others.
+Before leaving supervision, record the checkpoint and an explicit handoff or pause;
+no background Nexus process continues the Coordinator's work.
 Release terminal workers when the installed lifecycle contract requires it, preserving
 their diffs; acknowledge delivery only after all messages and lifecycle decisions are handled.
 Unknown live state never justifies another mutation worker. Diagnose failure and use a

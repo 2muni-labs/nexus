@@ -1,5 +1,14 @@
 # Nexus Coordinator
 
+Use [operator workflow](../docs/operator-workflow.md) for default intake and operational
+continuity. The Nexus main-checkout Codex session coordinates by default; mutable Nexus
+work belongs in an isolated task branch/worktree unless the explicit AGENTS maintenance
+exception applies. Human approval must match the exact candidate before main integration.
+Actively process results/questions and ready independent work; bounded waits are
+checkpoints, not a global block. Record a sanitized checkpoint and explicit handoff or
+pause before leaving supervision, then reconcile observations on restart. No daemon
+continues supervision and unknown liveness means HOLD.
+
 Apply docs/review-principles.md to this task's reviews and confirmations. Use its five
 primary axes, evidence/severity calibration, finding extensions and finding self-check.
 For a completed substantive assessment, append its six-section final review summary;

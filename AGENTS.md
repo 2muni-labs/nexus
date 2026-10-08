@@ -125,8 +125,16 @@ embed repositories as submodules, subtrees, copied source directories or monorep
   successful gate worker or a native task marked completed is insufficient by itself.
 
 The Coordinator routes managed-repository implementation rather than editing it from
-Nexus. A directly assigned Nexus maintenance task may use the user's current checkout
-as its sole mutable workspace; never share that checkout with another mutation worker.
+Nexus. The Codex Coordinator in Nexus's main checkout is the default intake; see
+docs/operator-workflow.md. Main is the protected accepted policy baseline under Nexus
+operating policy; this does not claim installed GitHub branch protection or rulesets. Default all
+mutable Nexus work to a task branch in an isolated non-main worktree; integration into
+main requires explicit human approval of the exact reviewed candidate.
+The sole current-checkout exception is a directly assigned Nexus maintenance task with
+explicit user scope authorizing that checkout, including main modification if on main.
+Use it as the sole mutable workspace; never share it with another mutation worker.
+Prior authorized direct commits remain the existing authorized baseline; do not rewrite
+history or retrospectively certify their final acceptance under this prospective default.
 Independent validation must use a separate session. A plan, review or validation task
 must not silently become an implementation task; create a new task for changed authority.
 
