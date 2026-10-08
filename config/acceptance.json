@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "kind": "nexus-repository-acceptance-policy",
+  "authority": {
+    "workflow_decision_owner": "Nexus Coordinator",
+    "change_specific_acceptance_owner": "owning repository technical owner",
+    "human_approval_required": ["main integration", "merge", "publication"],
+    "approval_scope": "exact reviewed candidate and operation; changed inputs invalidate approval",
+    "human_overrides": "preserve pause/cancel/resume/reprioritization/reassignment/review controls without erasing mandatory acceptance or capability floors"
+  },
+  "resolution": {
+    "requirements": "union of all matching common, repository, classification, routing, review and change-specific requirements",
+    "required_flags": "logical OR; routing profile uses maximum matching rank",
+    "missing_policy_or_provenance": "HOLD",
+    "backend_or_card_may_choose_policy": false,
+    "before_dispatch": "reinspect exact owner revision and policy; reverify stale baselines and record resolved acceptance",
+    "legacy_local_runs": "explicitly designated limited runs only; omission is never a permissive default for new managed work"
+  },
+  "common": {
+    "managed_implementation_review_required": true,
+    "local_validation_required": true,
+    "local_validation_binding": "exact candidate head; frozen precommit patch digest requires verified mapping to the final head",
+    "independent_validation": {
+      "sources": ["config/routing.yaml", "config/review.yaml", "docs/review-principles.md"],
+      "mandatory_when": ["P0", "P1", "high risk", "critical complexity", "architecture task or architecture-sensitive change", "mutable integration with multiple distinct mutable upstream inputs", "any matching routing rule or task-class requirement"],
+      "session": "fresh session distinct from implementer; compatible same-family validator permitted",
+      "P2": "risk-based; cannot waive another mandatory trigger",
+      "P3": "record by default; cannot waive another mandatory trigger"
+    },
+    "acceptance_evidence": ["policy revision and resolved requirements provenance", "local validation PASS with commands, results and exact head", "independent validation PASS when required", "approved review of current head with authoritative evidence", "fresh native required-check discovery and current-head check results", "exact human merge approval and observed merge facts", "authoritative attempt settlement and editor exit"],
+    "missing_or_stale_evidence": "HOLD; validation with missing evidence is NEEDS-WORK, never PASS",
+    "native_ci": {
+      "unknown_required_checks": null,
+      "unknown_discovery": "HOLD; never infer an empty set from absent CI files, missing access or incomplete discovery",
+      "verified_empty_requirements": "empty array only with fresh native evidence for the exact repository and target branch plus explicit bounded owning-repository disposition",
+      "empty_does_not_waive": ["local validation", "managed implementation review", "mandatory independent validation", "human merge approval"],
+      "check_binding": "complete authoritative observations at current PR head for every resolved required check"
+    }
+  },
+  "repositories": {
+    "nexus": {
+      "inspection_revision": "9954ba02efb729b6d9bfceeaa0307708ef10cde1",
+      "sources": ["AGENTS.md", "README.md", "tests/run.sh", "scripts/validate.sh"],
+      "local_validation": ["bash tests/run.sh", "documentation and link acceptance for affected content"],
+      "change_specific_test_plan_required": true,
+      "native_required_checks": null
+    },
+    "basecamp": {
+      "inspection_revision": "9eae3c7721443a4e55a3cd61b395db917e26540d",
+      "sources": ["Makefile", "README.md"],
+      "local_validation": ["affected shell, Makefile and dotfile syntax using their actual interpreters/formats", "controlled mocks or reproduction meaningful to the change", "/usr/bin/make doctor when installed host readiness is relevant; read-only, binaries and versions do not prove authentication"],
+      "standard_test_target": null,
+      "change_specific_test_plan_required": true,
+      "not_automatic_tests": ["bootstrap", "install", "update", "link", "macos"],
+      "native_required_checks": null
+    },
+    "foundry": {
+      "inspection_revision": "a9697df5cead83f4272aa6ec4aeed1bc368244ed",
+      "sources": ["AGENTS.md", "README.md", "scripts/compose", "Makefile"],
+      "local_validation": ["sh -n scripts/compose", "affected Compose configuration validation via inspected scripts/compose wrapper", "runtime and worktree-isolation smoke tests only when meaningful to the change and authorized for scoped contained resources"],
+      "standard_test_target": null,
+      "change_specific_test_plan_required": true,
+      "prohibited_validation": ["raw Compose bypass", "global down or prune", "host credential or whole-home mounts"],
+      "native_required_checks": null
+    }
+  }
+}

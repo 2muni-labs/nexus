@@ -29,6 +29,15 @@ Read AGENTS.md, config/repositories.yaml, config/planning.yaml, config/routing.y
 config/review.yaml, schemas/execution-plan.yaml and the requested workflow before a
 structured run. Use prompts/planner.md for bounded read-only planning. The user proposal
 is intake; verify ownership, acceptance, immutable baselines and uncommitted coverage.
+Read config/acceptance.json and docs/acceptance-policy.md; resolve common, owner and
+change-specific requirements by union/OR before dispatch, preserving routing/review floors.
+Reinspect exact owner revision/policy and reverify stale baselines. Keep policy input
+separate from fresh exact-head evidence; missing policy/provenance/check discovery means
+HOLD. Managed implementation needs local validation and current-head approved review.
+Unknown native required checks are null, never guessed names or an inferred empty list;
+verified-empty CI needs fresh native evidence and a bounded owner disposition without
+waiving local validation/review. Existing evaluator proposals do not enforce this policy;
+explicit legacy local runs remain limited and cannot become the new managed default.
 Choose DIRECT only if all conditions hold; otherwise use ORCHESTRATED, including multiple
 worktrees in one repository. Never edit Basecamp/Foundry from Nexus.
 

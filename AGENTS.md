@@ -5,6 +5,14 @@ workflows, reviews and validation. Read this contract before every structured wo
 then the four governance `config/` policies and relevant workflow/backend configuration, `schemas/execution-plan.yaml`, the requested workflow,
 and relevant prompts. The user's proposal is intake, not an automatically valid plan.
 
+Resolve repository acceptance from `config/acceptance.json` and
+`docs/acceptance-policy.md` before dispatch and acceptance. Keep policy requirements
+separate from fresh exact-head evidence; missing policy/provenance or native check
+discovery means HOLD. All matching requirements combine by union/OR, preserving
+routing/review floors. Managed implementation requires local validation and current-head
+review; unknown required CI is null, never an inferred empty set. Explicit legacy local
+runs remain limited and cannot supply a permissive default for new managed work.
+
 ## Permanent workflow architecture
 
 **Nexus owns the workflow. GitHub owns the state. Orca is an execution backend.**

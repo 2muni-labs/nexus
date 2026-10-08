@@ -1,6 +1,14 @@
 version: 1
 kind: nexus-workflow-observation-contract
 # Input to the pure one-shot decision evaluator, not persistent project state.
+acceptance_policy:
+  source: config/acceptance.json
+  guidance: docs/acceptance-policy.md
+  resolution: Coordinator_verified_union_of_matching_requirements_and_required_flags_OR
+  provenance: exact_policy_owner_revision_classification_and_change_specific_acceptance
+  separation: policy_input_is_not_observed_validation_review_checks_merge_or_settlement
+  missing_policy_or_provenance: HOLD
+  implementation_limit: declarative_Coordinator_contract_not_new_evaluator_fields_or_enforcement
 required: [work_item_id, kind, status, observed_at, observation_ref, inventory_complete, inventory_ref, backend, human, gates]
 kind: [implementation, non-code]
 status: config_workflow_json_states
@@ -27,6 +35,11 @@ pull_request:
   required_review: when_review_required_true_require_approved_current_head_and_authoritative_review_evidence
   review_policy: Coordinator_sets_review_required_from_verified_repository_policy_not_backend_or_card_state
   legacy_review_policy: absent_review_required_preserves_existing_snapshot_behavior_not_certification_that_review_is_unnecessary
+  managed_review_policy: review_required_true_for_all_managed_implementation_no_omission_default
+  required_checks_policy: null_means_unresolved_and_HOLD_never_infer_empty_or_fabricate_names
+  verified_empty_checks: fresh_complete_native_repository_target_branch_discovery_and_explicit_bounded_owner_disposition_no_local_validation_or_review_waiver
+  empty_checks_evaluator_limit: current_evaluator_HOLDs_empty_arrays_policy_does_not_add_support
+  discovery_provenance: native_source_time_scope_completeness_reverify_changed_head_branch_or_rules
   checks: normalized_name_state_observations_bound_to_head_revision
 retry:
   required: explicit_approved_decision_reference_positive_budget_and_readiness

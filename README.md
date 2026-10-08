@@ -47,6 +47,13 @@ correctness come first. Findings require operational impact, the smallest justif
 correction and proportional severity; absent evidence is never PASS. AGENTS, prompts and
 workflows reference this common standard rather than maintaining separate checklists.
 
+[Repository acceptance policy](docs/acceptance-policy.md) and
+[its declarative input](config/acceptance.json) define common and owner-specific floors.
+The Coordinator resolves these before dispatch and checks separate exact-head evidence
+before acceptance. Native required CI names remain unresolved (`null`) until fresh native
+discovery; verified-empty CI needs a bounded owner disposition and never waives local
+validation or review. This adds no automatic enforcement or collector.
+
 ## Start
 
 Use the Codex Coordinator in Nexus's main checkout as the default intake. Follow the

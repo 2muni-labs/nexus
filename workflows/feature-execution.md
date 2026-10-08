@@ -30,6 +30,13 @@ dependencies, acceptance and validation. Check unique IDs, acyclic DAG, complete
 and conflicts; serialize overlapping mutations unless decomposition proves independence.
 Plan templates/examples require real baselines and verified routing before dispatch.
 
+Resolve [repository acceptance](../docs/acceptance-policy.md) from
+`config/acceptance.json` plus routing/review policy and the technical owner's change-specific
+test plan. Reinspect exact owner revision and instructions before dispatch; reverify stale
+baselines. Record strongest matching requirements by union/OR and keep policy provenance
+separate from observed evidence. Missing policy/provenance or native check discovery holds
+affected work; explicit legacy local runs are limited, never the managed default.
+
 ## Canonical work association
 
 For GitHub-managed work, read the Issue through schemas/work-item-provider.yaml and
@@ -98,6 +105,14 @@ architecture-sensitive changes and integration from multiple upstream mutations.
 P2 validation is risk-based. FAIL/NEEDS-WORK returns to a new bounded correction task;
 validator cannot silently implement. Use the original requirements or accepted finding
 and exact final candidate as evidence.
+
+Managed implementation additionally requires local validation and authoritative approved
+review of the current head. Discover native required checks freshly for the repository and
+target branch; unknown is null/HOLD. Verified-empty CI requires native evidence and bounded
+owner disposition, without waiving local validation/review or mandatory independent floors.
+Check current-head review/check/merge facts and backend settlement under the acceptance
+policy before accepting any existing evaluator proposal; the scripts do not enforce this
+new declarative input. Human main/merge/publication authority remains exact and separate.
 
 Synthesize result/diff, checks, remaining risks and gate/baseline provenance. Each
 implementation result receives exactly one final human review decision. Keep transient
