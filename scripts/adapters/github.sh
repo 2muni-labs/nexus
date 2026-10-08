@@ -101,6 +101,7 @@ nexus_github_operation() {
             payload=$(jq -c --arg marker "$marker" '{title,body:(.body+"\n\n"+$marker)}' "$argument")
             if [[ "$op" == pr-create ]]; then
                 jq -e '(.head|type == "string" and length>0) and (.base|type == "string" and length>0) and (.head_repository|type == "string" and test("^[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$")) and (.expected_head_revision|type == "string" and test("^[0-9a-f]{40}$"))' "$argument" >/dev/null || nexus_fail 'Explicit PR head/base, head_repository and exact 40-character expected_head_revision required.'
+                jq -e '.draft == null or (.draft|type == "boolean")' "$argument" >/dev/null || nexus_fail 'PR draft must be boolean or null (default true).'
                 head_repo=$(jq -r .head_repository "$argument"); head_branch=$(jq -r .head "$argument")
                 git check-ref-format "refs/heads/$head_branch" >/dev/null &&
                     git check-ref-format "refs/heads/$(jq -r .base "$argument")" >/dev/null || nexus_fail 'PR head/base must be branch names, not owner-qualified refs.'
@@ -110,7 +111,7 @@ nexus_github_operation() {
                 payload=$(jq -c --arg marker "$marker" --arg repo "$repo" '
                   {title,body:(.body+"\n\n"+$marker),
                    head:(if .head_repository == $repo then .head else (.head_repository|split("/")[0])+":"+.head end),
-                   base,draft:(.draft // true)} +
+                   base,draft:(if .draft == null then true else .draft end)} +
                   (if .head_repository == $repo then {} else {head_repo:(.head_repository|split("/")[1])} end)' "$argument")
             fi ;;
         issue-update|association-comment)

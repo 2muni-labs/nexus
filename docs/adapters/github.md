@@ -25,7 +25,9 @@ All require `operation_id`; creates also title/body, PRs explicit branch names h
 expected_head_revision (40 lowercase hexadecimal characters);
 updates/comments require number and expected_updated_at. Issue changes support title,
 body, labels, milestone and state. Preserve current human content when constructing a
-body update; default PR drafts require published head branches, but this tool never pushes.
+body update. PR draft defaults to true for omitted/null; explicit false is preserved,
+and other types are rejected before any API call. Both draft and non-draft PRs require
+published head branches, but this tool never pushes.
 Association comments carry reviewed sanitized task/attempt/backend/PR associations.
 
 By default a write returns a prepared plan and its Git blob `plan_oid` without an API write.

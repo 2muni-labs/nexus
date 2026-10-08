@@ -261,6 +261,36 @@ class ProviderTests(unittest.TestCase):
         self.run_cli("review-checks-read","a/b","2",good=False)
         self.assertEqual(self.write_calls(), [])
 
+    def test_pr_draft_boolean_prepare_apply_and_recovery(self):
+        for fields, expected in [({},True), ({"draft":None},True), ({"draft":False},False), ({"draft":True},True)]:
+            with self.subTest(fields=fields):
+                self.env.pop("MOCK_FOUND",None)
+                plan = self.pr_plan(**fields)
+                self.assertIs(plan["plan"]["payload"]["draft"],expected)
+                self.assertTrue(self.apply(plan,"pr-create")["applied"])
+                writes = len(self.write_calls())
+                self.env["MOCK_FOUND"] = json.dumps([self.pr_record(plan)])
+                self.assertTrue(self.apply(plan,"pr-create")["recovered"])
+                self.assertEqual(len(self.write_calls()),writes)
+                self.env["MOCK_FOUND"] = json.dumps([self.pr_record(plan,draft=not expected)])
+                self.apply(plan,"pr-create",good=False)
+                self.assertEqual(len(self.write_calls()),writes)
+
+    def test_pr_draft_invalid_types_rejected_without_api(self):
+        for value in ["false", "true", 0, 1, [], {}]:
+            request=dict(operation_id="op1",title="Title",body="Body",head="feature",base="main",
+                         head_repository="a/b",expected_head_revision="a"*40,draft=value)
+            self.request.write_text(json.dumps(request))
+            self.run_cli("pr-create","a/b",str(self.request),good=False)
+        self.assertFalse(self.calls.exists())
+
+    def test_pr_draft_change_invalidates_approval(self):
+        first = self.pr_plan(draft=False)
+        second = self.pr_plan(draft=True)
+        self.assertNotEqual(first["plan_oid"],second["plan_oid"])
+        self.apply(first,"pr-create",good=False)
+        self.assertFalse(self.calls.exists())
+
     def test_invalid_target_and_unsupported_operation(self):
         self.run_cli("issue-list","../b",good=False)
         self.run_cli("merge","a/b",good=False)
