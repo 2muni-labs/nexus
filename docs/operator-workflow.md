@@ -122,7 +122,9 @@ ignored `reviews/`. Include:
 
 Keep recovery-critical sanitized associations and decisions in durable external
 records before claiming recovery after local loss, following
-[reconciliation](reconciliation.md). External publication still requires exact
+[reconciliation](reconciliation.md) and the
+[association identity, author, decision and scope checks](work-associations.md).
+External publication still requires exact
 authorization: prepare a reviewed minimal record, do not implicitly upload private
 reports. Credentials, machine paths and raw transcripts stay private. If external
 records are incomplete, name that recovery limit; a local checkpoint is operational

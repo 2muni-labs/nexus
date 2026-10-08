@@ -38,6 +38,9 @@ backend receipt references, accepted validation and human decision scope; privat
 raw transcripts, credentials and machine paths stay private. Verify authorized authors and
 conflicting records; ambiguous comments/selection provenance HOLD. This evaluator consumes
 already-verified normalized inputs; it does not parse arbitrary comments as authority.
+Apply the [association contract and manual trust procedure](work-associations.md)
+before normalization; incomplete records or unresolved supersession preserve history
+and HOLD, never select the newest comment by inference.
 
 ## Conservative recovery decisions
 

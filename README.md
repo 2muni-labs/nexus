@@ -124,6 +124,8 @@ Membership changes do not set workflow status or start execution. See [Project s
 
 Recovery: `scripts/reconcile.sh external-snapshot.json` proposes a decision from complete
 verified external state, without reading local runtime records. See [reconciliation](docs/reconciliation.md).
+The [durable association contract](docs/work-associations.md) defines sanitized,
+human-reviewed Issue comments and manual trust checks; its example is never live evidence.
 
 Backend-independent assignments: [coordination policy](docs/multi-agent.md),
 [assignment contract](schemas/agent-assignment.yaml) and [backend registry](config/execution-backends.yaml).

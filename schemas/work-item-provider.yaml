@@ -24,6 +24,7 @@ authority:
   writes: default_prepared_plan_only_apply_requires_exact_plan_digest_and_human_reference
   merge_push_delete: unsupported
 associations:
+  contract: schemas/work-association.yaml
   work_item: canonical_Issue_identity
   execution: stable_Nexus_task_and_attempt_ids_with_backend_receipt_reference
   pull_request: canonical_PR_URL_and_exact_head_revision

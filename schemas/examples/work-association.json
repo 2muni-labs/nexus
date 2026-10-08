@@ -1,0 +1,62 @@
+{
+  "illustrative_only": true,
+  "dispatchable": false,
+  "recovery_evidence": false,
+  "notice": "All identifiers and references are illustrative placeholders, not real external observations or approvals. This incomplete running record cannot satisfy acceptance or recovery and is not a provider request.",
+  "version": 1,
+  "kind": "nexus-work-association",
+  "association_id": "<stable-Nexus-association-id>",
+  "operation_id": "<unique-exact-provider-operation-id>",
+  "phase": "running",
+  "work": {
+    "id": "<canonical-Issue-URL-matching-repository-and-number>",
+    "provider": "github",
+    "repository": "<canonical-owner/repository>",
+    "issue_number": 1,
+    "issue_url": "<canonical-Issue-URL-matching-repository-and-number>"
+  },
+  "task_id": "<stable-Nexus-task-id>",
+  "attempts": [
+    {
+      "id": "<stable-Nexus-attempt-id>",
+      "task_id": "<stable-Nexus-task-id>",
+      "backend": "orca",
+      "receipt_refs": ["<verified-adapter-resolvable-path-free-Dispatch-ref>"],
+      "source": {
+        "repository": "<canonical-source-owner/repository>",
+        "branch": "<observed-source-branch>",
+        "head": null,
+        "artifact": null
+      },
+      "outcome_ref": null,
+      "settlement_ref": null,
+      "editor_exit_ref": null
+    }
+  ],
+  "pull_requests": [],
+  "selected_attempt_id": "<stable-Nexus-attempt-id>",
+  "selected_pr_url": null,
+  "policy": {
+    "repository": "<canonical-policy-owner/repository>",
+    "revision": "<exact-immutable-policy-commit>",
+    "requirements_ref": "<verified-resolved-acceptance-provenance>"
+  },
+  "validations": [],
+  "reviews": [],
+  "human_decisions": [
+    {
+      "decision_ref": "<real-external-human-dispatch-decision-ref>",
+      "author_ref": "<verified-canonical-human-identity>",
+      "permission_evidence_ref": "<repository-specific-authorized-author-evidence>",
+      "operation": "dispatch",
+      "scope": {
+        "target": "<canonical-Issue-URL-matching-repository-and-number>",
+        "task_id": "<stable-Nexus-task-id>",
+        "attempt_id": "<stable-Nexus-attempt-id>",
+        "artifact": "<exact-approved-source-baseline-commit>"
+      }
+    }
+  ],
+  "prior_association_refs": [],
+  "supersedes_refs": []
+}

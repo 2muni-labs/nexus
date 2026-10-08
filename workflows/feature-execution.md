@@ -45,6 +45,8 @@ attempts and eventual PR. Explicit local-only runs remain legacy and cannot clai
 external recovery. Issue/PR/comment write plans require exact publication authority;
 implementation or local commit authority does not grant it. Record reviewed sanitized
 associations externally before relying on recovery; never publish private reports.
+Apply [the association contract](../docs/work-associations.md) and its manual trust
+checks; illustrative examples and local approval receipts are not durable authority.
 
 ## Route and dispatch
 

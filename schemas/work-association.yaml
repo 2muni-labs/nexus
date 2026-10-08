@@ -1,0 +1,88 @@
+version: 1
+kind: nexus-work-association-contract
+# Declarative Coordinator contract, not JSON Schema, parser or executable policy.
+record:
+  required: [version, kind, association_id, operation_id, phase, work, task_id, attempts, pull_requests, selected_attempt_id, selected_pr_url, policy, validations, reviews, human_decisions, prior_association_refs, supersedes_refs]
+  version: 1
+  kind: nexus-work-association
+  association_id: stable_Nexus_record_id_not_provider_comment_id
+  operation_id: stable_provider_operation_marker_identity_for_exact_payload_and_target
+  phase: [planned, running, result, accepted]
+  work:
+    required: [id, provider, repository, issue_number, issue_url]
+    id: canonical_GitHub_Issue_URL_equal_to_issue_url_no_second_Work_Item_identity
+    provider: github
+    repository: canonical_OWNER_REPO_with_one_logical_owner
+    issue_number: positive_integer_matching_canonical_Issue_URL
+    issue_url: canonical_Work_Item_identity_per_work_item_provider_contract
+  task_id: stable_Nexus_task_id_preserved_across_attempts
+  attempts:
+    each_required: [id, task_id, backend, receipt_refs, source, outcome_ref, settlement_ref, editor_exit_ref]
+    id: stable_Nexus_attempt_id_distinct_from_backend_receipts
+    backend: configured_execution_backend_key
+    receipt_refs: opaque_path_free_refs_resolvable_only_by_verified_backend_adapter
+    source:
+      required: [repository, branch, head, artifact]
+      repository: canonical_source_repository_may_be_verified_fork
+      branch: observed_Git_branch_not_host_directory
+      head: exact_immutable_commit_revision_or_null_before_known
+      artifact: immutable_revision_or_full_patch_digest_with_evidence_ref_or_null
+    outcome_ref: authoritative_explicit_attempt_result_reference_or_null
+    settlement_ref: authoritative_settlement_reference_or_null
+    editor_exit_ref: independent_authoritative_editor_exit_reference_or_null
+  pull_requests:
+    each_required: [url, head_repository, head_branch, head, disposition_ref]
+    url: canonical_PR_URL_verified_against_provider_inventory
+    head: exact_observed_PR_head_revision
+    disposition_ref: observed_merge_or_other_final_disposition_reference_or_null
+  selected_attempt_id: exactly_one_inventory_attempt_id_or_null_only_when_none_known
+  selected_pr_url: exactly_one_inventory_PR_URL_or_null_only_when_none_known
+  policy:
+    required: [repository, revision, requirements_ref]
+    revision: exact_immutable_policy_revision_separate_from_candidate_evidence
+    requirements_ref: resolved_acceptance_union_OR_and_routing_review_floor_provenance
+  validations:
+    each_required: [attempt_id, artifact, head, result, evidence_ref, session_ref, implementer_session_ref, independent]
+    result: [PASS, FAIL, NEEDS-WORK]
+    evidence_ref: verifiable_sanitized_commands_results_scope_and_exact_candidate_evidence
+    independent: verified_distinct_session_when_required_never_boolean_alone
+  reviews:
+    each_required: [pr_url, head, evidence_ref]
+    evidence_ref: authoritative_current_head_approved_review_not_worker_success
+  human_decisions:
+    each_required: [decision_ref, author_ref, permission_evidence_ref, operation, scope]
+    decision_ref: exact_real_human_decision_independently_verifiable_after_local_loss
+    permission_evidence_ref: repository_specific_authorized_author_permission_and_provenance
+    scope: exact_operation_target_artifact_revision_or_digest_and_gate_inputs_when_applicable
+  prior_association_refs: canonical_verified_prior_comment_refs_preserving_history
+  supersedes_refs: exact_prior_record_refs_corrected_by_this_separately_reviewed_record
+phase_requirements:
+  planned: incomplete_attempt_PR_and_evidence_fields_allowed_no_acceptance_or_recovery_authority
+  running: known_attempt_receipts_and_source_identity_required_missing_facts_HOLD_recovery
+  result: selected_exact_artifact_explicit_outcome_settlement_exit_and_applicable_validation_required
+  accepted: result_facts_plus_acceptance_policy_current_head_review_CI_exact_human_decision_and_observed_merge_or_accepted_noncode_disposition
+crosschecks:
+  - stable_work_task_attempt_ids_and_canonical_Issue_target_agree_across_all_sources
+  - selected_attempt_and_PR_match_unique_complete_external_inventories_no_missing_known_pointer
+  - source_and_PR_repository_branch_head_and_artifact_mapping_verified_by_Git_provider_and_backend
+  - branch_worktree_relationship_observed_never_inferred_from_stable_filesystem_layout
+  - author_identity_and_repository_specific_permission_verified_author_association_is_insufficient
+  - publication_approval_is_real_exact_scoped_and_independently_verifiable_not_boolean_or_local_receipt_alone
+  - version_supported_comment_target_and_operation_marker_verified_with_full_paginated_history
+  - human_decisions_validation_and_reviews_match_current_exact_candidate_policy_and_operation
+  - supersession_chain_resolved_without_cycles_forks_or_contradictory_selection_never_newest_comment_wins
+  - fresh_cross_system_observations_required_claims_never_prove_liveness_or_authorize_dispatch
+storage:
+  current: human_reviewed_sanitized_Issue_comment_via_existing_association_comment_operation
+  contract: schemas/work-item-provider.yaml
+  ambiguous_write: preserve_exact_plan_lookup_marker_and_target_never_blind_replay
+  correction: separately_exact_reviewed_superseding_record_never_delete_history
+  conflict_or_missing_evidence: HOLD_preserve_all_records_and_request_exact_resolution
+privacy:
+  forbidden: [secrets, credentials, transcripts, private_reports, absolute_host_paths, raw_Orca_worktree_ids_embedding_paths]
+  backend_metadata: opaque_to_core_only_verified_path_free_Dispatch_or_instance_refs_publishable
+  host_paths: local_only
+limits:
+  project_progress_store: none_GitHub_owns_project_state
+  automatic_parser_publisher_dispatcher_or_recovery: none_manual_verification_required
+  example: illustrative_placeholders_never_live_recovery_dispatch_or_authorization_evidence
