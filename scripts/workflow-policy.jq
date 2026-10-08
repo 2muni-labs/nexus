@@ -22,6 +22,10 @@ def required_checks_pass:
   .pr.checks_head == .pr.head_revision and
   all(.pr.required_checks[]; . as $name |
     [$s.pr.checks[]? | select(.name == $name)] | length == 1 and .[0].state == "pass");
+def required_review_pass:
+  if .pr.review_required == true then
+    .pr.review_state == "approved" and .pr.review_head == .pr.head_revision and (.pr.review_evidence_ref | text)
+  else .pr.review_required == null or .pr.review_required == false end;
 def proposal($decision; $status; $action; $reason):
   {work_item_id,observed_at,source_observation:.observation_ref,
    decision:$decision,proposed_status:$status,action:$action,reasons:[$reason],
@@ -55,7 +59,7 @@ then
   elif .pr.exists == true then
     if .pr.merged == true then
       if (.pr.merge_evidence_ref | text) and (.pr.merge_approval_reference | text) and .pr.merge_approval_head == .pr.head_revision and
-         validated(.pr.head_revision) and required_checks_pass and (.backend.state == "none" or stopped) then
+         validated(.pr.head_revision) and required_checks_pass and required_review_pass and (.backend.state == "none" or stopped) then
         proposal("PROPOSE";"Done";"record-observed-merge";"Observed authorized merge has exact validation, required checks and acceptance")
       else proposal("HOLD";"Blocked";"verify-merged-acceptance";"Merge alone cannot supply missing acceptance, approval or check evidence") end
     elif (.validation.result == "FAIL" and .validation.candidate_head == .pr.head_revision) or

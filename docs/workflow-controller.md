@@ -18,6 +18,10 @@ and Done. Validation and check observations bind to exact candidate/head revisio
 independent_session is required when routing demands it. Required checks must be configured
 explicitly and completely observed; an empty or missing set does not mean PASS. Non-code
 completion requires accepted exact artifact disposition and settled observed resources.
+When verified repository policy requires review, set `pr.review_required:true`; Done also
+requires `review_state:approved`, matching `review_head` and a real `review_evidence_ref`.
+Missing/stale/rejected/unknown evidence holds even an observed merge. An absent flag preserves
+legacy snapshot behavior; the Coordinator must not omit it to bypass a required review.
 
 Feedback from current-head validation/CI/review returns a proposed bounded remediation task
 under the same Issue, preserving Work Item/PR identity. Stale feedback does not authorize

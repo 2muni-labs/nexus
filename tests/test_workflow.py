@@ -65,6 +65,17 @@ class WorkflowTests(unittest.TestCase):
         s["readiness"]["independent_validation_required"]=True
         self.assertEqual(self.decide(s)["action"],"validate-existing-pr")
 
+    def test_required_review_binds_exact_head_and_evidence_after_merge(self):
+        s=copy.deepcopy(BASE);s["backend"]=stopped();s["pr"]=pr()
+        s["pr"].update(merged=True,merge_evidence_ref="merge:1",merge_approval_reference="human:1",merge_approval_head="abc",review_required=True)
+        s["validation"]=dict(result="PASS",candidate_head="abc",evidence_ref="validation:1")
+        self.assertEqual(self.decide(s)["decision"],"HOLD")
+        s["pr"].update(review_state="approved",review_evidence_ref="github:review",review_head="old")
+        self.assertEqual(self.decide(s)["decision"],"HOLD")
+        s["pr"]["review_head"]="abc";self.assertEqual(self.decide(s)["proposed_status"],"Done")
+        s["pr"].pop("review_evidence_ref");self.assertEqual(self.decide(s)["decision"],"HOLD")
+        s["pr"]["review_required"]="true";self.assertEqual(self.decide(s)["decision"],"HOLD")
+
     def test_stale_pre_pr_feedback_and_conflicting_required_checks(self):
         s=copy.deepcopy(BASE); s["backend"]=stopped(); s["artifact_revision"]="new"
         s["validation"]=dict(result="FAIL",candidate_head="old",evidence_ref="old-validation")

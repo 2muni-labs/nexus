@@ -56,7 +56,10 @@ never mark Done from worker success. Feedback creates a bounded correction task 
 same Issue; required validation remains independent and exact-head evidence is mandatory.
 
 For repository-specific Projects apply docs/github-projects.md. Read the configured
-canonical lifecycle field, compare fresh human edits and prepare only exact authorized
+canonical lifecycle field. If the Issue lacks membership, prepare `scripts/projects.sh
+item-add` and apply only under exact publication approval; reobserve membership before
+preparing separate status/priority plans. Existing membership never starts another execution.
+Compare fresh human edits and prepare only exact authorized
 single-field changes with scripts/projects.sh. An evaluator proposal does not write state.
 Missing Project mapping/permission is a visible blocker, never an invented local status.
 

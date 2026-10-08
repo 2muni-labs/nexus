@@ -2,6 +2,11 @@
 
 **Nexus owns the workflow. GitHub owns the state. Orca is an execution backend.**
 
+The [flat operating model](operating-model.md) defines independent peer responsibilities,
+the execution board, validation ownership and deployment boundaries. Coordination is not
+ownership of other systems' state. GitHub stores project records and runs CI; Nexus sets
+acceptance policy; Orca supplies execution mechanics and observations; humans approve merge.
+
 This is the permanent target. Nexus is a document-driven Coordinator with one-shot shell ports and pure decision tools; it has no background controller or project-state cache. The one-shot workflow policy
 evaluator proposes transitions without executing effects. GitHub operations now
 use a one-shot WorkItemProvider adapter; no automatic lifecycle synchronization exists. Reconciliation combines verified external

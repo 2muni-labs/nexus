@@ -20,7 +20,7 @@ nexus_github_project_snapshot() {
       ($m.options|type == "object" and length>0) and
       ($m.options|[.[]]|unique|length) == ($m.options|length) and
       ($m.options|to_entries|all(.[]; .value as $name | [$f[0].options[]|select(.name == $name)]|length == 1)))' <<< "$mapping" >/dev/null || nexus_fail 'Missing, ambiguous or non-single-select Project fields/options.'
-    items=$(nexus_github_api graphql -f query='query($id:ID!,$endCursor:String){node(id:$id){... on ProjectV2{items(first:100,after:$endCursor){nodes{id content{... on Issue{url repository{nameWithOwner}}} fieldValues(first:100){nodes{... on ProjectV2ItemFieldSingleSelectValue{name optionId field{... on ProjectV2FieldCommon{id name}}}} pageInfo{hasNextPage}}} pageInfo{hasNextPage endCursor}}}}}' \
+    items=$(nexus_github_api graphql -f query='query($id:ID!,$endCursor:String){node(id:$id){... on ProjectV2{items(first:100,after:$endCursor){nodes{id content{... on Issue{id url repository{nameWithOwner}}} fieldValues(first:100){nodes{... on ProjectV2ItemFieldSingleSelectValue{name optionId field{... on ProjectV2FieldCommon{id name}}}} pageInfo{hasNextPage}}} pageInfo{hasNextPage endCursor}}}}}' \
       -f id="$(jq -r .id <<< "$project")" --paginate --slurp |
       jq -ec 'if length==0 or any(.[]; (.errors|length)>0 or .data.node.items == null) or
         .[-1].data.node.items.pageInfo.hasNextPage != false or
@@ -28,9 +28,54 @@ nexus_github_project_snapshot() {
     jq -e 'all(.[]; .fieldValues.pageInfo.hasNextPage == false)' <<< "$items" >/dev/null || nexus_fail 'Item field inventory incomplete; HOLD instead of truncating.'
     jq -cn --argjson project "$project" --argjson fields "$fields" --argjson items "$items" --argjson mapping "$mapping" '{project:$project,fields:$fields,items:$items,mapping:$mapping}'
 }
+# Membership is independent of workflow/priority. The plan binds immutable provider
+# identities, not whether the item happened to exist at preparation time.
+nexus_github_project_membership() {
+    local logical=$1 mapping=$2 snapshot=$3 request=$4 apply=$5 approved=$6 approval=$7
+    local repo url number issue content project matches plan oid result='' received valid=false
+    [[ -f "$request" && -r "$request" ]] || nexus_fail 'Item add requires request JSON.'
+    jq -e 'type == "object" and keys == ["issue_url"] and (.issue_url|type == "string")' "$request" >/dev/null || nexus_fail 'Item add accepts only issue_url; fields need separate plans.'
+    repo=$(jq -r .repository <<< "$mapping"); url=$(jq -r .issue_url "$request")
+    jq -e --arg prefix "https://github.com/$repo/issues/" '.issue_url | startswith($prefix) and (ltrimstr($prefix)|test("^[1-9][0-9]*$"))' "$request" >/dev/null || nexus_fail 'Expected canonical Issue URL in the exact owning repository.'
+    number=${url##*/}
+    issue=$(nexus_github_api "repos/$repo/issues/$number" --method GET)
+    jq -e --arg url "$url" --arg number "$number" '(has("pull_request")|not) and .html_url == $url and (.number|type == "number" and floor == . and .>0) and (.number|tostring) == $number and (.node_id|type == "string" and length>0)' <<< "$issue" >/dev/null || nexus_fail 'Issue identity missing, changed or is a PR; reobserve.'
+    content=$(jq -r .node_id <<< "$issue"); project=$(jq -r .project.id <<< "$snapshot")
+    matches=$(jq -c --arg url "$url" --arg content "$content" '[.items[]|select(.content.url == $url or .content.id == $content)]' <<< "$snapshot")
+    nexus_github_project_membership_matches "$matches" "$content" "$repo" "$url"
+    plan=$(jq -cn --arg logical "$logical" --arg url "$url" --arg project "$project" --arg content "$content" '{provider:"github",operation:"project-item-add",repository:$logical,work_item_id:$url,metadata:{project_id:$project,content_id:$content}}')
+    oid=$(printf '%s\n' "$plan" | git hash-object --stdin)
+    if [[ "$apply" == false ]]; then
+        [[ -z "$approved$approval" ]] || nexus_fail 'Approval flags require --apply.'
+        jq -cn --argjson plan "$plan" --arg oid "$oid" --argjson present "$(jq 'length==1' <<< "$matches")" '{plan:$plan,plan_oid:$oid,applied:false,already_member:$present}'; return
+    fi
+    [[ "$approved" == "$oid" && -n "$approval" && "$approval" == *[![:space:]]* ]] || nexus_fail 'Exact membership plan digest and real human approval reference required.'
+    if [[ $(jq length <<< "$matches") == 1 ]]; then
+        jq -cn --arg oid "$oid" --arg approval "$approval" --arg item "$(jq -r '.[0].id' <<< "$matches")" '{applied:false,unchanged:true,observed:true,plan_oid:$oid,approval_reference:$approval,metadata:{item_id:$item}}'; return
+    fi
+    # At most one write. Even transport/GraphQL failure is followed by observation,
+    # never replay; a recovered membership does not certify this mutation succeeded.
+    if result=$(nexus_github_api graphql -f query='mutation($project:ID!,$content:ID!){addProjectV2ItemById(input:{projectId:$project,contentId:$content}){item{id project{id} content{... on Issue{id url repository{nameWithOwner}}}}}}' -f project="$project" -f content="$content"); then
+        if jq -e --arg project "$project" --arg content "$content" --arg url "$url" --arg repo "$repo" '(.errors|length)==0 and (.data.addProjectV2ItemById.item.id|type == "string" and length>0) and .data.addProjectV2ItemById.item.project.id == $project and .data.addProjectV2ItemById.item.content.id == $content and .data.addProjectV2ItemById.item.content.url == $url and .data.addProjectV2ItemById.item.content.repository.nameWithOwner == $repo' <<< "$result" >/dev/null 2>&1; then valid=true; fi
+    fi
+    snapshot=$(nexus_github_project_snapshot "$mapping")
+    jq -e --arg project "$project" '.project.id == $project' <<< "$snapshot" >/dev/null || nexus_fail 'Project identity changed after membership write; HOLD.'
+    matches=$(jq -c --arg url "$url" --arg content "$content" '[.items[]|select(.content.url == $url or .content.id == $content)]' <<< "$snapshot")
+    nexus_github_project_membership_matches "$matches" "$content" "$repo" "$url"
+    [[ $(jq length <<< "$matches") == 1 ]] || nexus_fail 'Membership not observed after one write; preserve plan, reobserve, do not replay automatically.'
+    received=$(jq -r '.data.addProjectV2ItemById.item.id // empty' <<< "$result" 2>/dev/null) || received=''
+    if [[ -n "$received" ]]; then
+        # A contradictory identified response cannot be reconciled as success.
+        [[ "$valid" == true && "$received" == "$(jq -r '.[0].id' <<< "$matches")" ]] || nexus_fail 'Identified membership response contradicts observed target; HOLD and reconcile.'
+    fi
+    jq -cn --arg oid "$oid" --arg approval "$approval" --argjson valid "$valid" --arg item "$(jq -r '.[0].id' <<< "$matches")" '{applied:$valid,recovered:($valid|not),observed:true,plan_oid:$oid,approval_reference:$approval,metadata:{item_id:$item}}'
+}
+nexus_github_project_membership_matches() {
+    jq -e --arg content "$2" --arg repo "$3" --arg url "$4" 'length<=1 and all(.[]; (.id|type == "string" and length>0) and .content.id == $content and .content.url == $url and .content.repository.nameWithOwner == $repo)' <<< "$1" >/dev/null || nexus_fail 'Duplicate or conflicting Project membership identity; HOLD.'
+}
 nexus_github_project_operation() {
     local op=$1 logical=$2 config=$3 request=$4 apply=$5 approved=$6 approval=$7 mapping snapshot field value expected matches item nativefield option current plan oid result
-    [[ "$op" == read || "$op" == field-update ]] || nexus_fail 'Unsupported Project operation.'
+    [[ "$op" == read || "$op" == field-update || "$op" == item-add ]] || nexus_fail 'Unsupported Project operation.'
     jq -e '.version == 1 and (.repositories|type == "object") and
       ([.repositories[].project | select(.number != null) | [.owner_kind,(.owner|ascii_downcase),.number]] as $ids | ($ids|unique|length) == ($ids|length))' "$config" >/dev/null || nexus_fail 'Invalid config or Project shared by multiple owning repositories.'
     mapping=$(jq -ec --arg logical "$logical" '.repositories[$logical] // error("Repository mapping absent")' "$config")
@@ -53,6 +98,9 @@ nexus_github_project_operation() {
                   if ($values|length)==1 then $values[0] else error("Unmapped human field value") end end)})|from_entries),
               metadata:{external_item_id:.id}}],metadata:{project_id:.project.id}}' <<< "$snapshot"
         return
+    fi
+    if [[ "$op" == item-add ]]; then
+        nexus_github_project_membership "$logical" "$mapping" "$snapshot" "$request" "$apply" "$approved" "$approval"; return
     fi
     [[ -f "$request" && -r "$request" ]] || nexus_fail 'Field update requires request JSON.'
     jq -e '(.field == "status" or .field == "priority") and (.value|type == "string") and has("expected_value") and

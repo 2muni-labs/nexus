@@ -5,8 +5,10 @@ source "$(dirname -- "${BASH_SOURCE[0]}")/common.sh"
 if [[ ${1:-} == --help ]]; then
     cat <<'USAGE'
 Usage: scripts/projects.sh read LOGICAL-REPOSITORY
+       scripts/projects.sh item-add LOGICAL-REPOSITORY REQUEST.json
        scripts/projects.sh field-update LOGICAL-REPOSITORY REQUEST.json
 Default config: local/github.json (override NEXUS_GITHUB_CONFIG with literal JSON path).
+Item add request: {"issue_url":"https://github.com/OWNER/REPO/issues/NUMBER"}.
 Update request: issue_url, field (status|priority), expected_value, value.
 Default outputs a write plan. Apply: --apply --approved-plan OID --approval-reference REF.
 Each logical repository has its own linked Project; no create/merge/push/delete operation.

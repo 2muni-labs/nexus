@@ -23,7 +23,10 @@ gates:
 validation:
   pass: result_PASS_nonempty_evidence_ref_and_candidate_head_equals_PR_head_or_artifact_revision_and_independent_session_when_required
 pull_request:
-  optional: [exists, head_revision, review_state, checks, checks_complete, required_checks, merged, merge_evidence_ref, merge_approval_reference, merge_approval_head, review_head]
+  optional: [exists, head_revision, review_state, checks, checks_complete, required_checks, merged, merge_evidence_ref, merge_approval_reference, merge_approval_head, review_head, review_required, review_evidence_ref]
+  required_review: when_review_required_true_require_approved_current_head_and_authoritative_review_evidence
+  review_policy: Coordinator_sets_review_required_from_verified_repository_policy_not_backend_or_card_state
+  legacy_review_policy: absent_review_required_preserves_existing_snapshot_behavior_not_certification_that_review_is_unnecessary
   checks: normalized_name_state_observations_bound_to_head_revision
 retry:
   required: explicit_approved_decision_reference_positive_budget_and_readiness

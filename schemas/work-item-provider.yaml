@@ -8,7 +8,17 @@ work_item:
   record_state: provider_record_open_closed_or_merged_not_workflow_status
   workflow_status: external_lifecycle_metadata_or_Project_field_not_inferred_from_record_state
   metadata: adapter_owned_opaque_external_identifiers
-operations: [issue-read, issue-list, issue-create, issue-update, pr-read, pr-list, pr-create, review-checks-read, labels-via-issue-update, association-comment, association-read, project-read, project-field-update]
+operations: [issue-read, issue-list, issue-create, issue-update, pr-read, pr-list, pr-create, review-checks-read, labels-via-issue-update, association-comment, association-read, project-read, project-item-add, project-field-update]
+project_membership:
+  cli: scripts/projects.sh_item-add_LOGICAL-REPOSITORY_REQUEST.json
+  request: canonical_issue_url_only_in_configured_owning_repository
+  plan: exact_Issue_node_ID_and_Project_ID_with_canonical_Work_Item_reference
+  existing_membership: unchanged_without_write_after_exact_approval
+  ambiguity: one_write_then_complete_reobservation_never_automatic_replay
+  success: matching_mutation_identity_and_observed_unique_membership
+  recovery: observed_membership_does_not_certify_ambiguous_mutation_success
+  conflicts: duplicate_or_contradictory_identity_HOLD
+  field_changes: separate_exact_authorized_operations_never_implicit_status_or_priority
 authority:
   reads: no_local_state_dependency
   writes: default_prepared_plan_only_apply_requires_exact_plan_digest_and_human_reference

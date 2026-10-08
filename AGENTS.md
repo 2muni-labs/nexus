@@ -9,6 +9,20 @@ and relevant prompts. The user's proposal is intake, not an automatically valid 
 
 **Nexus owns the workflow. GitHub owns the state. Orca is an execution backend.**
 
+These are peer responsibility boundaries, not an ownership hierarchy. GitHub owns durable
+project records and performs CI; Nexus defines workflow, validation and acceptance policy;
+Orca owns execution environments, sessions and factual attempt observations. Humans approve
+final merge and exact checkout deletion separately. GitHub assignees are project-accountable
+people, distinct from Nexus agent assignments. See docs/operating-model.md.
+
+Orca board is an execution observability/control surface, never a competing project backlog.
+GitHub status may be displayed as read-only context; no blind bidirectional status mirroring.
+Cards represent environments that may carry sequential attempts. Card movement, Completed,
+idle or fencing cannot prove acceptance, process exit or deletion eligibility. Board actions
+request exact scoped operations through normal policy/authority checks, never bypass them.
+Execution history needed for reconciliation must survive even when its current state is transient.
+Host/client OS placement is deployment configuration, not a domain rule.
+
 Nexus owns planning, decomposition, priorities, routing, logical transitions, validation,
 completion criteria, recovery decisions and human-control policy. Agents perform assigned
 work; neither agents nor execution backends own project state or workflow semantics.

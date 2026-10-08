@@ -14,13 +14,15 @@ read/write operations are available through an explicit one-shot provider port; 
 synchronization is not implemented. Restart reconciliation is an explicit read-only
 Coordinator procedure using externally collected snapshots. See the
 [migration plan](docs/workflow-migration.md) for staged delivery and compatibility gates.
+The [flat operating model](docs/operating-model.md) separates peer responsibilities,
+execution-board controls, validation policy and durable recovery evidence.
 
 ## Boundaries
 
 | Layer | Responsibility |
 | --- | --- |
 | Nexus | Requirements, planning, Task DAGs, policy, routing, gates, normalized decisions |
-| GitHub (target) | Authoritative Issues, PRs, Projects, reviews, checks and project history |
+| GitHub | Authoritative Issues, PRs, Projects, CI, reviews, checks and project history |
 | Execution backend (currently Orca) | Worktrees, terminals, dispatch, attempt lifecycle, isolation, runtime supervision |
 | Basecamp | macOS host provisioning, packages, shell/PATH, developer tools, host prerequisites |
 | Foundry | Docker/Compose runtime, bootstrap, containers, project-local environment |
@@ -105,7 +107,8 @@ verified external facts. It writes no state and invokes no backend/provider. See
 
 Projects: copy `local/github.json.example` to ignored `local/github.json` and configure
 a separate linked Project per repository. `scripts/projects.sh --help` supports canonical
-status/priority reads and reviewed updates. See [Project setup](docs/github-projects.md).
+status/priority reads, exact-reviewed Issue registration (`item-add`) and field updates.
+Membership changes do not set workflow status or start execution. See [Project setup](docs/github-projects.md).
 
 Recovery: `scripts/reconcile.sh external-snapshot.json` proposes a decision from complete
 verified external state, without reading local runtime records. See [reconciliation](docs/reconciliation.md).

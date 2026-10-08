@@ -12,7 +12,33 @@ and its repository link. Credentials remain in `gh` credential storage, never co
 No key or token plaintext belongs in local mappings or reports.
 
 `scripts/projects.sh read nexus` reads a complete paginated field/item inventory and emits
-canonical workflow status and priority. `field-update nexus request.json` prepares an exact
+canonical workflow status and priority. `item-add nexus request.json` prepares membership
+of an existing Issue in the configured Project. Its only request property is `issue_url`:
+
+```json
+{"issue_url":"https://github.com/OWNER/REPO/issues/NUMBER"}
+```
+
+The URL must identify an Issue in the exact configured repository. The adapter reads the
+Issue to verify its canonical URL, number and provider node ID; a PR, redirected/mismatched
+Issue or incomplete identity is rejected. The plan binds the exact Project and Issue IDs.
+Apply uses the existing `--apply --approved-plan OID --approval-reference REF` boundary;
+the reference must name a real human authorization, not an invented CLI string. Membership
+presence is excluded from the digest so that a later observation can settle the same plan.
+Existing unique membership is unchanged with no write. Duplicate/conflicting identities
+or incomplete pagination HOLD. Retain one Coordinator writer; prechecks are not atomic CAS.
+
+One add mutation is followed by a complete fresh snapshot. A matching identified response
+plus exact observed membership returns `applied:true, observed:true`. Lost/empty/ambiguous
+responses with exact observed membership return `applied:false, recovered:true, observed:true`:
+the requested state exists, but that mutation's success is not certified. Contradictory
+identified responses or absent membership HOLD. No blind retry or deletion compensates an
+unknown response; preserve the plan and reobserve before any new explicit decision.
+Registration does not set Workflow or Priority, create an Issue, or start an agent. GitHub
+itself may have human-configured Project automation; observe its field values rather than
+overwriting them. Separate field plans are required after membership is verified.
+
+`field-update nexus request.json` prepares an exact
 single-field write plan. Requests specify Issue URL, status/priority, expected current value
 (or null for an unset field), and desired canonical value. Actual writes require matching
 plan digest and real human approval reference. Reobserve after mutation; a successful
@@ -36,11 +62,14 @@ only an authorized Project field change. Proposed transitions do not claim updat
 Human changes must be observed first. No automatic Project creation, Issue publication,
 merge, scheduling or retry is added by this tool.
 
-Current account authentication has Projects access, but inspection found no existing user
-Project or Nexus-linked Project. Local fixtures verify fields/options, owner isolation,
+Project setup and linked-board reads have been verified in the maintenance environment;
+account-specific mappings remain ignored local configuration. Local fixtures verify membership,
+fields/options, owner isolation,
 stale values, exact approvals, mutation response identity, reobservation and idempotent
-updates. Live field synchronization requires a separately approved board setup and an
-existing Issue item; none is fabricated for tests.
+updates. Live registration/field synchronization needs an exact-approved existing Issue;
+none is fabricated or published by the offline tests.
 
 Implementation follows the installed GitHub CLI and
 [GitHub Projects API guidance](https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects).
+Membership uses the documented
+[addProjectV2ItemById mutation](https://docs.github.com/en/graphql/reference/projects#addprojectv2itembyid).
