@@ -11,7 +11,8 @@ normalized Work Items; review/check reads normalize review and check observation
 not automatic acceptance. Native details remain opaque adapter metadata. Missing reviews/checks is not PASS.
 
 Write: `issue-create`, `issue-update`, `pr-create`, `association-comment` take a JSON file.
-All require `operation_id`; creates also title/body, PRs explicit distinct head/base;
+All require `operation_id`; creates also title/body, PRs explicit branch names head/base, head_repository (OWNER/REPO), and
+expected_head_revision (40 lowercase hexadecimal characters);
 updates/comments require number and expected_updated_at. Issue changes support title,
 body, labels, milestone and state. Preserve current human content when constructing a
 body update; default PR drafts require published head branches, but this tool never pushes.
@@ -26,7 +27,17 @@ to implement/commit Nexus does not authorize publishing Issues, PRs or comments.
 One Coordinator owns writes to a Work Item. Updates recheck expected_updated_at, but this
 is not atomic CAS: stop if concurrent writers exist. Creates/comments use a stable operation
 marker and lookup every page before writing. A matching prior result is recovered without
-another write; contradictory markers require reconciliation. On timeout/error preserve the
+another write; contradictory markers require reconciliation. PR plans include the exact
+source repository/branch/revision separately from the API payload. Fork payloads use
+owner:branch and head_repo; callers supply the unqualified branch in head. The adapter
+checks the exact remote source ref before registration and requires the same source,
+revision and base repository in returned/recovered PRs. Branch/revision changes require
+new approval. This intentionally rejects old PR requests lacking candidate identity.
+The ref lookup and PR POST are not atomic: strict exact-diff publication requires a
+controlled dedicated source branch with one writer through registration. A mismatched
+post-write head is HOLD/reconciliation, not success, and cannot undo an already published
+PR. The base branch may also move; this binding pins source head, not an immutable base
+comparison or merge authorization. On timeout/error preserve the
 plan and inspect external state; never automate a retry or presume an absent lookup proves
 absence. GitHub mutations are not globally transactional or guaranteed exactly-once.
 

@@ -25,11 +25,21 @@ if "--input" in args:
   payload.update(id=3,html_url="https://github.com/a/b/issues/1#issuecomment-3",issue_url="https://api.github.com/repos/a/b/issues/1")
  elif "/pulls" in endpoint:
   head=payload["head"]; base=payload["base"]
-  payload.update(number=2,html_url="https://github.com/a/b/pull/2",head={"label":head,"ref":head,"repo":{"full_name":"a/b"},"sha":"abc"},base={"ref":base})
+  source="a/b" if ":" not in head else head.split(":")[0]+"/"+payload["head_repo"]
+  branch=head.split(":")[-1]
+  payload.update(number=2,html_url="https://github.com/a/b/pull/2",head={"label":head,"ref":branch,"repo":{"full_name":source},"sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},base={"ref":base,"repo":{"full_name":"a/b"}})
  else:
   payload.update(number=1,html_url="https://github.com/a/b/issues/1")
   if "labels" in payload: payload["labels"]=[{"name":x} for x in payload["labels"]]
  print(json.dumps(payload)); sys.exit()
+endpoint=next((x for x in args if x.startswith("repos/")), "")
+if "/git/ref/heads/" in endpoint:
+ if os.environ.get("MOCK_REF") is not None:
+  print(os.environ["MOCK_REF"]); sys.exit()
+ from urllib.parse import unquote
+ source,branch=endpoint[6:].split("/git/ref/heads/",1); branch=unquote(branch)
+ revision="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+ print(json.dumps({"ref":"refs/heads/"+branch,"url":"https://api.github.com/repos/"+source+"/git/refs/heads/"+branch,"object":{"type":"commit","sha":revision,"url":"https://api.github.com/repos/"+source+"/git/commits/"+revision}})); sys.exit()
 if "--slurp" in args:
  print(json.dumps([json.loads(os.environ.get("MOCK_FOUND","[]"))])); sys.exit()
 print(json.dumps({"html_url":"https://github.com/a/b/issues/1","number":1,"node_id":"I_1","title":"Issue","body":"Body","state":"open","updated_at":"t1","labels":[{"name":"ready"}]}))
@@ -118,12 +128,73 @@ class ProviderTests(unittest.TestCase):
             self.apply(plan,good=False)
 
     def test_pr_comment_and_successful_update(self):
-        plan=self.prepare("pr-create",head="feature",base="main")
+        plan=self.prepare("pr-create",head="feature",base="main",head_repository="a/b",expected_head_revision="a"*40)
         self.assertTrue(self.apply(plan,"pr-create")["applied"])
         plan=self.prepare("association-comment",number=1,expected_updated_at="t1")
         self.assertTrue(self.apply(plan,"association-comment")["applied"])
         plan=self.prepare("issue-update",number=1,expected_updated_at="t1",changes={"labels":["review"]})
         self.assertTrue(self.apply(plan,"issue-update")["applied"])
+
+    def pr_plan(self, **fields):
+        request = dict(head="feature", base="main", head_repository="a/b", expected_head_revision="a"*40)
+        request.update(fields)
+        return self.prepare("pr-create", **request)
+
+    def write_calls(self):
+        calls = [json.loads(x) for x in self.calls.read_text().splitlines()] if self.calls.exists() else []
+        return [x for x in calls if "--input" in x]
+
+    def pr_record(self, plan, **changes):
+        record = dict(plan["plan"]["payload"], number=2, html_url="https://github.com/a/b/pull/2",
+                      head={"ref":plan["plan"]["candidate"]["branch"], "repo":{"full_name":plan["plan"]["candidate"]["repository"]}, "sha":"a"*40},
+                      base={"ref":"main", "repo":{"full_name":"a/b"}})
+        record.update(changes)
+        return record
+
+    def test_pr_candidate_bound_and_required(self):
+        first = self.pr_plan()
+        second = self.pr_plan(expected_head_revision="b"*40)
+        self.assertNotEqual(first["plan_oid"], second["plan_oid"])
+        self.assertEqual(first["plan"]["candidate"]["revision"], "a"*40)
+        self.apply(first, "pr-create", good=False)
+        self.assertFalse(self.calls.exists())
+        for fields in [{}, {"expected_head_revision":"abc"}, {"head_repository":"../b"}, {"head":"owner:feature"}, {"head":"main"}]:
+            request=dict(operation_id="op1", title="Title", body="Body", head="feature", base="main", head_repository="a/b", expected_head_revision="a"*40)
+            if not fields: request.pop("expected_head_revision")
+            request.update(fields)
+            self.request.write_text(json.dumps(request))
+            self.run_cli("pr-create","a/b",str(self.request),good=False)
+        self.assertFalse(self.calls.exists())
+
+    def test_pr_moved_or_wrong_source_precheck_never_writes(self):
+        plan = self.pr_plan()
+        for ref in [{"ref":"refs/heads/feature","url":"https://api.github.com/repos/a/b/git/refs/heads/feature","object":{"type":"commit","sha":"b"*40,"url":"https://api.github.com/repos/a/b/git/commits/"+"b"*40}},
+                    {"ref":"refs/heads/feature","object":{"type":"commit","sha":"a"*40}}]:
+            self.env["MOCK_REF"] = json.dumps(ref)
+            self.apply(plan,"pr-create",good=False)
+        self.assertEqual(self.write_calls(), [])
+
+    def test_pr_wrong_returned_and_recovered_head_rejected(self):
+        plan = self.pr_plan()
+        bad = self.pr_record(plan, head={"ref":"feature", "repo":{"full_name":"a/b"}, "sha":"b"*40})
+        self.env["MOCK_RESPONSE"] = json.dumps(bad)
+        self.apply(plan,"pr-create",good=False)
+        self.assertEqual(len(self.write_calls()),1)
+        self.env["MOCK_FOUND"] = json.dumps([bad])
+        self.apply(plan,"pr-create",good=False)
+        self.assertEqual(len(self.write_calls()),1)
+        self.env["MOCK_FOUND"] = json.dumps([self.pr_record(plan)])
+        self.assertTrue(self.apply(plan,"pr-create")["recovered"])
+        self.assertEqual(len(self.write_calls()),1)
+
+    def test_pr_exact_fork_and_slash_branch(self):
+        plan = self.pr_plan(head="topic/change", head_repository="fork/b")
+        self.assertEqual(plan["plan"]["payload"]["head"],"fork:topic/change")
+        self.assertTrue(self.apply(plan,"pr-create")["applied"])
+        bad = self.pr_record(plan, head={"ref":"topic/change", "repo":{"full_name":"other/b"}, "sha":"a"*40})
+        self.env["MOCK_FOUND"] = json.dumps([bad])
+        self.apply(plan,"pr-create",good=False)
+        self.assertEqual(len(self.write_calls()),1)
 
     def test_invalid_target_and_unsupported_operation(self):
         self.run_cli("issue-list","../b",good=False)

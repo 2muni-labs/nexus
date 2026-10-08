@@ -16,7 +16,7 @@ nexus_github_normalize() {
 }
 # A transport success is not evidence of a correctly applied mutation.
 nexus_github_verify_write() {
-    jq -e --arg op "$1" --arg repo "$2" --argjson payload "$3" --arg number "$4" '
+    jq -e --arg op "$1" --arg repo "$2" --argjson payload "$3" --arg number "$4" --argjson candidate "${5:-null}" '
       def positive: type == "number" and floor == . and .>0;
       if $op == "association-comment" then
         (.id|positive) and .body == $payload.body and
@@ -26,8 +26,8 @@ nexus_github_verify_write() {
         (.number|positive) and (if $number == "" then true else (.number|tostring) == $number end) and
         .html_url == ("https://github.com/"+$repo+ (if $op == "pr-create" then "/pull/" else "/issues/" end)+(.number|tostring)) and
         (if $op == "pr-create" then
-          (.head.label == $payload.head or (.head.ref == $payload.head and .head.repo.full_name == $repo)) and
-          .base.ref == $payload.base and (.head.sha|type == "string" and length>0)
+          .head.ref == $candidate.branch and .head.repo.full_name == $candidate.repository and
+          .head.sha == $candidate.revision and .base.ref == $payload.base and .base.repo.full_name == $repo
          else (has("pull_request")|not) end) and
         (. as $record | all($payload|keys[]; . as $key |
           if $key == "labels" then ($record.labels|map(.name)|sort) == ($payload.labels|sort)
@@ -38,7 +38,7 @@ nexus_github_verify_write() {
 }
 
 nexus_github_operation() {
-    local op=$1 repo=$2 argument=$3 apply=$4 approved=$5 approval=$6 endpoint method payload plan oid temp marker found current number=''
+    local op=$1 repo=$2 argument=$3 apply=$4 approved=$5 approval=$6 endpoint method payload plan oid temp marker found current number='' candidate='null' head_repo head_branch
     case "$op" in
         issue-read|pr-read|review-checks-read|association-read)
             [[ "$argument" =~ ^[1-9][0-9]*$ ]] || nexus_fail 'Positive item number required.'
@@ -86,9 +86,18 @@ nexus_github_operation() {
             endpoint="repos/$repo/issues"; method=POST
             payload=$(jq -c --arg marker "$marker" '{title,body:(.body+"\n\n"+$marker)}' "$argument")
             if [[ "$op" == pr-create ]]; then
-                jq -e '(.head|type == "string" and length>0) and (.base|type == "string" and length>0) and (.head != .base)' "$argument" >/dev/null || nexus_fail 'Distinct explicit PR head/base required.'
+                jq -e '(.head|type == "string" and length>0) and (.base|type == "string" and length>0) and (.head_repository|type == "string" and test("^[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$")) and (.expected_head_revision|type == "string" and test("^[0-9a-f]{40}$"))' "$argument" >/dev/null || nexus_fail 'Explicit PR head/base, head_repository and exact 40-character expected_head_revision required.'
+                head_repo=$(jq -r .head_repository "$argument"); head_branch=$(jq -r .head "$argument")
+                git check-ref-format "refs/heads/$head_branch" >/dev/null &&
+                    git check-ref-format "refs/heads/$(jq -r .base "$argument")" >/dev/null || nexus_fail 'PR head/base must be branch names, not owner-qualified refs.'
+                [[ "$head_repo" != "$repo" || "$head_branch" != "$(jq -r .base "$argument")" ]] || nexus_fail 'Distinct PR head/base required in the same repository.'
+                candidate=$(jq -c '{repository:.head_repository,branch:.head,revision:.expected_head_revision}' "$argument")
                 endpoint="repos/$repo/pulls"
-                payload=$(jq -c --arg marker "$marker" '{title,body:(.body+"\n\n"+$marker),head,base,draft:(.draft // true)}' "$argument")
+                payload=$(jq -c --arg marker "$marker" --arg repo "$repo" '
+                  {title,body:(.body+"\n\n"+$marker),
+                   head:(if .head_repository == $repo then .head else (.head_repository|split("/")[0])+":"+.head end),
+                   base,draft:(.draft // true)} +
+                  (if .head_repository == $repo then {} else {head_repo:(.head_repository|split("/")[1])} end)' "$argument")
             fi ;;
         issue-update|association-comment)
             jq -e '(.number|type == "number" and floor == . and .>0) and (.expected_updated_at|type == "string" and length>0)' "$argument" >/dev/null || nexus_fail 'Number and expected_updated_at required.'
@@ -104,9 +113,10 @@ nexus_github_operation() {
             fi ;;
     esac
     plan=$(jq -cn --arg op "$op" --arg repo "$repo" --arg endpoint "$endpoint" --arg method "$method" \
-        --argjson payload "$payload" --slurpfile request "$argument" \
+        --argjson candidate "$candidate" --argjson payload "$payload" --slurpfile request "$argument" \
         '{provider:"github",operation:$op,repository:$repo,endpoint:$endpoint,method:$method,
-          operation_id:$request[0].operation_id,expected_updated_at:$request[0].expected_updated_at,payload:$payload}')
+          operation_id:$request[0].operation_id,expected_updated_at:$request[0].expected_updated_at,payload:$payload}
+          + (if $op == "pr-create" then {candidate:$candidate} else {} end)')
     oid=$(printf '%s\n' "$plan" | git hash-object --stdin)
     if [[ "$apply" == false ]]; then
         [[ -z "$approved$approval" ]] || nexus_fail 'Approval flags require --apply.'
@@ -131,7 +141,7 @@ nexus_github_operation() {
           (if $op == "pr-create" then
             ($r.head.label == $payload.head or $r.head.ref == $payload.head) and $r.base.ref == $payload.base
            else true end)' <<< "$found" >/dev/null || nexus_fail 'Operation marker exists with different content/target; reconcile, do not create or reuse.'
-        nexus_github_verify_write "$op" "$repo" "$payload" "$number" <<< "$(jq -c '.[0]' <<< "$found")" >/dev/null || nexus_fail 'Recovered response has no authoritative matching record; reconcile.'
+        nexus_github_verify_write "$op" "$repo" "$payload" "$number" "$candidate" <<< "$(jq -c '.[0]' <<< "$found")" >/dev/null || nexus_fail 'Recovered response has no authoritative matching record; reconcile.'
         jq -cn --arg approval "$approval" --arg oid "$oid" --argjson records "$found" '{applied:false,recovered:true,plan_oid:$oid,approval_reference:$approval,record:$records[0]}'
         return
     fi
@@ -139,11 +149,20 @@ nexus_github_operation() {
         current=$(nexus_github_api "repos/$repo/issues/$(jq -r .number "$argument")" --method GET)
         jq -e --arg expected "$(jq -r .expected_updated_at "$argument")" '.updated_at == $expected and (has("pull_request") | not)' <<< "$current" >/dev/null || nexus_fail 'Item changed or is a PR; reobserve and approve a new plan.'
     fi
+    if [[ "$op" == pr-create ]]; then
+        current=$(nexus_github_api "repos/$head_repo/git/ref/heads/$(jq -rn --arg branch "$head_branch" '$branch|@uri')" --method GET)
+        jq -e --argjson candidate "$candidate" '
+          .ref == ("refs/heads/"+$candidate.branch) and
+          .url == ("https://api.github.com/repos/"+$candidate.repository+"/git/refs/heads/"+$candidate.branch) and
+          .object.type == "commit" and .object.sha == $candidate.revision and
+          .object.url == ("https://api.github.com/repos/"+$candidate.repository+"/git/commits/"+$candidate.revision)
+        ' <<< "$current" >/dev/null || nexus_fail 'PR source branch identity or revision changed; reobserve and approve a new plan.'
+    fi
     temp=$(mktemp "${TMPDIR:-/tmp}/nexus-github.XXXXXX")
     printf '%s\n' "$payload" > "$temp"
     if current=$(nexus_github_api "$endpoint" --method "$method" --input "$temp"); then
         rm -f -- "$temp"
-        nexus_github_verify_write "$op" "$repo" "$payload" "$number" <<< "$current" >/dev/null || nexus_fail 'Provider write response is ambiguous or mismatched. Preserve plan and reconcile; do not retry.'
+        nexus_github_verify_write "$op" "$repo" "$payload" "$number" "$candidate" <<< "$current" >/dev/null || nexus_fail 'Provider write response is ambiguous or mismatched. Preserve plan and reconcile; do not retry.'
         jq -cn --argjson record "$current" --arg oid "$oid" --arg approval "$approval" '{applied:true,plan_oid:$oid,approval_reference:$approval,record:$record}'
     else
         rm -f -- "$temp"
