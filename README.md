@@ -63,7 +63,8 @@ main integration requires human approval of the exact reviewed candidate.
 
 Run from a Nexus Git checkout with Bash and Git. Orca preflight uses the installed Orca CLI;
 structured decision/provider tools additionally require jq, and GitHub operations require
-authenticated gh. The development test suite requires Bash, Git, jq and Python 3;
+installed gh, Python 3 and OpenSSL with configured [GitHub App authentication](docs/github-app-authentication.md).
+The development test suite requires Bash, Git, jq, Python 3 and OpenSSL;
 its Python tests use the standard library only:
 
 ```bash
@@ -120,8 +121,10 @@ See [architecture](docs/architecture.md), [routing](docs/routing.md),
 and [plan examples](schemas/examples/). Validation is structural; the Coordinator checks
 DAG, routing and integration semantics. No external YAML library is required.
 
-GitHub Work Items: `scripts/work-items.sh --help` uses authenticated `gh` and `jq`,
-independent of Orca. Writes default to an exact reviewable plan; applying requires a
+GitHub Work Items: `scripts/work-items.sh --help` uses one-shot App-authenticated `gh` and `jq`,
+independent of Orca. Configure ignored `.runtime/github-app.json` from
+`local/github-app.json.example` and an external private key; personal credentials are never
+a fallback. Writes default to an exact reviewable plan; applying requires a
 matching digest and real human publication approval. See [provider binding](docs/adapters/github.md).
 
 Workflow decisions: `scripts/workflow.sh observation.json` proposes status/actions from
