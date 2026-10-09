@@ -127,6 +127,8 @@ Membership changes do not set workflow status or start execution. See [Project s
 
 Observation collection: `scripts/observe.sh --help` gathers a private factual bundle through existing read ports; inventory and trust limits remain explicit. See [collector usage](docs/observation-collector.md).
 
+Operations: [read-only diagnostics](docs/operations-diagnostics.md) covers preflight, static plan checks, provider/backend correlation, acceptance holds and retained checkouts.
+
 Recovery: `scripts/reconcile.sh external-snapshot.json` proposes a decision from complete
 verified external state, without reading local runtime records. See [reconciliation](docs/reconciliation.md).
 The [durable association contract](docs/work-associations.md) defines sanitized,
