@@ -8,7 +8,18 @@ Usage: scripts/work-items.sh OP OWNER/REPO [NUMBER|REQUEST.json]
 Reads: issue-read, issue-list, pr-read, pr-list, review-checks-read, association-read
 Writes: issue-create, issue-update, pr-create, association-comment
 Write requests are JSON; default prints exact plan + plan_oid, performs no writes.
+PR creation (pr-create) requires these request fields:
+  operation_id: stable identifier using letters, digits, underscores or hyphens.
+  title: nonempty string; body: string.
+  head_repository: OWNER/REPO of the source branch (forks supported).
+  head: plain head branch name, e.g. topic/change, not OWNER:branch.
+  base: target branch name in OWNER/REPO supplied to the command.
+  expected_head_revision: exact head SHA, 40 lowercase hexadecimal characters.
+  draft: omitted or null defaults to true; explicit false is preserved.
+         Only booleans or null are accepted; other values are rejected.
 Apply: append --apply --approved-plan OID --approval-reference TEXT.
+OID must match the exact prepared plan_oid; TEXT must reference explicit human
+publication approval for that plan. Changed requests require a newly approved plan.
 Only GitHub is supported. No merge/push/delete, automatic retries or local state store.
 USAGE
     exit 0

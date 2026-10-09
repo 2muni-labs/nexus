@@ -83,6 +83,27 @@ class ProviderTests(unittest.TestCase):
         self.assertFalse(self.calls.exists())
         self.assertIn("$(not-shell)", plan["plan"]["payload"]["body"])
 
+    def test_help_documents_pr_request_and_approval_without_provider(self):
+        for command in [str(self.mock), str(self.dir / "missing-gh")]:
+            with self.subTest(command=command):
+                env = dict(self.env, NEXUS_GH_COMMAND=command)
+                result = subprocess.run([str(CLI), "--help"], cwd=ROOT, env=env,
+                                        text=True, capture_output=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                for text in ["pr-create", "operation_id: stable identifier",
+                             "title: nonempty string; body: string",
+                             "head_repository: OWNER/REPO", "forks supported",
+                             "head: plain head branch name", "not OWNER:branch",
+                             "base: target branch name",
+                             "expected_head_revision: exact head SHA, 40 lowercase hexadecimal characters",
+                             "draft: omitted or null defaults to true; explicit false is preserved",
+                             "Only booleans or null are accepted; other values are rejected",
+                             "--apply --approved-plan OID --approval-reference TEXT",
+                             "exact prepared plan_oid", "explicit human\npublication approval",
+                             "Changed requests require a newly approved plan"]:
+                    self.assertIn(text, result.stdout)
+                self.assertFalse(self.calls.exists())
+
     def test_exact_apply_and_changed_payload(self):
         plan = self.prepare()
         result = self.apply(plan)
@@ -162,10 +183,10 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(first["plan"]["candidate"]["revision"], "a"*40)
         self.apply(first, "pr-create", good=False)
         self.assertFalse(self.calls.exists())
-        for fields in [{}, {"expected_head_revision":"abc"}, {"head_repository":"../b"}, {"head":"owner:feature"}, {"head":"main"}]:
+        for fields in [{"expected_head_revision":None}, {"head_repository":None}, {"expected_head_revision":"abc"}, {"head_repository":"../b"}, {"head":"owner:feature"}, {"head":"main"}]:
             request=dict(operation_id="op1", title="Title", body="Body", head="feature", base="main", head_repository="a/b", expected_head_revision="a"*40)
-            if not fields: request.pop("expected_head_revision")
             request.update(fields)
+            request = {key:value for key,value in request.items() if value is not None}
             self.request.write_text(json.dumps(request))
             self.run_cli("pr-create","a/b",str(self.request),good=False)
         self.assertFalse(self.calls.exists())
