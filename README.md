@@ -63,7 +63,8 @@ main integration requires human approval of the exact reviewed candidate.
 
 Run from a Nexus Git checkout with Bash and Git. Orca preflight uses the installed Orca CLI;
 structured decision/provider tools additionally require jq, and GitHub operations require
-authenticated gh. The development test suite uses Python 3 standard library only:
+authenticated gh. The development test suite requires Bash, Git, jq and Python 3;
+its Python tests use the standard library only:
 
 ```bash
 ./scripts/validate.sh
@@ -74,6 +75,16 @@ authenticated gh. The development test suite uses Python 3 standard library only
 ./scripts/run.sh --objective 'Improve Foundry bootstrap' --repository foundry
 ./scripts/weekly-review.sh
 ```
+
+For local validation, run `bash tests/run.sh`. Native GitHub Actions
+[CI](.github/workflows/ci.yml) runs the same offline suite on hosted `ubuntu-24.04`
+for pull requests (opened, synchronized, reopened or marked ready for review) and
+pushes to `main`. The stable job/check name is `Nexus tests`, with a 10-minute
+timeout. CI reuses the runner's Bash, Git, jq and Python 3; backend/provider calls
+use mocks, so no Orca installation or live account credentials are needed.
+The workflow grants only `contents: read` and disables checkout credential
+persistence. A local PASS does not establish a native CI result or a required
+branch-protection check; acceptance still requires fresh GitHub evidence.
 
 `run.sh` prints preflight results, installed orchestration guidance and a Coordinator
 context. It **does not execute the objective**, approve a plan, create a run or start
