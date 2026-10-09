@@ -135,3 +135,53 @@ PATH presence and requested args alone cannot certify the required floor. On ins
 1.4.222, OpenCode model overrides require existing-worktree placement and do not support
 reasoning-effort overrides. Never weaken isolated mutable placement to obtain an override;
 use verified inheritance or a compatible agent. Always recheck installed guidance.
+
+## Model and effort observation
+
+Apply the [Nexus selection procedure](../model-selection-verification.md); this binding
+supplies Orca mechanics, not suitability policy. On inspected Orca 1.4.222, load
+`skills get orchestration --reference references/coordinator-loop.md` and inspect
+`orchestration worker-start --help`. Pass `--model` only for a user-named choice;
+`--effort` requires that model's supported setting and `--model`. Neither override
+combines with `--terminal`. Omitted/null values preserve configured inheritance but
+do not certify the actual model or effort. Recheck host/version support before use.
+
+Start with a spec that requires read-only preflight and a blocking Coordinator ask
+before source mutation. Preserve `launch.requested` and `launch.effective` from the
+start receipt/worker-show when present. A ready/input-accepted/`turn_started` receipt
+proves start, not effective capability or permission to bypass this checkpoint.
+For a terminal-backed worker, inspect the exact returned terminal on its owning host:
+
+```text
+orca orchestration worker-show --dispatch <native-dispatch-id> --json
+orca terminal show --terminal <returned-terminal-handle> --json
+orca terminal read --terminal <returned-terminal-handle> --screen --json
+```
+
+Require `source: screen` for rendered model/effort evidence; accumulated stream,
+`screen-unavailable`, absent source or a stale preview cannot verify a current rendered
+setting. Bind observations to host/runtime, versions, Dispatch, terminal incarnation,
+logical assignment session and time. Preserve opaque native references privately.
+Fleet model alone leaves effort unknown. If the worker has no terminal, use its
+documented current-session evidence surface; do not apply terminal commands to an
+unsupported handle or treat transcript claims as effective proof. Missing evidence
+uses the procedure's unknown/HOLD rules.
+
+The worker uses the exact live preamble's `orchestration ask --from <worker-handle>`
+to report requested/observed model and effort, sources, identity/time, exact Git head
+and clean or included/excluded dirty source. Await a same-attempt Coordinator reply
+before editing. Use the installed ask/reply contract; after an ask timeout resume its
+returned message ID, never create a duplicate question. Coordinator routing confirmation
+does not supply human integration/merge/publication/deletion approval. Existing backend
+messaging carries the checkpoint; no automatic enforcement is added.
+
+For proven same-terminal reuse, reobserve settings before work; `--terminal` cannot
+apply model/effort overrides. A previous launch receipt cannot certify retained settings
+or validator independence. Resume, host/account/version/scope or setting changes and
+quota interruptions invalidate stale confirmation. Preserve the attempt/partial edits
+and HOLD; any authorized compatible setting change needs fresh same-session observation
+and checkpoint. Do not auto-downgrade, spend, reset, retry, stop or start another worker.
+When an operator is authorized to change Codex settings, use the documented `/model`
+picker without arguments, verify the rendered selection and active model/effort before
+any work prompt; numeric paste alone is not selection proof. See the procedure's
+official `/status` and `/debug-config` sources and evidence limits.

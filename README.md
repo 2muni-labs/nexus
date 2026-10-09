@@ -105,6 +105,7 @@ Plans, routing receipts and gate evidence stay under ignored `.runtime/runs/<run
 Generated reviews also stay ignored, preserving the user's review-storage preference.
 Only curated, explicitly requested durable policy/architecture decisions enter Git.
 See [architecture](docs/architecture.md), [routing](docs/routing.md),
+[model selection and effective-setting verification](docs/model-selection-verification.md),
 [feature execution](workflows/feature-execution.md), [weekly review](workflows/weekly-review.md)
 and [plan examples](schemas/examples/). `validate.sh` checks repository structure.
 The optional [development plan checker](docs/plan-validation.md) checks JSON-form
