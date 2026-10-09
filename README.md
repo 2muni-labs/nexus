@@ -106,8 +106,11 @@ Generated reviews also stay ignored, preserving the user's review-storage prefer
 Only curated, explicitly requested durable policy/architecture decisions enter Git.
 See [architecture](docs/architecture.md), [routing](docs/routing.md),
 [feature execution](workflows/feature-execution.md), [weekly review](workflows/weekly-review.md)
-and [plan examples](schemas/examples/). Validation is structural; the Coordinator checks
-DAG, routing and integration semantics. No external YAML library is required.
+and [plan examples](schemas/examples/). `validate.sh` checks repository structure.
+The optional [development plan checker](docs/plan-validation.md) checks JSON-form
+plan semantics with explicit supported-policy limits; static PASS grants no dispatch
+authority. The Coordinator retains evidence and authorization checks. No external YAML
+library is required.
 
 GitHub Work Items: `scripts/work-items.sh --help` uses authenticated `gh` and `jq`,
 independent of Orca. Writes default to an exact reviewable plan; applying requires a
