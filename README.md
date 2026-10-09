@@ -122,6 +122,8 @@ a separate linked Project per repository. `scripts/projects.sh --help` supports 
 status/priority reads, exact-reviewed Issue registration (`item-add`) and field updates.
 Membership changes do not set workflow status or start execution. See [Project setup](docs/github-projects.md).
 
+Observation collection: `scripts/observe.sh --help` gathers a private factual bundle through existing read ports; inventory and trust limits remain explicit. See [collector usage](docs/observation-collector.md).
+
 Recovery: `scripts/reconcile.sh external-snapshot.json` proposes a decision from complete
 verified external state, without reading local runtime records. See [reconciliation](docs/reconciliation.md).
 The [durable association contract](docs/work-associations.md) defines sanitized,
