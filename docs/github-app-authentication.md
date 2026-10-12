@@ -138,6 +138,12 @@ New PR requests must include this private identity context:
 The prepared plan digest binds this context, source branch and exact head. The
 public PR payload excludes checkout paths and provenance. Old requests missing
 identity context fail closed and must be prepared again under exact approval.
+Apply reads the complete caller request once and carries that snapshot through
+planning, preflight and final transport. Later changes to the caller file cannot
+replace its approved body, candidate or exemptions. The transport captures payload
+bytes before authentication, validates that snapshot and supplies those same bytes
+to `gh` through stdin. A changed caller file may therefore still submit the unchanged
+approved payload; an invalid approved checkout/head/context blocks the write.
 Apply verifies the checkout branch/head and every raw author/committer in the
 complete `base_revision..expected_head_revision` graph, including merged side
 branches. It does not use mailmap display identity or replacement objects; shallow

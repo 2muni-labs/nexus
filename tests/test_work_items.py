@@ -21,7 +21,8 @@ if "pr" in args:
  print(json.dumps({"url":"https://github.com/a/b/pull/2","headRefOid":"abc","reviewDecision":"APPROVED","statusCheckRollup":[{"name":"test","conclusion":"SUCCESS"},{"name":"build","conclusion":"FAILURE"}],"mergedAt":None,"isDraft":False})); sys.exit()
 if "--input" in args:
  if os.environ.get("MOCK_FAIL"): sys.exit(1)
- payload=json.loads(Path(args[args.index("--input")+1]).read_text())
+ input_path=args[args.index("--input")+1]
+ payload=json.loads(sys.stdin.read() if input_path == "-" else Path(input_path).read_text())
  if os.environ.get("MOCK_RESPONSE") is not None:
   print(os.environ["MOCK_RESPONSE"]); sys.exit()
  endpoint=next(x for x in args if x.startswith("repos/"))
@@ -255,6 +256,55 @@ class ProviderTests(unittest.TestCase):
             self.env["MOCK_REF"] = json.dumps(ref)
             self.apply(plan,"pr-create",good=False)
         self.assertEqual(self.write_calls(), [])
+
+    def test_pr_request_substitution_after_approval_cannot_exempt_new_personal_commit(self):
+        plan = self.pr_plan()
+        self.env.update(MOCK_REQUEST=str(self.request), MOCK_CHECKOUT=str(self.checkout),
+                        MOCK_RACE=str(self.dir / "race.json"))
+        # Return the approved remote head, then replace the caller request and
+        # move the checkout before the final transport opens its identity input.
+        race = '''
+ if branch == "feature" and not Path(os.environ["MOCK_RACE"]).exists():
+  import subprocess
+  def git(*parts):
+   return subprocess.check_output(["git","-C",os.environ["MOCK_CHECKOUT"],*parts],env={"PATH":os.environ["PATH"]},stderr=subprocess.DEVNULL,text=True).strip()
+  git("-c","user.name=Human","-c","user.email=human@example.test","commit","--allow-empty","-m","unapproved personal")
+  personal=git("rev-parse","HEAD")
+  git("-c","user.name=test-app[bot]","-c","user.email=987+test-app[bot]@users.noreply.github.com","commit","--allow-empty","-m","unapproved bot")
+  moved=git("rev-parse","HEAD")
+  path=Path(os.environ["MOCK_REQUEST"]); request=json.loads(path.read_text())
+  request["expected_head_revision"]=moved
+  request["commit_identity"]["preserved_commits"]=[dict(revision=personal,source_revision=personal,approval_reference="invented:never-approved")]
+  request["body"]="unapproved body"
+  path.write_text(json.dumps(request)); Path(os.environ["MOCK_RACE"]).write_text(json.dumps(dict(new=moved,personal=personal)))
+'''
+        self.mock.write_text(MOCK.replace(' revision=os.environ["MOCK_BASE"]', race + ' revision=os.environ["MOCK_BASE"]'))
+        result = self.apply(plan, "pr-create", good=False)
+        changed = json.loads(self.request.read_text())
+        self.assertNotEqual(changed["expected_head_revision"], plan["plan"]["candidate"]["revision"])
+        self.assertEqual(changed["commit_identity"]["preserved_commits"][0]["approval_reference"], "invented:never-approved")
+        self.assertIn("GitHub App authentication/transport failed", result.stderr)
+        self.assertEqual(self.write_calls(), [])
+
+    def test_pr_changed_caller_file_still_submits_only_approved_payload_and_context(self):
+        plan = self.pr_plan()
+        self.env["MOCK_REQUEST"] = str(self.request)
+        race = '''
+ if branch == "feature":
+  path=Path(os.environ["MOCK_REQUEST"]); request=json.loads(path.read_text())
+  request["body"]="unapproved body"; request["head"]="different-personal-branch"
+  request["commit_identity"]["checkout"]="/invalid/unapproved/checkout"
+  request["commit_identity"]["preserved_commits"]=[dict(revision="b"*40,source_revision="b"*40,approval_reference="invented:never-approved")]
+  path.write_text(json.dumps(request))
+'''
+        self.mock.write_text(MOCK.replace(' revision=os.environ["MOCK_BASE"]', race + ' revision=os.environ["MOCK_BASE"]'))
+        result = self.apply(plan, "pr-create")
+        self.assertTrue(result["applied"])
+        self.assertEqual(result["record"]["body"], plan["plan"]["payload"]["body"])
+        self.assertEqual(result["record"]["head"]["ref"], "feature")
+        self.assertEqual(result["record"]["head"]["sha"], self.head)
+        self.assertEqual(len(self.write_calls()), 1)
+        self.assertEqual(self.write_calls()[0][-1], "-")
 
     def test_pr_wrong_returned_and_recovered_head_rejected(self):
         plan = self.pr_plan()

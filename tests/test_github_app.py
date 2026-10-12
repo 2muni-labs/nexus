@@ -36,6 +36,9 @@ assert not any(k in os.environ for k in ["GITHUB_TOKEN","GH_ENTERPRISE_TOKEN",
  "GITHUB_ENTERPRISE_TOKEN","GH_DEBUG","DEBUG","GIT_TRACE","GH_REPO",
  "GH_PATH","HTTP_PROXY","HTTPS_PROXY","SSLKEYLOGFILE","OPENSSL_CONF"])
 print(token, file=sys.stderr) # Deliberately hostile stderr must never escape.
+if "--input" in sys.argv:
+ assert sys.argv[sys.argv.index("--input")+1] == "-"
+ json.loads(sys.stdin.buffer.read())
 print(json.dumps({"args":sys.argv[1:], "authenticated_fixture_token":bool(token)}))
 '''
 
@@ -178,6 +181,80 @@ class AppTests(unittest.TestCase):
         with patch.object(APP.subprocess, "run", side_effect=spy):
             with self.assertRaises(Exception): self.execute(args, request)
         self.assertEqual(gh_calls, [])
+        self.assertEqual(self.calls[-1][:2], ("DELETE", "/installation/token"))
+
+    def test_authenticated_request_substitution_cannot_exempt_moved_personal_head(self):
+        args, request = self.publication()
+        approved = copy.deepcopy(request)
+        request_file = self.dir / "request.json"
+        request_file.write_text(json.dumps(request))
+        def changed(record):
+            checkout = request["commit_identity"]["checkout"]
+            def git(*parts):
+                return subprocess.check_output(["git", "-C", checkout, *parts],
+                    env={"PATH": os.environ["PATH"], "HOME": str(self.dir)}, text=True,
+                    stderr=subprocess.DEVNULL).strip()
+            git("-c", "user.name=Human", "-c", "user.email=human@example.test",
+                "commit", "--allow-empty", "-m", "unapproved personal")
+            personal = git("rev-parse", "HEAD")
+            git("-c", "user.name=test-app[bot]", "-c", "user.email=987+test-app[bot]@users.noreply.github.com",
+                "commit", "--allow-empty", "-m", "unapproved bot")
+            self.head = git("rev-parse", "HEAD")
+            request["expected_head_revision"] = self.head
+            request["commit_identity"]["preserved_commits"] = [dict(revision=personal,
+                source_revision=personal, approval_reference="invented:never-approved")]
+            request_file.write_text(json.dumps(request))
+            return record
+        self.changes = {"/users/test-app%5Bbot%5D": changed}
+        original = subprocess.run
+        writes = []
+        def spy(argv, **kwargs):
+            if argv[0] == str(self.gh): writes.append(argv)
+            return original(argv, **kwargs)
+        with patch.object(APP.subprocess, "run", side_effect=spy):
+            with self.assertRaisesRegex(Exception, "Identity checkout branch or head differs"):
+                self.execute(args, request)
+        self.assertNotEqual(request["expected_head_revision"], approved["expected_head_revision"])
+        self.assertEqual(writes, [])
+        self.assertEqual(self.calls[-1][:2], ("DELETE", "/installation/token"))
+
+    def test_authenticated_payload_file_substitution_submits_exact_validated_bytes(self):
+        args, request = self.publication()
+        payload_path = Path(args[-1])
+        approved_bytes = payload_path.read_bytes()
+        def changed(record):
+            altered = json.loads(approved_bytes)
+            altered.update(head="different-personal-branch", body="unapproved body", base="other-base")
+            payload_path.write_text(json.dumps(altered))
+            return record
+        self.changes = {"/users/test-app%5Bbot%5D": changed}
+        original = subprocess.run
+        writes = []
+        def spy(argv, **kwargs):
+            if argv[0] == str(self.gh): writes.append((argv, kwargs["input"]))
+            return original(argv, **kwargs)
+        with patch.object(APP.subprocess, "run", side_effect=spy):
+            code, _ = self.execute(args, request)
+        self.assertEqual(code, 0)
+        self.assertNotEqual(payload_path.read_bytes(), approved_bytes)
+        self.assertEqual(len(writes), 1)
+        self.assertEqual(writes[0][0][-1], "-")
+        self.assertEqual(writes[0][1], approved_bytes)
+        self.assertEqual(args[-1], str(payload_path))
+        self.assertEqual(self.calls[-1][:2], ("DELETE", "/installation/token"))
+
+    def test_authenticated_context_alias_changes_cannot_replace_approved_checks(self):
+        args, request = self.publication()
+        approved = copy.deepcopy(request)
+        def changed(record):
+            request["head"] = "unapproved-branch"
+            request["commit_identity"].update(checkout="/invalid/checkout", preserved_commits=[dict(
+                revision="b"*40, source_revision="b"*40, approval_reference="invented:never-approved")])
+            return record
+        self.changes = {"/users/test-app%5Bbot%5D": changed}
+        self.assertEqual(self.execute(args, request)[0], 0)
+        self.assertNotEqual(request, approved)
+        self.assertIn("/repos/a/b/git/ref/heads/feature", [c[1] for c in self.calls])
         self.assertEqual(self.calls[-1][:2], ("DELETE", "/installation/token"))
 
     def test_fork_pr_source_uses_separate_exact_installation_token(self):

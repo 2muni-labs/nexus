@@ -39,6 +39,11 @@ After the exact plan has human authorization, apply with `--apply --approved-pla
 --approval-reference REF`. The reference names the real human decision; supplying a string
 cannot create authority. Repo/action/payload changes invalidate the digest. User authorization
 to implement/commit Nexus does not authorize publishing Issues, PRs or comments.
+The adapter snapshots the caller request once per invocation, including private
+PR identity context, and uses it through the final write. The App transport sends
+captured payload bytes through stdin after validation; it never asks `gh` to reopen
+the caller's mutable payload path. Changing those files during apply cannot change
+the approved submission or supply a new exemption.
 
 One Coordinator owns writes to a Work Item. Updates recheck expected_updated_at, but this
 is not atomic CAS: stop if concurrent writers exist. Creates/comments use a stable operation

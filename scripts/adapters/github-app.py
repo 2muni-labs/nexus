@@ -1,5 +1,6 @@
 """One App token for one existing adapter call; no credentials on stdout or disk."""
 import base64
+import copy
 import importlib.util
 from datetime import datetime, timezone
 import json
@@ -252,6 +253,15 @@ def bot_identity(app, user, repository):
 
 def run(repository, args, identity_request=None):
     needed = command_permissions(repository, args)
+    # Keep caller-owned objects/paths out of the post-authentication write.
+    identity_request = copy.deepcopy(identity_request)
+    args = list(args)
+    input_bytes = None
+    if "--input" in args:
+        index = args.index("--input") + 1
+        input_bytes = (sys.stdin.buffer.read() if args[index] == "-" else
+                       Path(args[index]).read_bytes())
+        args[index] = "-"
     pr_create = (args[:4] == ["api", "--hostname", "github.com", f"repos/{repository}/pulls"]
                  and "--method" in args and args[args.index("--method") + 1] == "POST")
     require((identity_request is not None) == pr_create,
@@ -259,7 +269,13 @@ def run(repository, args, identity_request=None):
     if pr_create:
         identity_module().request_identity(identity_request)
         require("--input" in args, "PR publication payload required.")
-        payload = identity_module().load_request(args[args.index("--input") + 1])
+        def unique(pairs):
+            result = {}
+            for key, value in pairs:
+                require(key not in result, "Duplicate PR payload key.")
+                result[key] = value
+            return result
+        payload = json.loads(input_bytes.decode("utf-8"), object_pairs_hook=unique)
         source = identity_request["head_repository"]
         expected_head = identity_request["head"] if source == repository else source.split("/")[0] + ":" + identity_request["head"]
         require(type(payload) is dict and payload.get("head") == expected_head and
@@ -277,7 +293,7 @@ def run(repository, args, identity_request=None):
             code, output = run(repository, ["identity"])
             require(code == 0, "Offline bot fixture unavailable.")
             identity_module().verify_request(identity_request, json.loads(output))
-        result = subprocess.run([fixture, *args], env=env, capture_output=True, timeout=120)
+        result = subprocess.run([fixture, *args], input=input_bytes, env=env, capture_output=True, timeout=120)
         if args == ["identity"] and result.returncode == 0:
             identity_module().validate_identity(json.loads(result.stdout), repository)
         return result.returncode, result.stdout if result.returncode == 0 else b""
@@ -358,7 +374,7 @@ def run(repository, args, identity_request=None):
             if args == ["identity"]:
                 result = subprocess.CompletedProcess([], 0, json.dumps(bot).encode(), b"")
             else:
-                result = subprocess.run([executable, *args], env=env, capture_output=True, timeout=120)
+                result = subprocess.run([executable, *args], input=input_bytes, env=env, capture_output=True, timeout=120)
         if result.returncode == 0:
             require(token.encode() not in result.stdout and app_jwt.encode() not in result.stdout and
                     b"PRIVATE KEY-----" not in result.stdout, "Credential-bearing provider output refused.")
