@@ -7,11 +7,12 @@ using existing backend messaging, not an automatic capability checker or approva
 engine. Read [routing](routing.md), [review principles](review-principles.md),
 [acceptance policy](acceptance-policy.md) and the selected adapter together.
 
-Model choice authorization, task suitability, installed support, account readiness
-and actual session settings are separate claims. A user choosing a model authorizes
-its use; it does not prove the capability floor. A catalog entry proves advertised
-support within its version/scope, not access or execution by this account. Successful
-tests or a validator PASS cannot retrospectively certify settings used earlier.
+Model choice authorization, task suitability, installed launcher support, catalog
+coverage, account access and actual session settings are separate claims. A user
+choosing a model authorizes its use; it does not prove the capability floor. A catalog
+entry proves advertised support within its version/scope, not access or execution by
+this account. Successful tests or a validator PASS cannot retrospectively certify
+settings used earlier.
 
 ## Select from task requirements
 
@@ -22,29 +23,64 @@ tests or a validator PASS cannot retrospectively certify settings used earlier.
    Profiles combine by maximum rank (`fast < standard < deep < critical`);
    independent-validation requirements combine by logical OR across routing,
    review and acceptance. Documentation or a preferred agent cannot lower a floor.
+   If `routing.logical_purpose` is explicit, verify its class/scope/role alias
+   using [routing](routing.md#optional-logical-purpose), then select its scoped
+   Codex preference within the class defaults. An alternate client requires explicit
+   task authorization and verified capability matching; automatic fallback is disabled.
+   Record preferred versus selected agent separately from verified suitability, with an explicit `fallback:`
+   reason when they differ. Omission retains the existing class preference.
 3. State concrete needs: tools/permissions, usable context for the assigned inputs,
    required output formats/artifacts, and reasoning/judgment needed for contracts,
    debugging, integration or review. Record the abstract effort intent separately
    from any provider effort value.
-4. Assess preferred agent/profile and then compatible configured fallback against
-   those needs. Justify suitability with versioned provider/installed evidence and
-   a concise operational rationale connecting each material need to capability.
-   Task-relevant prior observations may support judgment, but name, price, a passed
-   test or the highest selectable effort alone cannot establish suitability.
-5. Resolve the user-named, authorized local model mapping, or record ownership of
-   the configured default when no model is named. Local capability data is inert
+4. Compare default Codex/profile and any explicitly task-authorized compatible
+   alternate client against those needs, recording the accepted candidate, any rejected
+   candidate and the concrete selection reason. Justify suitability with versioned
+   provider/installed evidence and a concise operational rationale connecting each
+   material need to capability. Task-relevant prior observations and a prior one-task
+   user choice may support judgment, but name, price, a passed test, the highest
+   selectable effort or a previous task's setting alone cannot establish suitability
+   or a standing default.
+5. Resolve the user-named, authorized local model mapping, or record ownership and
+   source of the configured default when no model is named. Leave the task-local
+   mapping null unless the user named or authorized a model; never invent a provider
+   ID or claim availability the account has not shown. Local capability data is inert
    data, never shell code or authority to choose an unauthorized override. Preserve
-   unknown model/effort as null. Honor the installed adapter's user-choice rule;
-   do not invent a provider ID to satisfy an abstract profile.
+   unknown model/effort as null. Honor the installed adapter's user-choice rule.
 6. On the exact execution host inspect installed launcher/backend versions,
    supported model/effort controls and account readiness. Record evidence scope,
    time and limitations. Authentication presence alone does not establish model
-   access, quota or the effective reasoning setting. Unavailable preferred agents
-   may use a verified compatible authorized fallback, with a recorded reason and
-   unchanged floor/validation; otherwise HOLD and ask the Coordinator.
+   access, quota or the effective reasoning setting. Unavailable or quota-limited Codex
+   means HOLD, never automatic client switching. Alternate clients require explicit
+   task authorization, verified capability matching and unchanged floor/validation.
 7. Preserve the requested launch receipt, then bind actual observations to the
    resulting logical session and native attempt. Apply the before-work decision
    below, recheck after changes, and include capability evidence in completion.
+
+## Candidate comparison and authorization scope
+
+Each routing decision assesses default Codex and any explicitly task-authorized
+compatible alternative for the actual task, recording accepted/rejected candidates
+and concrete selection reasons. Automatic client fallback is disabled; default
+unavailability or quota means HOLD. An alternate selection never lowers floors
+or validation requirements. Reusing a previous task's
+choice without that comparison is not a routing decision. A prior one-task user
+selection authorizes only that task; it is not a catalog default, a global model
+mapping or a standing precedent, and later tasks re-derive their own comparison unless
+the user explicitly extends the scope. Compare candidates on versioned suitability,
+support and compatibility with the task's needs, not reputation or recency.
+
+Keep the task-local mapping null unless the user named or authorized a model. Never
+invent a provider ID or assert availability the account has not shown. Record the
+mapping's source, freshness, scope and default ownership, plus every rejected candidate
+and fallback reason, in the ignored sidecar below. Profile model/effort values in
+`local/capabilities.yaml` express inert authorized mapping intent; actual observed
+model/effort belongs in separate exact-session evidence, even when it differs from
+intent or a default has been positively observed. Observation cannot create mapping
+authorization. The template's `verified: true` requires fresh consistent evidence
+supporting the scoped mapping match and profile suitability, not merely that any
+observation was made. The flag alone neither authorizes launch nor certifies a floor;
+apply the live before-work decision with all required evidence and policy gates.
 
 Profile reasoning labels are policy intent, not provider-independent effort ranks.
 `maximum` is not a CLI value; critical means the strongest **verified suitable**
@@ -77,7 +113,10 @@ Validation requirements never decrease under inheritance or fallback.
 
 Preparation resolves policy, ownership, baseline, placement, authorization and
 available support evidence. Actual settings can require a live session to observe;
-launch that session with a **read-only preflight first** specification. Distinguish
+launch that session in a newly created isolated non-main worktree at an exact baseline
+with a **read-only preflight first** specification. This includes DIRECT, planning,
+review, validation and integration tasks; main is intake/read-only coordination only,
+with ignored operational evidence permitted, never worker execution/tests/repair. Distinguish
 permission to start preflight from permission to perform implementation. Preserve
 setup policy and inspect any setup effects against the assigned mutation boundaries.
 Normal worker-start can deliver a prompt that immediately begins work: merely
@@ -160,12 +199,33 @@ observe the setting in the **same exact session**, recheck suitability/support/a
 readiness and record a new checkpoint before continuing. Do not send a work prompt
 until the rendered picker selection and effective setting are verified. If replacement
 is needed, apply finite recovery rules, preserve identity/evidence and prove prior
-settlement and editor exit; unknown liveness never permits a duplicate editor.
+settlement and editor exit, preserve immutable results and create a new isolated non-main
+worktree; unknown liveness never permits a duplicate editor. Only continuation of the
+same active attempt may use its own worktree.
 
 At completion record which settings were verified for which work intervals, recheck
 current settings, identify unresolved gaps, and attach the exact candidate and required
 validation. A later correction or validator PASS cannot certify earlier unknown use.
 Capability verification supplies neither acceptance nor lifecycle settlement/exit.
+
+## Procedural validation scenarios
+
+These are operator checks using existing messaging and native observations,
+not additional runtime enforcement or static capability certification. Record
+scenario/decision evidence privately against the exact task, session and attempt.
+
+| Scenario | Required observation and decision |
+| --- | --- |
+| Stale or conflicting session settings | Reobserve exact current session/model/effort with time and identity; HOLD mutation until a renewed same-attempt checkpoint resolves the conflict. A prior matching launch receipt alone is insufficient. |
+| Unsupported model or effort | Verify installed support and scoped account execution; HOLD until an authorized suitable equivalent/fallback meets every requirement. Do not translate abstract maximum into a literal flag or silently lower it to high. |
+| Different clients, unobserved model families | Record diversity unknown; independent validation still needs a fresh session. Client names cannot prove distinct model families. |
+| Replacement writer, unknown prior liveness | HOLD conflicting mutation; require concrete cause, finite budget, explicit new assignment and backend proof of prior settlement/fencing and editor exit. No automatic replacement chain. |
+| Read-only preflight awaiting reply | Preserve source and bounded read-only scope. Only a matching Coordinator before-work reply releases implementation; launch success or static PASS cannot release it. |
+| Technical PASS without merge approval | Preserve the immutable proposal; HOLD final integration/merge until exact human authorization and applicable native acceptance evidence. Worker success and board status are insufficient. |
+
+Unknown usage tokens, cost and duration remain null/unknown unless observed; no
+telemetry or pricing lookup is introduced by this procedure. Changed settings,
+session, scope or baseline invalidate affected evidence and require rechecking.
 
 ## Private decision record using existing contracts
 
@@ -198,7 +258,7 @@ format, a model mapping or a dispatch mechanism:
 | --- | --- |
 | Identity and action | Work/task/assignment IDs, logical `session_ref`, exact base/candidate, opaque native session/attempt/terminal/incarnation refs; action `beforeWork`, `recheck` or `settlement`. |
 | Requirements | Classification and policy revision/sources, maximum profile and abstract effort intent, tool/context/output/reasoning needs, required validation and fresh validator identity when known. |
-| Authorization and mapping | Exact user choice reference or default owner/source, selected agent/model/effort, compatible fallback reason, versioned suitability evidence and operational rationale. |
+| Authorization and mapping | Exact user choice reference or configured-default owner/source, mapping freshness and scope, selected agent/model/effort, compatible fallback and each rejected-candidate reason, versioned suitability evidence and operational rationale. |
 | Support and observation | Host, backend/agent versions, account-readiness evidence and limits, requested/effective launch receipt refs, actual observed model/effort, source, timestamps and evidence validity/change triggers. |
 | Decision | `verified`, `inherit-with-uncertainty` or `blocked`; concrete reason/unknowns, permitted next action, Coordinator checkpoint reference matching this attempt and observed settings. |
 

@@ -36,7 +36,9 @@ Requirements → Nexus intake / plan / route → Orca repository workers
 ```
 
 Each mutable task has one owner, one repository, one isolated worktree and one diff.
-Read-only work can reuse a safe context. Each implementation result receives one final
+Every new task, including DIRECT and read-only review/validation, starts in a newly
+created isolated non-main worktree at an exact baseline and fresh session. Each
+implementation result receives one final
 review decision. Reviewers report; a separate task implements accepted findings.
 
 ## Shared review standard
@@ -58,8 +60,11 @@ validation or review. This adds no automatic enforcement or collector.
 
 Use the Codex Coordinator in Nexus's main checkout as the default intake. Follow the
 [operator workflow](docs/operator-workflow.md) for planning, active supervision,
-checkpoints and handoff. Mutable Nexus work defaults to an isolated task branch/worktree;
-main integration requires human approval of the exact reviewed candidate.
+checkpoints and handoff. Codex is default for every agent role; optional clients require
+explicit task authorization and verified capability matching. Default unavailability or
+quota means HOLD. Main permits intake, read-only coordination and ignored evidence only,
+never worker execution/tests/repair; final main integration is separately controlled and
+requires human approval of the exact reviewed candidate.
 
 Run from a Nexus Git checkout with Bash and Git. Orca preflight uses the installed Orca CLI;
 structured decision/provider tools additionally require jq, and GitHub operations require

@@ -47,9 +47,16 @@ plan:
     architecture_sensitive: boolean
     routing:
       required: [task_class, agent, fallback_agent, model_profile, effort, reasons, validation, resolution]
+      logical_purpose: optional_canonical_key_from_config_routing_logical_purposes
+      # Class/role alias preserves type, scope, capability and fresh-review rules.
+      # Codex purpose/class defaults never supply alternate-client authorization.
       task_class: key_from_config_routing_task_classes
       agent: key_from_agent_catalog
-      fallback_agent: compatible_catalog_key_or_null
+      fallback_agent: null_automatic_client_fallback_disabled
+      agent_authorization:
+        optional: explicit_alternate_client_selection_only
+        fields: [agent, evidence]
+        evidence: explicit_task_scoped_authorization_reference_not_availability_or_quota
       model_profile: [fast, standard, deep, critical]
       effort: abstract_intent_not_a_literal_cli_flag
       reasons: concise_operational_justification_not_private_chain_of_thought
@@ -90,8 +97,13 @@ relational_checks:
   - dependencies_precede_consumers_and_graph_is_acyclic
   - same_wave_tasks_are_independent_and_have_compatible_mutation_scopes
   - every_independently_mutable_task_has_one_owner_and_its_own_worktree
+  - every_new_task_including_DIRECT_read_only_and_integration_starts_in_a_new_isolated_non_main_worktree_at_exact_baseline
+  - main_allows_intake_read_only_coordination_and_ignored_evidence_never_worker_execution_tests_or_repair
+  - same_active_attempt_may_continue_its_own_worktree_replacement_requires_new_worktree_after_settlement_exit_and_preserved_results
   - direct_mode_meets_all_planning_policy_conditions
   - routing_profiles_and_validation_requirements_merge_monotonically
+  - optional_logical_purpose_matches_class_scope_and_supplied_assignment_role_even_without_execution_request
+  - purpose_preference_is_class_compatible_and_nonpreferred_selection_has_explicit_authorization_and_fallback_reason
   - high_risk_critical_architecture_sensitive_and_mutable_multi_upstream_integration_require_independent_validation
   - parallel_mutations_have_a_compatibility_gate_before_any_shared_consumer
   - gate_task_success_does_not_release_consumers_without_gate_PASS
@@ -101,4 +113,5 @@ relational_checks:
   - cross_repository_inputs_never_become_a_cross_repository_mutation_task
   - final_human_decision_maps_each_implementation_result_once
   - agent_or_backend_replacement_preserves_policy_floor_and_validation
+  - default_agent_is_codex_unavailability_or_quota_HOLD_alternate_requires_explicit_task_authorization_and_capability_match
   - every_dispatched_assignment_has_exact_logical_identity_and_observed_effective_receipt

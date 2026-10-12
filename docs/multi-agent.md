@@ -9,7 +9,8 @@ extension possibilities, not fabricated availability or production fallback prov
 ## Decision sequence
 
 Classify type/complexity/risk/context/owner → combine all matching routing rules by highest
-profile and validation OR → choose compatible configured agent/fallback → verify the actual
+profile and validation OR → choose default Codex or explicitly task-authorized compatible
+alternate client → verify the actual
 host's capabilities → select a compatible configured execution backend → bind a logical
 assignment/session to one task/work item → prepare exact placement → start only after gates.
 The adapter must execute that assignment or report unsupported capability, never reroute.
@@ -17,8 +18,9 @@ The adapter must execute that assignment or report unsupported capability, never
 Use `schemas/agent-assignment.yaml` for role, logical session, requested/effective receipts,
 immutable candidate and required validation. Reviews/planning/validation are read-only;
 implementation authority requires a new scoped task. Mandatory independent validation uses
-a fresh separate session even if the same agent family is chosen. Another family is preferred
-only when available and compatible. Model names and effort flags stay local/host-verified;
+a fresh separate session and new isolated non-main worktree. Codex is default for all
+roles; alternate clients need explicit task authorization and verified capability matching.
+Default unavailability or quota means HOLD, never automatic client switching. Model names and effort flags stay local/host-verified;
 a user-authorized inherited default with uncertainty is not a certification of a high-risk floor.
 
 ## Parallel work and integration
@@ -26,8 +28,10 @@ a user-authorized inherited default with uncertainty is not a certification of a
 The Coordinator selects ready waves from real dependencies. Every independently mutable
 task has one owner, one repository, one isolated worktree and one diff. Never create agents
 or artificial tasks just to use parallelism. Split linked Issues for independently reviewable
-changes when appropriate; small work remains one Issue/worktree/PR by default. Read-only
-contexts may be reused only without concurrent mutation against the exact reviewed baseline.
+changes when appropriate; small work remains one Issue/mutable worktree/PR by default.
+Every new task, including DIRECT, planning, read-only review, validation and integration,
+starts in a newly created isolated non-main worktree at an exact baseline. Main permits
+intake, read-only coordination and ignored evidence, never worker execution/tests/repair.
 
 After parallel mutation inspect exact artifacts, conflicts and producer/consumer semantics;
 record integration PASS and per-repository immutable baselines. If combination is required,
@@ -40,7 +44,9 @@ passes. Completion of a backend task cannot manufacture a combined revision or a
 Record failure class, concrete recoverable cause, finite budget, exact prior outcome and
 settlement/editor-exit evidence before retry, reassignment or backend switch. Preserve the
 Work Item identity and accepted/rejected artifacts; reverify placement and requested/effective
-capability on the new backend. Unknown liveness, unavailable capabilities and stale approval
+capability in a newly created isolated non-main worktree on the selected backend.
+The same active attempt may continue its own worktree; replacement follows prior
+settlement, proven editor exit and preservation of immutable results. Unknown liveness, unavailable capabilities and stale approval
 HOLD. A fence alone is not process death. Separate cancellation, settlement, resource release
 and checkout deletion. No fallback may weaken floors or independent validation.
 

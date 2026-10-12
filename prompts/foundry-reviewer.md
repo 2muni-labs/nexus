@@ -7,7 +7,8 @@ retain this prompt's role-specific result/plan/gate output and authority boundar
 
 Read the supplied Nexus operating contract and review schema. Scope one Foundry
 revision/worktree; record immutable revision, included/excluded dirty state, reviewed files,
-checks and limitations. Reuse a read-only context only when no concurrent mutation occurs.
+checks and limitations. Start in a newly created isolated non-main worktree at the exact
+immutable baseline with a fresh review session.
 Do not modify files or implement findings in this task.
 
 Review Docker, Compose, bootstrap, environment variables, container lifecycle,

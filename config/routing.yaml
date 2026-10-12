@@ -28,52 +28,87 @@ routing:
   coordinator:
     agent: codex
     repository: nexus
+  # Optional canonical aliases; Codex is preferred for all purposes and classes.
+  # No alias defines a capability floor or substitutes for effective evidence.
+  logical_purposes:
+    FAST:
+      task_classes: [research]
+      assignment_roles: [planner, reviewer]
+      preferred_agent: codex
+    CODE:
+      task_classes: [implementation-standard, implementation-complex]
+      assignment_roles: [implementer]
+      preferred_agent: codex
+    CODE_FAST:
+      task_classes: [implementation-mechanical]
+      assignment_roles: [implementer]
+      preferred_agent: codex
+    GENERAL:
+      task_classes: [research]
+      assignment_roles: [planner, reviewer]
+      preferred_agent: codex
+    REVIEW:
+      task_classes: [independent-review, debugging]
+      assignment_roles: [reviewer]
+      preferred_agent: codex
+    DEEP_REVIEW:
+      task_classes: [independent-review]
+      assignment_roles: [reviewer]
+      preferred_agent: codex
+    ARCHITECT:
+      task_classes: [architecture]
+      assignment_roles: [planner, reviewer]
+      preferred_agent: codex
+    CHALLENGER:
+      task_classes: [independent-review]
+      assignment_roles: [reviewer]
+      preferred_agent: codex
   task_classes:
     architecture:
       preferred_agent: codex
-      fallback_agent: antigravity
+      fallback_agent: null
       model_profile: deep
       independent_validation: true
     implementation-complex:
       preferred_agent: codex
-      fallback_agent: antigravity
+      fallback_agent: null
       model_profile: deep
     implementation-standard:
       preferred_agent: codex
-      fallback_agent: opencode
+      fallback_agent: null
       model_profile: standard
     implementation-mechanical:
-      preferred_agent: opencode
-      fallback_agent: codex
+      preferred_agent: codex
+      fallback_agent: null
       model_profile: fast
     debugging:
       preferred_agent: codex
-      fallback_agent: antigravity
+      fallback_agent: null
       model_profile: deep
     testing:
       preferred_agent: codex
-      fallback_agent: opencode
+      fallback_agent: null
       model_profile: standard
     documentation:
-      preferred_agent: opencode
-      fallback_agent: codex
+      preferred_agent: codex
+      fallback_agent: null
       model_profile: fast
     research:
       preferred_agent: codex
-      fallback_agent: antigravity
+      fallback_agent: null
       model_profile: standard
     integration:
       preferred_agent: codex
-      fallback_agent: antigravity
+      fallback_agent: null
       model_profile: deep
     independent-review:
-      preferred_agent: antigravity
-      fallback_agent: codex
+      preferred_agent: codex
+      fallback_agent: null
       model_profile: deep
       independent_session: true
     validation:
-      preferred_agent: antigravity
-      fallback_agent: codex
+      preferred_agent: codex
+      fallback_agent: null
       model_profile: deep
 
 routing_rules:
@@ -110,7 +145,8 @@ policies:
   profile_order: [fast, standard, deep, critical]
   integration_upstream_count: distinct_mutable_inputs_including_through_prerequisite_gates
   override_merge: highest_matching_profile_and_validation_logical_or
-  optional_agents: available_compatible_fallback
+  optional_agents: explicit_task_authorization_and_verified_capability_match_only
+  default_agent_unavailable_or_quota_limited: HOLD_no_automatic_client_switch
   fallback_must_preserve_capability_floor: true
   local_capabilities: local/capabilities.yaml
   no_local_model_mapping: inherit_configured_default_and_record_uncertainty

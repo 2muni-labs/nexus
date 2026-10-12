@@ -2,13 +2,31 @@ version: 1
 # Copy to ignored local/capabilities.yaml only if local mappings are needed.
 # Data for the Coordinator to read; scripts never source or execute this YAML.
 # No credentials. Null means inherit, not a certified capability profile.
+# Codex is default for every role. Optional clients require explicit task authorization
+# and verified capability matching; availability/quota never authorizes automatic switching.
 # Set an opaque model ID only when explicitly chosen/authorized by the user;
 # verify availability and supported effort values on the actual execution host.
+#
+# Profile model/effort values express inert, user-authorized mapping intent,
+# not actual observed settings. Keep actual model/effort, session/attempt identity,
+# times and limitations in a separate ignored decision sidecar; do not copy an
+# observed default into a mapping unless the user authorized it for that scope.
+# `verified: true` requires fresh consistent evidence supporting the exact scoped
+# mapping's model/effort match and profile suitability; merely making any observation
+# is insufficient. The flag alone neither authorizes launch nor certifies the floor,
+# account access or quota; recheck exact-session evidence and all policy gates.
+# Keep `model` and `effort` null unless the user named or authorized that mapping.
+# Never invent a provider ID or claim availability the account has not shown.
+# Record mapping source, freshness, scope and default ownership so a prior
+# one-task choice is not mistaken for a global default.
 agents:
   codex:
-    availability: unverified
-    default_profile: null
-    supported_efforts: []
+    availability: unverified        # unverified | available | unavailable (support only, not account/quota)
+    default_profile: null           # configured default; record its owner/source below
+    supported_efforts: []           # observed supported effort values on this host; [] means unknown
+    # Illustrative provenance/reference labels, not actual settings or a selector:
+    evidence: {source: null, observed_at: null, scope: null, limitations: null}
+    authorization: {source: null, scope: null, owner: null}
     profiles:
       fast: {model: null, effort: null, verified: false}
       standard: {model: null, effort: null, verified: false}
@@ -18,12 +36,21 @@ agents:
     availability: unverified
     default_profile: null
     supported_efforts: []
+    evidence: {source: null, observed_at: null, scope: null, limitations: null}
+    authorization: {source: null, scope: null, owner: null}
     profiles:
       deep: {model: null, effort: null, verified: false}
   opencode:
     availability: unverified
     default_profile: null
     supported_efforts: []
+    evidence: {source: null, observed_at: null, scope: null, limitations: null}
+    authorization: {source: null, scope: null, owner: null}
     profiles:
       fast: {model: null, effort: null, verified: false}
       standard: {model: null, effort: null, verified: false}
+      deep: {model: null, effort: null, verified: false}
+# `evidence.source` names the current-session or versioned catalog diagnostic;
+# `authorization.source` names the exact user selection or configured-default owner.
+# These labels reference separate observations and prior authorization, not new grants.
+# Absent, stale or out-of-scope evidence stays null and never supplies launch authority.

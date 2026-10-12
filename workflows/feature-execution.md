@@ -24,7 +24,8 @@ only when every eligibility condition holds; otherwise use ORCHESTRATED, includi
 single-repository work that benefits from multiple worktrees.
 
 Create a plan and routing record in `.runtime/runs/<run-id>/` using a Nexus-owned run namespace; record backend run/attempt IDs separately as opaque adapter receipts.
-Draft planning can stay in an explicitly supplied ignored local context. Classify each
+Task planning executes in a newly created isolated non-main worktree at an exact baseline;
+main may record ignored coordination evidence but never execute workers/tests/repair. Classify each
 task, declare read-only/write scope and forbidden paths, assign one owner, immutable base,
 dependencies, acceptance and validation. Check unique IDs, acyclic DAG, complete waves
 and conflicts; serialize overlapping mutations unless decomposition proves independence.
@@ -51,10 +52,16 @@ checks; illustrative examples and local approval receipts are not durable author
 ## Route and dispatch
 
 Apply all routing overrides monotonically. Resolve compatible agent/model/effort on the
-execution host and record fallback or missing capability. Hold high-risk/critical tasks
+execution host using default Codex for all roles. Optional clients require explicit task
+authorization and verified capability matching; default unavailability/quota means HOLD
+without automatic client switching. Hold high-risk/critical tasks
 with unknown floors. Prepare execution via schemas/execution-backend.yaml and the selected adapter binding.
 Translate logical tasks/dependencies behind that boundary; start ready independent tasks
-in parallel only after capabilities, placement and authorization are verified. Each independently mutable task gets its own worktree in its owning repository.
+in parallel only after capabilities, placement and authorization are verified. Every new
+task, including DIRECT, planning, read-only review, validation and integration, starts in
+a newly created isolated non-main worktree at an exact baseline and fresh session. Only
+the same active attempt may continue its own worktree; replacement requires prior
+settlement, proven editor exit and preserved immutable results.
 Workers receive explicit objective, scope, base, acceptance, result format and boundaries.
 
 ## Workflow decisions
@@ -115,6 +122,12 @@ owner disposition, without waiving local validation/review or mandatory independ
 Check current-head review/check/merge facts and backend settlement under the acceptance
 policy before accepting any existing evaluator proposal; the scripts do not enforce this
 new declarative input. Human main/merge/publication authority remains exact and separate.
+
+Before requesting human review, apply the
+[human review handoff procedure](../docs/operator-workflow.md#human-review-handoff):
+verify Ready for review at the exact unchanged candidate with readiness evidence and
+explicit publication/transition authority. HOLD Draft before promotion when gates are
+unresolved; final current-head review, merge authority and acceptance remain separate.
 
 Synthesize result/diff, checks, remaining risks and gate/baseline provenance. Each
 implementation result receives exactly one final human review decision. Keep transient

@@ -9,7 +9,10 @@ Read AGENTS.md, all four config policies, the execution-plan contract and reques
 workflow. Treat the user's plan as input: validate objective, ownership, scope,
 constraints, existing behavior and observable acceptance before accepting its decomposition.
 Inspect exact repository revisions and dirty-state coverage; do not overwrite user work.
-Use normalized context for cross-repository reasoning when practical. Do not implement.
+Use normalized context for cross-repository reasoning when practical. Start this task in
+a newly created isolated non-main worktree at an exact baseline and fresh session; this
+also applies to DIRECT, review, validation and integration tasks. Main permits intake,
+read-only coordination and ignored evidence, never worker execution/tests/repair. Do not implement.
 
 Choose DIRECT only when all eligibility conditions hold; otherwise ORCHESTRATED.
 Decompose tasks by concrete outcome and one owner. Include type, complexity, risk,
@@ -22,7 +25,9 @@ assignments. Choose logical role/session/backend after capability classification
 placement/attempt identifiers remain opaque adapter metadata. Do not invent availability.
 
 For non-trivial tasks record agent/class/profile/effort intent, fallback, concise reasons,
-validation requirement and capability resolution. Profiles only increase under overrides;
+validation requirement and capability resolution. Codex is default for all roles; optional
+clients need explicit task authorization and verified capability matching. Default
+unavailability or quota means HOLD, never automatic client switching. Profiles only increase under overrides;
 validation combines by OR. Flag missing capabilities and ambiguous requirements.
 
 After parallel mutation insert explicit compatibility-gate tasks. If outputs need combining,

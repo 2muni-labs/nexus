@@ -25,11 +25,11 @@ tasks:
     routing:
       task_class: "research"
       agent: "codex"
-      fallback_agent: "antigravity"
+      fallback_agent: null
       model_profile: "standard"
       effort: "medium"
       reasons: ["Draft capability intent; verify before dispatch"]
-      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      validation: {"required": false, "independent_session": false, "preferred_agent": "codex"}
       resolution: {"status": "pending", "model": null, "effort": null}
   -
     id: "T2"
@@ -48,11 +48,11 @@ tasks:
     routing:
       task_class: "implementation-standard"
       agent: "codex"
-      fallback_agent: "opencode"
+      fallback_agent: null
       model_profile: "standard"
       effort: "medium"
       reasons: ["Draft capability intent; verify before dispatch"]
-      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      validation: {"required": false, "independent_session": false, "preferred_agent": "codex"}
       resolution: {"status": "pending", "model": null, "effort": null}
   -
     id: "T3"
@@ -71,11 +71,11 @@ tasks:
     routing:
       task_class: "implementation-standard"
       agent: "codex"
-      fallback_agent: "opencode"
+      fallback_agent: null
       model_profile: "standard"
       effort: "medium"
       reasons: ["Draft capability intent; verify before dispatch"]
-      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      validation: {"required": false, "independent_session": false, "preferred_agent": "codex"}
       resolution: {"status": "pending", "model": null, "effort": null}
   -
     id: "G1"
@@ -94,11 +94,11 @@ tasks:
     routing:
       task_class: "integration"
       agent: "codex"
-      fallback_agent: "antigravity"
+      fallback_agent: null
       model_profile: "deep"
       effort: "high"
       reasons: ["Draft capability intent; verify before dispatch"]
-      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      validation: {"required": false, "independent_session": false, "preferred_agent": "codex"}
       resolution: {"status": "pending", "model": null, "effort": null}
     gate:
       kind: "integration"
@@ -127,11 +127,11 @@ tasks:
     routing:
       task_class: "integration"
       agent: "codex"
-      fallback_agent: "antigravity"
+      fallback_agent: null
       model_profile: "deep"
       effort: "high"
       reasons: ["Draft capability intent; verify before dispatch"]
-      validation: {"required": true, "independent_session": true, "preferred_agent": "antigravity"}
+      validation: {"required": true, "independent_session": true, "preferred_agent": "codex"}
       resolution: {"status": "pending", "model": null, "effort": null}
   -
     id: "V1"
@@ -149,12 +149,12 @@ tasks:
     architecture_sensitive: false
     routing:
       task_class: "validation"
-      agent: "antigravity"
-      fallback_agent: "codex"
+      agent: "codex"
+      fallback_agent: null
       model_profile: "deep"
       effort: "high"
       reasons: ["Draft capability intent; verify before dispatch"]
-      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      validation: {"required": false, "independent_session": false, "preferred_agent": "codex"}
       resolution: {"status": "pending", "model": null, "effort": null}
   -
     id: "R1"
@@ -172,12 +172,12 @@ tasks:
     architecture_sensitive: false
     routing:
       task_class: "independent-review"
-      agent: "antigravity"
-      fallback_agent: "codex"
+      agent: "codex"
+      fallback_agent: null
       model_profile: "deep"
       effort: "high"
       reasons: ["Draft capability intent; verify before dispatch"]
-      validation: {"required": false, "independent_session": false, "preferred_agent": "antigravity"}
+      validation: {"required": false, "independent_session": false, "preferred_agent": "codex"}
       resolution: {"status": "pending", "model": null, "effort": null}
 waves:
   - id: W1

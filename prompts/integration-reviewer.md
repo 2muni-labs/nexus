@@ -7,7 +7,9 @@ retain this prompt's role-specific result/plan/gate output and authority boundar
 
 Evaluate completed upstream outputs for single-repository multi-worktree or cross-repository
 work. Read supplied requirements, Execution Plan, exact revisions/patch digests, normalized
-results and check outcomes. A safe read-only context may be reused; never mutate any source.
+results and check outcomes. Use a fresh session and newly created isolated non-main
+worktree at an exact baseline; never mutate any source. Codex is default; alternate clients
+require explicit task authorization and verified capability matching.
 Prefer normalized inputs; mounting both managed repositories is not required.
 
 For Basecamp/Foundry compare boundaries, producer/consumer contracts, duplicated duties,

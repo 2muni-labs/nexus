@@ -23,11 +23,24 @@ Orca owns execution environments, sessions and factual attempt observations. Hum
 final merge and exact checkout deletion separately. GitHub assignees are project-accountable
 people, distinct from Nexus agent assignments. See docs/operating-model.md.
 
-Orca board is an execution observability/control surface, never a competing project backlog.
+The selected backend's board is an execution observability/control surface, never a competing project backlog.
 GitHub status may be displayed as read-only context; no blind bidirectional status mirroring.
 Cards represent environments that may carry sequential attempts. Card movement, Completed,
 idle or fencing cannot prove acceptance, process exit or deletion eligibility. Board actions
 request exact scoped operations through normal policy/authority checks, never bypass them.
+Reconcile the board after accepted worker settlement, at lifecycle changes and before
+closure/report: observe the exact scoped environments and attempts, apply only factual
+status/context/comment through adapter mechanics and read it back. Inspect all attempts sharing
+an environment: active attempts display active; delivered results awaiting required review display
+review; known settled/delivered/superseded non-review attempts may display Completed with factual
+success, failure or supersession context. Unknown unsettled/possibly active attempts mean HOLD;
+timeout or idle cannot prove completion. A known settled outcome with a retained user PTY or
+uncertain process exit may display delivered/Completed, but cannot prove exit, reuse or deletion
+eligibility. Preserve fresh human metadata; unexpected changes to identity, head, branch,
+links, comment or status from the prewrite snapshot/intended write, or a newly active attempt
+at prewrite/readback, mean HOLD, never blind mutation replay.
+Follow docs/operator-workflow.md#board-reconciliation for mapping and conflict checks. Keep
+GitHub Done, merge, process exit, worker release and checkout deletion separate.
 Execution history needed for reconciliation must survive even when its current state is transient.
 Host/client OS placement is deployment configuration, not a domain rule.
 
@@ -93,8 +106,11 @@ standard. Review-only authority does not grant implementation or merge permissio
 One mutable task = one owner = one repository. One independently mutable task = one
 isolated worktree = one diff. A worker modifying A must never modify B. Each
 implementation result eventually maps to exactly one final human review decision.
-Read-only planning/review may reuse a suitable context when no concurrent mutation can
-change its baseline; record the exact revisions. Cross-repository analysis is allowed,
+Every new task, including DIRECT, planning, read-only review, validation and integration,
+starts in a newly created isolated non-main worktree at an exact baseline. Independent
+review/validation also uses a fresh session. The same active attempt may continue in its
+own worktree; replacement requires a new worktree after prior settlement, proven editor
+exit and preserved immutable results. Cross-repository analysis is allowed,
 preferably through normalized inputs. Cross-repository mutation and commits are forbidden.
 
 Nexus owns intake, plans, routing, policies, prompts, workflows, gate decisions, normalized
@@ -119,7 +135,10 @@ embed repositories as submodules, subtrees, copied source directories or monorep
   rules before dispatch; placeholders, ownership ambiguity and cycles block execution.
 - **Router:** choose configured agent class, capability profile, effort intent, compatible
   fallback and independent-validation requirement. Apply all matching rules by maximum
-  profile rank and logical OR for validation. Record concise operational reasons and
+  profile rank and logical OR for validation. Compare default Codex
+  with any explicitly task-authorized compatible alternative for each task; record
+  accepted/rejected candidates and reasons. Codex defaults apply to every task role;
+  a prior one-task model choice is not a global default or authorization for later tasks. Record concise operational reasons and
   requested versus verified effective capabilities; never fabricate model availability.
 - **Scheduler (wave planning):** translate the DAG into backend-independent ready waves. Start independent
   work together; serialize real dependencies and conflicting mutation scopes. This is a
@@ -127,7 +146,8 @@ embed repositories as submodules, subtrees, copied source directories or monorep
 - **Supervisor:** use the selected backend's exact attempt/lifecycle authority. Require explicit outcomes
   and structured results; idle terminals, heartbeat, timeout or contact loss are not
   completion. Process questions, preserve failure evidence, prevent duplicate mutation
-  attempts, and choose release/reuse/user-requested retention after accepted settlement.
+  attempts, and choose release/user-requested retention after accepted settlement; new
+  tasks require new worktrees and sessions.
 - **Integrator:** assess prerequisites and semantic compatibility before shared downstream
   work. Require a recorded integration PASS and resolved immutable baseline map. A
   successful gate worker or a native task marked completed is insufficient by itself.
@@ -135,12 +155,12 @@ embed repositories as submodules, subtrees, copied source directories or monorep
 The Coordinator routes managed-repository implementation rather than editing it from
 Nexus. The Codex Coordinator in Nexus's main checkout is the default intake; see
 docs/operator-workflow.md. Main is the protected accepted policy baseline under Nexus
-operating policy; this does not claim installed GitHub branch protection or rulesets. Default all
-mutable Nexus work to a task branch in an isolated non-main worktree; integration into
-main requires explicit human approval of the exact reviewed candidate.
-The sole current-checkout exception is a directly assigned Nexus maintenance task with
-explicit user scope authorizing that checkout, including main modification if on main.
-Use it as the sole mutable workspace; never share it with another mutation worker.
+operating policy; this does not claim installed GitHub branch protection or rulesets. Main
+permits intake, read-only coordination and ignored operational evidence, never worker
+execution, tests, implementation or repair. All task execution uses new isolated non-main
+worktrees, including maintenance and DIRECT tasks; there is no current-checkout writer
+exception. Authorized final integration into main is a separate controlled operation
+requiring explicit human approval of the exact reviewed candidate, not implementation on main.
 Prior authorized direct commits remain the existing authorized baseline; do not rewrite
 history or retrospectively certify their final acceptance under this prospective default.
 Independent validation must use a separate session. A plan, review or validation task
@@ -157,8 +177,9 @@ approval scope means HOLD. Use Orca removal with verified host/version semantics
 account for possible branch deletion and archive hooks. No automatic age-based cleanup.
 Check relevant prior retention at instruction intake. The normal deletion window is
 post-disposition and pre-closure-report, with separate exact deletion approval.
-Report delivered work and workspace cleanup separately; unresolved cleanup is retained
-or HOLD with a next trigger, never an indefinite wait or implicit deletion authority.
+Report delivered work, board reconciliation and workspace cleanup separately; unresolved
+cleanup is retained or HOLD with a next trigger, never an indefinite wait or implicit
+deletion authority, and a reconciled card status is never deletion eligibility.
 
 ## Modes and plans
 
@@ -196,8 +217,9 @@ authorization decisions. Durable approval evidence must be externally recoverabl
 
 Independent validation is mandatory for P0/P1, high risk, critical complexity,
 architecture-sensitive changes, and integration changes with multiple mutable upstream
-results. Use a fresh session distinct from the implementer; another agent family is
-preferred but optional. Validate original finding or feature acceptance, root cause,
+results. Use a fresh session and newly created isolated non-main worktree distinct from the
+implementer. Codex is the default; another agent client requires explicit task authorization
+and verified capability matching. Validate original finding or feature acceptance, root cause,
 minimal scope, compatibility, meaningful tests, docs and managed contracts against the
 exact immutable proposal. Return PASS/FAIL/NEEDS-WORK; missing evidence is not PASS.
 Read-only validators may run safe tests and explicitly authorized exact candidate
@@ -215,9 +237,12 @@ invent commands or flags. Bind tasks to one owning repository and verify returne
 workspace identities. Preserve setup policy and inspect active attempt IDs/results.
 
 Policy profile names and abstract reasoning levels are not provider IDs or literal
-CLI effort flags. Local `capabilities.yaml` is data, never executable. Missing optional
-agents use an available compatible fallback; a Codex validator in a fresh session is
-still independent. Unsupported effort must use a verified supported equivalent or
+CLI effort flags. Local `capabilities.yaml` is data, never executable. Codex is the default
+for every agent role. Optional Antigravity/OpenCode clients remain
+catalog extensions requiring explicit task authorization and verified capability matching;
+Codex unavailability or quota means HOLD, never automatic client switching. A Codex
+validator in a fresh session and new worktree is independent. Unsupported effort must
+use a verified supported equivalent or
 configured default with recorded uncertainty, never silently drop a required capability
 floor. Unverified high-risk/critical capabilities block dispatch; lower-risk configured
 defaults can be used with explicit uncertainty and appropriate validation. Honor the
@@ -231,6 +256,13 @@ a duplicate editor, stop or release. Account for every expected Dispatch and set
 terminal's next owner before reporting completion.
 
 ## Governance and records
+
+Draft is the PR preparation default. Before requesting human review, follow
+[the review handoff procedure](docs/operator-workflow.md#human-review-handoff)
+and verify Ready for review at the exact unchanged candidate under explicit human
+publication/transition authority. Before promotion, missing readiness evidence means
+HOLD Draft; an explicit Draft-only instruction requires an exact Ready instruction to release it.
+Ready for review is not review approval, merge authority, acceptance or Done.
 
 Features require validated requirements and observable benefit; review-driven fixes
 require concrete findings. Normalize evidence/severity/confidence, deduplicate root
