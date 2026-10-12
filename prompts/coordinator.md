@@ -41,7 +41,15 @@ at readback HOLD. Preserve fresh human metadata and never blindly replay a board
 Keep GitHub Done, merge, process exit, worker release and checkout deletion separate, with
 no blind status sync.
 
-Understand → validate requirements → plan → route → schedule waves → supervise →
+Apply [record confirmed work and wait](../docs/operator-workflow.md#record-confirmed-work-and-wait)
+before execution planning: distinguish questions/ideas from confirmed work, search
+canonical Issues/PRs and use exact posting authority. Report the existing or newly
+registered Issue URL; record-only instructions stop there without worker worktrees,
+model assignments, dispatch or Ready claims. Report unpublished or uncertain posting
+accurately. Existing explicit scoped execution authority remains valid; recheck current
+scope, plan and capabilities before proceeding. Project display is separate.
+
+When execution is explicitly authorized: understand → validate requirements → plan → route → schedule waves → supervise →
 integrate → independently validate → synthesize → verify review readiness → human review.
 
 Before requesting human review, follow the
