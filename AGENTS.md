@@ -23,11 +23,24 @@ Orca owns execution environments, sessions and factual attempt observations. Hum
 final merge and exact checkout deletion separately. GitHub assignees are project-accountable
 people, distinct from Nexus agent assignments. See docs/operating-model.md.
 
-Orca board is an execution observability/control surface, never a competing project backlog.
+The selected backend's board is an execution observability/control surface, never a competing project backlog.
 GitHub status may be displayed as read-only context; no blind bidirectional status mirroring.
 Cards represent environments that may carry sequential attempts. Card movement, Completed,
 idle or fencing cannot prove acceptance, process exit or deletion eligibility. Board actions
 request exact scoped operations through normal policy/authority checks, never bypass them.
+Reconcile the board after accepted worker settlement, at lifecycle changes and before
+closure/report: observe the exact scoped environments and attempts, apply only factual
+status/context/comment through adapter mechanics and read it back. Inspect all attempts sharing
+an environment: active attempts display active; delivered results awaiting required review display
+review; known settled/delivered/superseded non-review attempts may display Completed with factual
+success, failure or supersession context. Unknown unsettled/possibly active attempts mean HOLD;
+timeout or idle cannot prove completion. A known settled outcome with a retained user PTY or
+uncertain process exit may display delivered/Completed, but cannot prove exit, reuse or deletion
+eligibility. Preserve fresh human metadata; unexpected changes to identity, head, branch,
+links, comment or status from the prewrite snapshot/intended write, or a newly active attempt
+at prewrite/readback, mean HOLD, never blind mutation replay.
+Follow docs/operator-workflow.md#board-reconciliation for mapping and conflict checks. Keep
+GitHub Done, merge, process exit, worker release and checkout deletion separate.
 Execution history needed for reconciliation must survive even when its current state is transient.
 Host/client OS placement is deployment configuration, not a domain rule.
 
@@ -122,7 +135,10 @@ embed repositories as submodules, subtrees, copied source directories or monorep
   rules before dispatch; placeholders, ownership ambiguity and cycles block execution.
 - **Router:** choose configured agent class, capability profile, effort intent, compatible
   fallback and independent-validation requirement. Apply all matching rules by maximum
-  profile rank and logical OR for validation. Record concise operational reasons and
+  profile rank and logical OR for validation. Compare default Codex
+  with any explicitly task-authorized compatible alternative for each task; record
+  accepted/rejected candidates and reasons. Codex defaults apply to every task role;
+  a prior one-task model choice is not a global default or authorization for later tasks. Record concise operational reasons and
   requested versus verified effective capabilities; never fabricate model availability.
 - **Scheduler (wave planning):** translate the DAG into backend-independent ready waves. Start independent
   work together; serialize real dependencies and conflicting mutation scopes. This is a
@@ -161,8 +177,9 @@ approval scope means HOLD. Use Orca removal with verified host/version semantics
 account for possible branch deletion and archive hooks. No automatic age-based cleanup.
 Check relevant prior retention at instruction intake. The normal deletion window is
 post-disposition and pre-closure-report, with separate exact deletion approval.
-Report delivered work and workspace cleanup separately; unresolved cleanup is retained
-or HOLD with a next trigger, never an indefinite wait or implicit deletion authority.
+Report delivered work, board reconciliation and workspace cleanup separately; unresolved
+cleanup is retained or HOLD with a next trigger, never an indefinite wait or implicit
+deletion authority, and a reconciled card status is never deletion eligibility.
 
 ## Modes and plans
 
@@ -239,6 +256,13 @@ a duplicate editor, stop or release. Account for every expected Dispatch and set
 terminal's next owner before reporting completion.
 
 ## Governance and records
+
+Draft is the PR preparation default. Before requesting human review, follow
+[the review handoff procedure](docs/operator-workflow.md#human-review-handoff)
+and verify Ready for review at the exact unchanged candidate under explicit human
+publication/transition authority. Before promotion, missing readiness evidence means
+HOLD Draft; an explicit Draft-only instruction requires an exact Ready instruction to release it.
+Ready for review is not review approval, merge authority, acceptance or Done.
 
 Features require validated requirements and observable benefit; review-driven fixes
 require concrete findings. Normalize evidence/severity/confidence, deduplicate root

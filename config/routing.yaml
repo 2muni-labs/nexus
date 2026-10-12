@@ -28,6 +28,41 @@ routing:
   coordinator:
     agent: codex
     repository: nexus
+  # Optional canonical aliases; Codex is preferred for all purposes and classes.
+  # No alias defines a capability floor or substitutes for effective evidence.
+  logical_purposes:
+    FAST:
+      task_classes: [research]
+      assignment_roles: [planner, reviewer]
+      preferred_agent: codex
+    CODE:
+      task_classes: [implementation-standard, implementation-complex]
+      assignment_roles: [implementer]
+      preferred_agent: codex
+    CODE_FAST:
+      task_classes: [implementation-mechanical]
+      assignment_roles: [implementer]
+      preferred_agent: codex
+    GENERAL:
+      task_classes: [research]
+      assignment_roles: [planner, reviewer]
+      preferred_agent: codex
+    REVIEW:
+      task_classes: [independent-review, debugging]
+      assignment_roles: [reviewer]
+      preferred_agent: codex
+    DEEP_REVIEW:
+      task_classes: [independent-review]
+      assignment_roles: [reviewer]
+      preferred_agent: codex
+    ARCHITECT:
+      task_classes: [architecture]
+      assignment_roles: [planner, reviewer]
+      preferred_agent: codex
+    CHALLENGER:
+      task_classes: [independent-review]
+      assignment_roles: [reviewer]
+      preferred_agent: codex
   task_classes:
     architecture:
       preferred_agent: codex

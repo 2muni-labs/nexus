@@ -47,6 +47,9 @@ plan:
     architecture_sensitive: boolean
     routing:
       required: [task_class, agent, fallback_agent, model_profile, effort, reasons, validation, resolution]
+      logical_purpose: optional_canonical_key_from_config_routing_logical_purposes
+      # Class/role alias preserves type, scope, capability and fresh-review rules.
+      # Codex purpose/class defaults never supply alternate-client authorization.
       task_class: key_from_config_routing_task_classes
       agent: key_from_agent_catalog
       fallback_agent: null_automatic_client_fallback_disabled
@@ -99,6 +102,8 @@ relational_checks:
   - same_active_attempt_may_continue_its_own_worktree_replacement_requires_new_worktree_after_settlement_exit_and_preserved_results
   - direct_mode_meets_all_planning_policy_conditions
   - routing_profiles_and_validation_requirements_merge_monotonically
+  - optional_logical_purpose_matches_class_scope_and_supplied_assignment_role_even_without_execution_request
+  - purpose_preference_is_class_compatible_and_nonpreferred_selection_has_explicit_authorization_and_fallback_reason
   - high_risk_critical_architecture_sensitive_and_mutable_multi_upstream_integration_require_independent_validation
   - parallel_mutations_have_a_compatibility_gate_before_any_shared_consumer
   - gate_task_success_does_not_release_consumers_without_gate_PASS

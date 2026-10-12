@@ -6,6 +6,7 @@ import runpy
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKER = runpy.run_path(str(ROOT / 'scripts/check-plan.py'))
@@ -76,6 +77,45 @@ def assignment(t, role='implementer'):
                        'effort_intent': r['effort'], 'session_ref': 'impl-' + t['id'], 'backend': 'orca',
                        'requested': copy.deepcopy(receipt), 'effective': copy.deepcopy(receipt), 'evidence': ['supplied receipt; unverified host'],
                        'validation': {'required': r['validation']['required'], 'independent_session': r['validation']['independent_session'], 'candidate': None}}
+
+
+def purpose_task(purpose, task_class=None, role=None):
+    # Latest Codex-default directive; fixture choices independent of checker extraction.
+    choices = {
+        'FAST': ('research', 'planner', 'codex', 'standard'),
+        'CODE': ('implementation-standard', 'implementer', 'codex', 'standard'),
+        'CODE_FAST': ('implementation-mechanical', 'implementer', 'codex', 'fast'),
+        'GENERAL': ('research', 'reviewer', 'codex', 'standard'),
+        'REVIEW': ('independent-review', 'reviewer', 'codex', 'deep'),
+        'DEEP_REVIEW': ('independent-review', 'reviewer', 'codex', 'deep'),
+        'ARCHITECT': ('architecture', 'planner', 'codex', 'deep'),
+        'CHALLENGER': ('independent-review', 'reviewer', 'codex', 'deep'),
+    }
+    cls, default_role, agent, profile = choices[purpose]
+    cls = task_class or cls
+    t = task(write=purpose in ('CODE', 'CODE_FAST'))
+    t['type'] = {'implementation-standard': 'implementation', 'implementation-complex': 'implementation',
+                 'implementation-mechanical': 'mechanical', 'independent-review': 'review'}.get(cls, cls)
+    if cls == 'implementation-complex':
+        profile = 'deep'
+    t['routing'].update(logical_purpose=purpose, task_class=cls, agent=agent, fallback_agent=None,
+                        model_profile=profile, effort={'fast': 'low', 'standard': 'medium', 'deep': 'high'}[profile],
+                        reasons=['Explicit purpose preference; bounded authorized scope'])
+    if purpose in ('REVIEW', 'DEEP_REVIEW', 'CHALLENGER', 'ARCHITECT'):
+        t['routing']['validation']['independent_session'] = True
+        t['routing']['validation']['required'] = purpose == 'ARCHITECT'
+        t['validation_sessions'] = {'implementation': 'impl-T1', 'validation': 'fresh-T1'}
+    assignment(t, role or default_role)
+    if purpose in ('REVIEW', 'DEEP_REVIEW', 'CHALLENGER'):
+        t['assignment']['session_ref'] = 'fresh-T1'
+    return t
+
+
+def managed(t):
+    p = plan(t)
+    p['work_item_binding'] = {'provider': 'github', 'repository': '2muni/nexus',
+                              'issue_url': 'https://github.com/2muni/nexus/issues/5'}
+    return p
 
 
 class ExecutionPlans(unittest.TestCase):
@@ -159,6 +199,214 @@ class ExecutionPlans(unittest.TestCase):
         t['routing']['validation']['required'] = True
         t['validation_sessions']['validation'] = t['validation_sessions']['implementation']
         self.rejects(plan(t), 'validation_sessions')
+
+    def test_all_optional_purposes_and_compatible_assignments(self):
+        policy = CHECKER['policies'](ROOT)
+        for purpose in ('FAST', 'CODE', 'CODE_FAST', 'GENERAL', 'REVIEW', 'DEEP_REVIEW', 'ARCHITECT', 'CHALLENGER'):
+            with self.subTest(purpose=purpose):
+                self.assertEqual('codex', policy['purposes'][purpose]['preferred_agent'])
+                p = managed(purpose_task(purpose))
+                self.passes(p, execution=True)
+                self.assertEqual(1, len(p['tasks']))
+        for purpose, cls, role in [('CODE', 'implementation-complex', 'implementer'),
+                                   ('REVIEW', 'debugging', 'reviewer'), ('ARCHITECT', 'architecture', 'reviewer'),
+                                   ('FAST', 'research', 'reviewer'), ('GENERAL', 'research', 'planner')]:
+            with self.subTest(purpose=purpose, cls=cls, role=role):
+                self.passes(managed(purpose_task(purpose, cls, role)), execution=True)
+
+    def test_purposeless_compatibility_and_preference_fallback(self):
+        t = task(write=True)
+        t['routing'].update(agent='opencode',
+                            agent_authorization={'agent': 'opencode', 'evidence': 'explicit authorization for this task'},
+                            resolution={'status': 'verified', 'model': 'supplied-model', 'effort': 'supplied-supported-effort'})
+        t['routing']['reasons'] = ['Existing explicitly authorized alternative']
+        self.passes(plan(t))
+        t['routing']['logical_purpose'] = 'CODE'
+        self.rejects(plan(t), 'routing.reasons')
+        t['routing']['reasons'] = ['fallback: explicitly authorized OpenCode; unchanged standard floor verified']
+        self.passes(plan(t))
+        t['routing']['reasons'] = ['fallback:   ']
+        self.rejects(plan(t), 'routing.reasons')
+        assignment(t)
+        for receipt in ('requested', 'effective'):
+            t['assignment'][receipt].update(agent='opencode', **t['routing']['resolution'])
+        t['assignment']['evidence'].append('fallback: explicitly authorized compatible client; supplied verified receipt')
+        self.passes(managed(t), execution=True)
+        # Nonpreferred explanation cannot substitute for scoped authorization,
+        # verified resolution, null automatic fallback or unchanged max/OR floors.
+        for purpose in ('FAST', 'CODE', 'CODE_FAST', 'GENERAL', 'REVIEW', 'DEEP_REVIEW', 'ARCHITECT', 'CHALLENGER'):
+            for alternative in ('antigravity', 'opencode'):
+                with self.subTest(purpose=purpose, alternative=alternative):
+                    t = purpose_task(purpose)
+                    t.pop('assignment')
+                    t['routing']['agent'] = alternative
+                    self.rejects(plan(t), 'routing.reasons')
+                    t['routing']['reasons'].append('fallback: explicit compatible alternate selection for this task')
+                    self.rejects(plan(t), 'routing.agent')
+                    t['routing']['agent_authorization'] = {'agent': alternative, 'evidence': 'exact task authorization reference'}
+                    self.rejects(plan(t), 'routing.resolution.status')
+                    t['routing']['resolution'] = {'status': 'verified', 'model': 'supplied-model', 'effort': 'supplied-supported-effort'}
+                    self.passes(plan(t), ready_task='T1')
+                    t['routing']['agent_authorization']['agent'] = 'codex'
+                    self.rejects(plan(t), 'agent_authorization.agent')
+                    t['routing']['agent_authorization']['agent'] = alternative
+                    t['routing']['fallback_agent'] = alternative
+                    self.rejects(plan(t), 'routing.agent')
+                    t['routing']['fallback_agent'] = None
+                    t.update(risk='high', complexity='critical', architecture_sensitive=True)
+                    validation(t, 'critical')
+                    self.passes(plan(t))
+                    t['routing']['validation']['required'] = False
+                    self.rejects(plan(t), 'routing.validation.required')
+                    t['routing']['validation']['required'] = True
+                    t['routing']['model_profile'] = 'deep'
+                    self.rejects(plan(t), 'routing.model_profile')
+
+    def test_purpose_shape_class_type_and_scope_rejections(self):
+        for value in ('unknown', 'code', '', None, True, {}, []):
+            t = task()
+            t['routing']['logical_purpose'] = value
+            self.rejects(plan(t), 'routing.logical_purpose')
+        for purpose in ('FAST', 'GENERAL', 'REVIEW', 'DEEP_REVIEW', 'ARCHITECT', 'CHALLENGER'):
+            t = purpose_task(purpose)
+            t['mutation_scope']['mode'] = 'write'
+            t.pop('assignment')
+            self.rejects(plan(t), 'mutation_scope.mode')
+        for purpose in ('CODE', 'CODE_FAST', 'REVIEW', 'ARCHITECT'):
+            t = task()
+            t['routing']['logical_purpose'] = purpose
+            self.rejects(plan(t), 'routing.logical_purpose')
+        t = purpose_task('CODE')
+        t['type'] = 'research'
+        self.rejects(plan(t), 'routing.task_class')
+        t = purpose_task('FAST')
+        t['routing']['agent'] = 'opencode'
+        t['routing']['reasons'].append('fallback: availability cannot widen research compatibility')
+        self.rejects(plan(t), 'routing.agent')
+
+    def test_supplied_purpose_roles_checked_without_execution(self):
+        for purpose in ('FAST', 'CODE', 'CODE_FAST', 'GENERAL', 'REVIEW', 'DEEP_REVIEW', 'ARCHITECT', 'CHALLENGER'):
+            t = purpose_task(purpose)
+            t['assignment']['role'] = 'validator'
+            self.rejects(plan(t), 'assignment.role')
+        t = purpose_task('CODE')
+        t['assignment']['role'] = 'reviewer'
+        self.rejects(plan(t), 'assignment.role')
+        t = purpose_task('ARCHITECT', role='planner')
+        t['mutation_scope']['mode'] = 'write'
+        self.rejects(plan(t), 'assignment.role')
+
+    def test_purposes_preserve_capability_and_validation_floors(self):
+        for purpose in ('FAST', 'GENERAL'):
+            t = purpose_task(purpose)
+            t.pop('assignment')
+            t['routing'].update(model_profile='fast', effort='low')
+            self.rejects(plan(t), 'routing.model_profile')
+            t['context_size'] = 'large'
+            t['routing'].update(model_profile='standard', effort='medium')
+            self.rejects(plan(t), 'routing.model_profile')
+            t['routing'].update(model_profile='deep', effort='high')
+            self.passes(plan(t))
+        t = purpose_task('CODE')
+        t.pop('assignment')
+        t.update(complexity='critical')
+        validation(t, 'critical')
+        t['routing']['resolution'] = {'status': 'verified', 'model': 'supplied-model', 'effort': 'supplied-supported-effort'}
+        self.passes(plan(t))
+        t['routing']['effort'] = 'high'
+        self.rejects(plan(t), 'routing.effort')
+        t['routing']['effort'] = 'maximum'
+        t['routing']['validation']['required'] = False
+        self.rejects(plan(t), 'routing.validation.required')
+        t = purpose_task('CODE')
+        t.pop('assignment')
+        t.update(risk='high')
+        validation(t)
+        t['routing']['resolution'] = {'status': 'verified', 'model': 'supplied-model', 'effort': 'supplied-supported-effort'}
+        t['routing']['effort'] = 'medium'
+        self.rejects(plan(t), 'routing.effort')
+        for purpose in ('REVIEW', 'ARCHITECT'):
+            t = purpose_task(purpose)
+            t.pop('assignment')
+            t['routing'].update(model_profile='standard', effort='medium')
+            self.rejects(plan(t), 'routing.model_profile')
+            t['routing'].update(model_profile='deep', effort='high')
+            t['routing']['validation']['independent_session'] = False
+            self.rejects(plan(t), 'routing.validation.independent_session')
+
+    def test_unverified_purpose_execution_readiness_rejected(self):
+        for classification in ({'risk': 'high'}, {'complexity': 'critical'}):
+            t = purpose_task('CODE')
+            t.update(classification)
+            validation(t, 'critical' if 'complexity' in classification else 'deep')
+            assignment(t)
+            p = managed(t)
+            for selector in ({'ready_task': 'T1'}, {'ready_wave': 'W0'}):
+                self.rejects(p, 'routing.resolution.status', execution=True, **selector)
+
+    def test_purpose_review_requires_fresh_declared_session(self):
+        for purpose, cls in [('REVIEW', 'independent-review'), ('REVIEW', 'debugging'),
+                             ('DEEP_REVIEW', 'independent-review'), ('CHALLENGER', 'independent-review')]:
+            t = purpose_task(purpose, cls)
+            p = managed(t)
+            self.passes(p, execution=True)
+            t['assignment']['session_ref'] = 'impl-T1'
+            self.rejects(p, 'assignment.session_ref')
+            self.rejects(p, 'assignment.session_ref', execution=True)
+            t['assignment']['session_ref'] = 'fresh-T1'
+            t['validation_sessions']['validation'] = 'impl-T1'
+            self.rejects(p, 'validation_sessions')
+        t = purpose_task('REVIEW', 'debugging')
+        t.pop('assignment')
+        t.pop('validation_sessions')
+        t['routing']['validation']['independent_session'] = False
+        self.rejects(plan(t), 'routing.validation.independent_session')
+
+    def test_preference_configuration_checked_for_every_class(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for name in CHECKER['SUPPORTED']:
+                destination = root / name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes((ROOT / name).read_bytes())
+            path = root / 'config/routing.yaml'
+            original = path.read_text()
+            for invalid in [original.replace('      task_classes: [independent-review, debugging]\n      assignment_roles: [reviewer]\n      preferred_agent: codex',
+                                             '      task_classes: [independent-review, debugging]\n      assignment_roles: [reviewer]\n      preferred_agent: opencode'),
+                            original.replace('      task_classes: [implementation-standard, implementation-complex]\n      assignment_roles: [implementer]\n      preferred_agent: codex',
+                                             '      task_classes: [implementation-standard, implementation-complex]\n      assignment_roles: [implementer]\n      preferred_agent: opencode'),
+                            original.replace('      task_classes: [research]', '      task_classes: [unknown]', 1),
+                            original.replace('      assignment_roles: [planner, reviewer]', '      assignment_roles: [unknown]', 1)]:
+                # Simulate reviewed syntax to exercise extraction/compatibility as
+                # well as the normal production fail-closed fingerprint boundary.
+                path.write_text(invalid)
+                self.rejects(plan(), 'policy', root=root)
+                with patch.dict(CHECKER['SUPPORTED'], {'config/routing.yaml': CHECKER['fingerprint'](invalid)}):
+                    self.rejects(plan(), 'policy', root=root)
+
+    def test_purpose_review_cannot_reuse_mutable_ancestor_session(self):
+        a = completed(task('A', write=True))
+        assignment(a)
+        reviewer = purpose_task('REVIEW')
+        reviewer['dependencies'] = ['A']
+        reviewer['base'] = {'source': 'A', 'ref': OUTPUT}
+        p = plan(a, reviewer)
+        p['work_item_binding'] = managed(reviewer)['work_item_binding']
+        self.passes(p, ready_task='T1', execution=True)
+        # Even distinct declared session strings cannot excuse a supplied
+        # upstream writer's observed assignment identity being reused.
+        a['assignment']['session_ref'] = reviewer['assignment']['session_ref']
+        self.rejects(p, 'assignment.session_ref', ready_task='T1', execution=True)
+
+    def test_purpose_preserves_receipt_and_final_human_boundary(self):
+        t = purpose_task('CODE')
+        p = managed(t)
+        self.passes(p, execution=True)
+        t['assignment']['effective']['model_profile'] = 'fast'
+        self.rejects(p, 'assignment.effective', execution=True)
+        t['assignment']['effective']['model_profile'] = 'standard'
+        p['final_gate'] = 'automatic-merge'
+        self.rejects(p, 'final_gate', execution=True)
 
     def test_resolved_multi_repo_read_only_parallel(self):
         self.passes(plan(task('A', 'basecamp'), task('B', 'foundry'), waves=[{'id': 'W', 'tasks': ['A', 'B']}]))

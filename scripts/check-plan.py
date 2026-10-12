@@ -8,15 +8,15 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-# Reviewed policy syntax/semantics for Codex defaults and fresh task placement;
+# Reviewed policy syntax/semantics for Codex defaults, fresh task placement and optional purposes;
 # hashes exclude blank/full-comment lines. Placement/live authority remain operator checks.
 # Unsupported revisions HOLD rather than silently guessing new policy semantics.
 SUPPORTED = {
     'config/planning.yaml': '4e86d3d915684b00530956818358db5f33ba0bd424d1e0391da34703c83bf9a2',
-    'config/routing.yaml': '8de288e4585454588743afb52af9dfbd7591fe092e3a14386780ca6874515329',
+    'config/routing.yaml': 'dc348b2c1b2eb92234325179c36fc8b6d7253fdf3c97287880c3d7338c176cae',
     'config/review.yaml': '8dbe71e6ddeb73bd6c950b42c5229b6a2a179af04f9d2b64acc05437250efc6a',
     'config/repositories.yaml': '996a1c7a5d97d55fb646beaa6f47bef6704174d3f25b25f9823c7b8f26c626e4',
-    'schemas/execution-plan.yaml': '5142607cfdadc31c1eafa70d5503f3895ddb9bf7f44c0a6c310d4f75e72a5338',
+    'schemas/execution-plan.yaml': '6868484ba20e2af1dfdc046b3d112f9060f4e0e9b9a0146a6b8ccbd3657631be',
     'schemas/agent-assignment.yaml': '98a19827834b6ede945fdd5eb679c97a30aed13a09733e90192a9147a0464159',
     'config/execution-backends.yaml': '62967798a1f207fdda98eb012a6455df087243c9bb72cb4569d6e003cdae1f1f',
     'config/acceptance.json': '3c4d2a5fc28333022f794b8a038ff161677169e661a01268d8c495c28dcbf8f8',
@@ -72,6 +72,28 @@ def policies(root):
     for name in keys(blocks, 4):
         block = section(blocks, name, 4)
         classes[name] = dict(re.findall(r'^      ([\w_]+): ([\w-]+)$', block, re.M))
+    purposes = {}
+    blocks = section(routing, 'logical_purposes', 2)
+    for name in re.findall(r'^    ([A-Z][A-Z_]*):$', blocks, re.M):
+        block = section(blocks, name, 4)
+        purpose = {key: value.split(', ') for key, value in re.findall(
+            r'^      (task_classes|assignment_roles): \[([^]]+)\]$', block, re.M)}
+        preferred = re.search(r'^      preferred_agent: ([\w-]+)$', block, re.M)
+        if preferred:
+            purpose['preferred_agent'] = preferred[1]
+        if not purpose.get('task_classes') or not purpose.get('assignment_roles'):
+            raise ValueError('unsupported logical purpose mapping: ' + name)
+        if not set(purpose['assignment_roles']) <= {'implementer', 'reviewer', 'validator', 'planner'}:
+            raise ValueError('unknown logical purpose assignment role: ' + name)
+        for task_class in purpose['task_classes']:
+            if task_class not in classes:
+                raise ValueError('unknown logical purpose task class: ' + name)
+            cls = classes[task_class]
+            if preferred and preferred[1] not in {cls['preferred_agent'], cls['fallback_agent']}:
+                raise ValueError('logical purpose preference outside configured task-class pair: ' + name)
+        purposes[name] = purpose
+    if not purposes:
+        raise ValueError('unsupported logical purposes section')
     rules = [(inline(a), inline(b)) for a, b in re.findall(
         r'^  - when: (\{[^\n]+\})\n    override: (\{[^\n]+\})$', routing, re.M)]
     order = re.search(r'^  profile_order: \[([^]]+)\]', routing, re.M)[1].split(', ')
@@ -79,7 +101,7 @@ def policies(root):
     def contract_list(field, indent):
         return re.search(r'^' + ' ' * indent + field + r': \[([^]]+)\]', schema, re.M)[1].split(', ')
     return {'repositories': keys(section(texts['config/repositories.yaml'], 'repositories'), 2),
-            'agents': keys(section(routing, 'agent_catalog'), 2), 'classes': classes,
+            'agents': keys(section(routing, 'agent_catalog'), 2), 'classes': classes, 'purposes': purposes,
             'profiles': order, 'reasoning': dict(re.findall(r'^  ([a-z]+):\n    reasoning: ([a-z]+)$', section(routing, 'model_profiles'), re.M)), 'rules': rules, 'plan_required': contract_list('required', 2),
             'task_required': contract_list('required', 4),
             'enums': {k: contract_list(k, 4) for k in ('type', 'complexity', 'risk', 'context_size')},
@@ -192,7 +214,9 @@ class Check:
             base = self.obj(t.get('base'), 'base', ('source', 'ref'), task=tid)
             self.string(base.get('source'), 'base.source', tid)
             self.ref(base.get('ref'), 'base.ref', tid, True)
-            r = self.obj(t.get('routing'), 'routing', ('task_class', 'agent', 'fallback_agent', 'model_profile', 'effort', 'reasons', 'validation', 'resolution'), ('agent_authorization',), task=tid)
+            r = self.obj(t.get('routing'), 'routing', ('task_class', 'agent', 'fallback_agent', 'model_profile', 'effort', 'reasons', 'validation', 'resolution'), ('logical_purpose', 'agent_authorization'), task=tid)
+            if 'logical_purpose' in r:
+                self.string(r['logical_purpose'], 'routing.logical_purpose', tid, p['purposes'])
             for field, choices in [('task_class', p['classes']), ('agent', p['agents']), ('model_profile', p['profiles'])]:
                 self.string(r.get(field), 'routing.' + field, tid, choices)
             if r.get('fallback_agent') is not None:
@@ -434,6 +458,25 @@ class Check:
         profiles = [cls['model_profile']]
         required = cls.get('independent_validation') == 'true'
         independent = cls.get('independent_session') == 'true' or t['type'] == 'validation'
+        if 'logical_purpose' in r:
+            purpose = p['purposes'][r['logical_purpose']]
+            if r['task_class'] not in purpose['task_classes']:
+                self.error('routing.logical_purpose', 'purpose does not allow declared task class', tid)
+            if 'implementer' not in purpose['assignment_roles'] and t['mutation_scope']['mode'] != 'read-only':
+                self.error('mutation_scope.mode', 'logical purpose has read-only authority', tid)
+            if 'assignment' in t:
+                if t['assignment']['role'] not in purpose['assignment_roles']:
+                    self.error('assignment.role', 'role does not match logical purpose', tid)
+                self.assignment_authority(t)
+            # REVIEW/debugging is read-only review, retaining the existing review
+            # session requirement rather than becoming a repair assignment.
+            if r['logical_purpose'] == 'REVIEW':
+                independent |= p['classes']['independent-review'].get('independent_session') == 'true'
+            preferred = purpose.get('preferred_agent', cls['preferred_agent'])
+            reasons = r['reasons'] + t.get('assignment', {}).get('evidence', [])
+            if r['agent'] != preferred and not any(
+                    reason.startswith('fallback:') and reason[len('fallback:'):].strip() for reason in reasons):
+                self.error('routing.reasons', 'nonpreferred purpose selection needs fallback: explanation in reasons/evidence', tid)
         if t['type'] in ('review', 'validation') and t['mutation_scope']['mode'] != 'read-only':
             self.error('mutation_scope.mode', 'review/validation tasks must remain read-only', tid)
         facts = dict(t, mutation_mode=t['mutation_scope']['mode'], minimum_upstream_mutations=upstream_count)
@@ -467,6 +510,8 @@ class Check:
             s = t.get('validation_sessions', {})
             if not s or s['implementation'] == s['validation']:
                 self.error('validation_sessions', 'declare distinct implementation and validation sessions', tid)
+            if fresh_review(t) and 'assignment' in t and t['assignment']['session_ref'] != s.get('validation'):
+                self.error('assignment.session_ref', 'purpose review must use declared fresh validation session', tid)
         res = r['resolution']
         if selected and r['agent'] != cls['preferred_agent'] and res['status'] != 'verified':
             self.error('routing.resolution.status', 'explicit alternate client needs verified capability matching; static checker cannot verify host', tid)
@@ -526,11 +571,8 @@ class Check:
         for field, expected in [('task_id', tid), ('repository', t['repository']), ('agent', r['agent']), ('model_profile', r['model_profile']), ('effort_intent', r['effort'])]:
             if a[field] != expected:
                 self.error('assignment.' + field, 'must match logical task/routing', tid)
+        self.assignment_authority(t)
         role = a['role']
-        if (t['mutation_scope']['mode'] == 'write' and role != 'implementer') or (role in ('reviewer', 'validator', 'planner') and t['mutation_scope']['mode'] != 'read-only'):
-            self.error('assignment.role', 'role conflicts with mutation scope', tid)
-        if t['type'] == 'validation' and role != 'validator' or t['type'] == 'review' and role != 'reviewer':
-            self.error('assignment.role', 'role must match read-only task purpose', tid)
         for field in ('required', 'independent_session'):
             if r['validation'][field] and not a['validation'][field]:
                 self.error('assignment.validation.' + field, 'cannot lower routing validation floor', tid)
@@ -542,18 +584,31 @@ class Check:
                 self.error('assignment.' + field, 'verified claim needs concrete model/effort', tid)
         if a['effective']['status'] != r['resolution']['status'] or any(a['effective'][k] != r['resolution'][k] for k in ('model', 'effort')):
             self.error('assignment.effective', 'must match supplied routing resolution receipt', tid)
-        session_role = 'validation' if role == 'validator' else 'implementation'
+        session_role = 'validation' if role == 'validator' or fresh_review(t) else 'implementation'
         if 'validation_sessions' in t and a['session_ref'] != t['validation_sessions'][session_role]:
             self.error('assignment.session_ref', 'must match declared implementation session', tid)
         if role == 'validator':
             if a['validation']['candidate'] != t['base']['ref']:
                 self.error('assignment.validation.candidate', 'validator must bind exact task candidate', tid)
+        if role == 'validator' or fresh_review(t):
             for dep in ancestors[tid]:
                 producer = tasks[dep]
                 if producer['mutation_scope']['mode'] == 'write':
                     session = producer.get('assignment', {}).get('session_ref')
                     if not session or session == a['session_ref']:
-                        self.error('assignment.session_ref', 'validator needs evidenced separate implementation session', tid)
+                        self.error('assignment.session_ref', 'review/validator needs evidenced separate implementation session', tid)
+
+    def assignment_authority(self, t):
+        tid, a = t['id'], t['assignment']
+        role = a['role']
+        if (t['mutation_scope']['mode'] == 'write' and role != 'implementer') or (role in ('reviewer', 'validator', 'planner') and t['mutation_scope']['mode'] != 'read-only'):
+            self.error('assignment.role', 'role conflicts with mutation scope', tid)
+        if t['type'] == 'validation' and role != 'validator' or t['type'] == 'review' and role != 'reviewer':
+            self.error('assignment.role', 'role must match read-only task purpose', tid)
+
+
+def fresh_review(t):
+    return t['routing'].get('logical_purpose') in ('REVIEW', 'DEEP_REVIEW', 'CHALLENGER')
 
 
 def literal_path(value):

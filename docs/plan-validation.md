@@ -77,8 +77,28 @@ and a nonempty `evidence` reference to explicit task-scoped authorization. The
 agent must match the selected task agent; an alternate validation preference
 also must match that authorized agent. Selected alternate clients require
 verified resolution claims with concrete model/effort values. These are supplied
-claims, not proof of real authority or host capability. Selected high-risk/critical
-tasks also cannot inherit uncertainty. Other selected tasks can
+claims, not proof of real authority or host capability.
+
+Optional `routing.logical_purpose` uses the canonical uppercase aliases and
+class/role table in [routing](routing.md#optional-logical-purpose). Unknown values
+(including null or lowercase), wrong classes, type conflicts and write scopes for
+read-only purposes are rejected. Supplied assignment role/scope checks apply to
+purpose-bearing tasks even without `--execution-requested`; absence of an
+assignment supplies no session-authority evidence. Purpose-less plans retain
+their previous class preference and validation behavior.
+
+Every purpose prefers Codex under the latest default policy. A preference outside
+any allowed class's configured defaults is a policy error. A compatible nonpreferred selection
+needs a nonempty `fallback:` explanation in `routing.reasons` or supplied
+assignment `evidence`. The checker checks the marker and nonempty explanation,
+not its factual adequacy, availability or model suitability. Aliases do not
+copy floors: existing class defaults and matching rules still combine by max/OR.
+REVIEW/debugging also uses the existing independent-review session requirement;
+REVIEW/DEEP_REVIEW/CHALLENGER assignments use the declared fresh validation
+session, distinct from implementation. Execution checks additionally compare
+those review sessions with supplied mutable ancestors' assignment sessions.
+Verified resolution claims require concrete model/effort values. Selected
+high-risk/critical tasks cannot inherit uncertainty. Other selected tasks can
 use explicit inherited uncertainty with reasons; no supplied claim is host proof.
 
 Compatibility gates are read-only integration tasks. `gate.upstream` exactly
@@ -139,14 +159,14 @@ never worker execution, tests or repair.
 
 The supported policy content consists of the four governance configs,
 `config/acceptance.json`, backend registry, Execution Plan and assignment contracts,
-including Codex defaults, explicit alternate-client authorization claims and fresh
+including optional logical purposes, Codex defaults, explicit alternate-client authorization claims and fresh
 task-worktree requirements. The exact supported content is identified by the
 script's fingerprints rather than a historical commit whose policy has changed.
 The script's `SUPPORTED` allowlist contains SHA256 fingerprints of those files
 with blank and full-comment lines removed. PASS includes these fingerprints as
 `policy_provenance`. Catalog keys, task-class defaults, profile reasoning/rank,
-classification enums and inline routing rules are read from those supported
-files; there is no copied model catalog or second routing configuration.
+classification enums, logical-purpose mappings/preferences and inline routing
+rules are read from those supported files; there is no copied model catalog or second routing configuration.
 
 Unsupported content, even a harmless formatting change, returns NEEDS-WORK.
 Comments and blank lines can change without updating fingerprints. To support a
@@ -171,3 +191,14 @@ not ready inputs; this tool does not rewrite or certify them.
 Run `bash tests/run.sh` for the offline development suite. The semantic tests
 exercise valid single/multi-repository, serial/parallel plans and adversarial
 ownership, dependency, routing, independent-session, gate and input cases.
+Run only the affected tests with
+`python3 -B -m unittest discover -s tests -p 'test_execution_plans.py'`.
+Purpose fixtures cover all eight aliases, compatible fallbacks, class/role/scope
+rejection, unchanged floors, fresh review, selected readiness and incompatible
+preference configuration. These checks do not launch clients or mutate providers.
+
+For actual capability settings, stale observations, unsupported model/effort,
+unobserved diversity, prior writer liveness and before-work permission, use the
+[procedural scenarios](model-selection-verification.md#procedural-validation-scenarios).
+Static PASS checks supplied consistency. Native backend facts and exact human
+approval remain required for procedural and final gates.

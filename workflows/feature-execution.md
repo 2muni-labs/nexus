@@ -123,6 +123,12 @@ Check current-head review/check/merge facts and backend settlement under the acc
 policy before accepting any existing evaluator proposal; the scripts do not enforce this
 new declarative input. Human main/merge/publication authority remains exact and separate.
 
+Before requesting human review, apply the
+[human review handoff procedure](../docs/operator-workflow.md#human-review-handoff):
+verify Ready for review at the exact unchanged candidate with readiness evidence and
+explicit publication/transition authority. HOLD Draft before promotion when gates are
+unresolved; final current-head review, merge authority and acceptance remain separate.
+
 Synthesize result/diff, checks, remaining risks and gate/baseline provenance. Each
 implementation result receives exactly one final human review decision. Keep transient
 plans/results and generated reviews ignored; preserve only explicitly curated durable

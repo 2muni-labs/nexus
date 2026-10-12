@@ -25,8 +25,30 @@ On restart or partial failure apply docs/reconciliation.md and schemas/reconcili
 Observe complete external state before considering dispatch; scripts/reconcile.sh proposals
 never authorize mutation. Absent pointers/approvals/liveness HOLD.
 
+After each accepted worker settlement, at environment lifecycle changes and before any
+closure report, reconcile the selected backend's board per
+[board reconciliation](../docs/operator-workflow.md#board-reconciliation): observe the
+exact scoped environments and attempts, apply only factual status/context/comment through
+the selected adapter (currently the [Orca adapter](../docs/adapters/orca.md#board-metadata-reconciliation))
+and read it back. Inspect all attempts sharing an environment: active displays active,
+delivered awaiting required review displays review, and known settled/delivered/superseded
+non-review attempts may display Completed with factual success/failure/supersession context.
+Unknown unsettled/possibly active attempts HOLD; timeout or idle never prove completion.
+Known settled results with retained user PTYs or uncertain exit may show delivered/Completed,
+without proving exit or authorizing reuse/cleanup. Snapshot and refresh identity/head/branch,
+links/comment/status and attempts before writing; unexpected changes or a newly active attempt
+at readback HOLD. Preserve fresh human metadata and never blindly replay a board mutation.
+Keep GitHub Done, merge, process exit, worker release and checkout deletion separate, with
+no blind status sync.
+
 Understand → validate requirements → plan → route → schedule waves → supervise →
-integrate → independently validate → synthesize → human review.
+integrate → independently validate → synthesize → verify review readiness → human review.
+
+Before requesting human review, follow the
+[human review handoff procedure](../docs/operator-workflow.md#human-review-handoff).
+Verify Ready for review at the exact unchanged candidate under explicit scoped
+publication/transition authority; explain any HOLD Draft and its next action.
+Ready for review grants no review approval, merge authority, acceptance or Done.
 
 Read AGENTS.md, config/repositories.yaml, config/planning.yaml, config/routing.yaml,
 config/review.yaml, schemas/execution-plan.yaml and the requested workflow before a
@@ -55,6 +77,23 @@ Use docs/multi-agent.md and schemas/agent-assignment.yaml for bounded roles and 
 sessions. Router selects configured compatible backend after preserving agent/profile floors;
 retry/reassignment/switch is never adapter policy or automatic recovery.
 
+If a plan explicitly supplies `routing.logical_purpose`, apply the canonical
+class/role table in [routing](../docs/routing.md#optional-logical-purpose).
+Omission retains class preferences; do not infer aliases or insert CHALLENGER
+tasks. Resolve all requirements by max/OR first, then use the purpose preference
+within the class defaults. Every purpose prefers Codex under the latest policy;
+older OpenCode/Antigravity preferences are superseded. Automatic client fallback
+remains disabled; alternate selection needs explicit task authorization and verified
+capability matching as well as unchanged floors.
+Record preference separately from actual suitability, with a nonempty `fallback:`
+reason in existing routing reasons/assignment evidence for a compatible alternative.
+Assess every authority, capability, context, tool, isolation, independence and
+approval requirement before considering cost/latency. FAST cannot lower research
+or any raised floor. REVIEW/debugging is read-only diagnosis with fresh review
+independence, never implicit repair authority. Supplied purpose assignment roles
+must be checked even without an execution selector. Without assignment evidence,
+assess only declared task scope. The static checker validates declarations, not host facts.
+
 Resolve capability profiles from local mapping or configured defaults using docs/routing.md.
 Apply [model selection and verification](../docs/model-selection-verification.md): connect
 tool/context/output/reasoning requirements to versioned suitability evidence and authorized
@@ -75,7 +114,27 @@ for every role; optional clients need explicit task authorization and verified c
 matching. Default unavailability or quota means HOLD, never automatic client switching.
 Independence means a fresh session and new worktree. Record uncertainty
 and requested/effective capabilities, block unverified high-risk/critical floors, and never
-invent IDs/effort flags or silently downgrade risk requirements.
+invent IDs/effort flags or silently downgrade risk requirements. Compare default Codex
+with any explicitly task-authorized compatible alternative for every task and record
+acceptance, rejection and selection reasons. Codex defaults apply to workers and validators
+as well as the Coordinator; a prior one-task model choice is not a global default.
+Keep the task-local mapping null unless the user named/authorized a model.
+
+For bounded read-only preflight, account for setup effects and observe exact
+attempt/session model/effort and relevant tool/context evidence. Preserve requested
+versus effective values and time/identity. An unanswered checkpoint or generic
+implementation permission cannot release substantive work. Known incompatibility
+always HOLDs; required unknown high-risk/critical capability HOLDs. Only explicitly
+applicable lower-risk inheritance can record bounded uncertainty and mandatory
+validation. Settings/session/scope/baseline changes invalidate affected evidence.
+Catalog presence, launch success and past observations do not establish current
+account access, effort, task suitability or scoped model authorization. Model
+family diversity and usage/cost/duration remain unknown unless observed. Follow
+the [procedural scenarios](../docs/model-selection-verification.md#procedural-validation-scenarios)
+for stale observations, unsupported settings, pending before-work confirmation,
+unsettled replacement writers and technical PASS without human merge approval.
+These checks use Coordinator judgment, native backend evidence and human approval;
+there is no automatic enforcement process. Static PASS grants no dispatch authority.
 
 Use schemas/execution-backend.yaml for prepare/start/observe/collect/cancel/release.
 Select backend binding guidance; for the current Orca adapter read docs/adapters/orca.md

@@ -135,6 +135,51 @@ Use the [operator diagnostics procedure](../operations-diagnostics.md) for the
 cross-system comparison and HOLD decisions. Preserve private scoped receipts rather
 than copying paths, native IDs or transcripts into public guidance.
 
+## Board metadata reconciliation
+
+The provider-neutral [board reconciliation checkpoint](../operator-workflow.md#board-reconciliation)
+decides when, whether and why to reconcile; this binding supplies only the native mechanics.
+On inspected 1.4.222 the workspace is the board card and `orca worktree set` writes its
+metadata. Snapshot the exact identity, head, branch, links, comment, status and scoped
+attempts before any write. Inspect every relevant Run's complete paginated inventory and
+other known attempts sharing the workspace; one Run alone cannot establish full coverage.
+Refresh that snapshot before writing, preserve human metadata, update only factual fields,
+then read the result and attempts back:
+
+```text
+orca worktree show --worktree <verified-selector> --json
+orca orchestration worker-list --run <native-run-id> --include-remote --json
+orca orchestration worker-show --dispatch <native-attempt-id> --json
+orca worktree set --worktree <verified-selector> --workspace-status <native-column-id> --comment <factual-context> [--issue <number-or-null>] [--pr <number-or-null>] --json
+orca worktree show --worktree <verified-selector> --json
+```
+
+`worktree set` accepts the native board column ids (defaults `todo`, `in-progress`,
+`in-review`, `completed`); custom columns use their configured id. These are execution
+context for the environment, not GitHub Workflow states. Apply the core mapping: active
+attempts use `in-progress`; delivered results awaiting required review use `in-review`;
+known settled/delivered/superseded non-review attempts may use `completed`. Preserve factual
+success, failure and supersession distinctions in the comment, plus outstanding remediation
+or retention. An active successor overrides an older settled result; pending required review
+overrides completed display. Optional issue/PR values are a positive safe integer or literal `null`
+(which clears only that named link); omitted flags leave links unchanged.
+
+Unknown unsettled/possibly active attempts HOLD reconciliation. A known settled result with
+a user-retained live PTY or uncertain process exit may use delivered/`completed` display
+with factual retention/exit uncertainty; it never proves acceptance, merge, exit, safe reuse,
+worker release or deletion eligibility. Fencing, timeout and idle alone prove none of these.
+
+Confirm readback matches the intended identity, head, branch, status, comment and links,
+including unchanged fields. Any unexpected change from the prewrite snapshot/intended write,
+or a newly active attempt at refresh/readback, means HOLD. Preserve fresh human metadata;
+do not overwrite comments/links or blindly replay `worktree set` to restore a stale snapshot.
+Reobserve and resolve the conflict under scoped authority before another write; these CLI
+operations provide no atomic compare-and-set guarantee.
+
+Metadata cannot prove association, approval, sole ownership or process exit. `worktree set`
+still requires normal scoped authorization; the adapter supplies mechanics only, never
+status policy or GitHub state mirroring.
+
 ## Assignment capability limits
 
 Installed CLI observations do not constitute a general agent/model availability catalog.
