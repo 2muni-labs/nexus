@@ -15,6 +15,11 @@ PR creation (pr-create) requires these request fields:
   head: plain head branch name, e.g. topic/change, not OWNER:branch.
   base: target branch name in OWNER/REPO supplied to the command.
   expected_head_revision: exact head SHA, 40 lowercase hexadecimal characters.
+  commit_identity: {checkout: absolute local Git root, base_revision: exact SHA,
+                    preserved_commits: [{revision: original SHA, source_revision: exact SHA,
+                                         approval_reference: reviewed exemption reference}]}.
+    Use [] when no new human/upstream commits need preservation; metadata is private
+    plan evidence, excluded from the public PR payload. Old requests fail closed.
   draft: omitted or null defaults to true; explicit false is preserved.
          Only booleans or null are accepted; other values are rejected.
 Apply: append --apply --approved-plan OID --approval-reference TEXT.

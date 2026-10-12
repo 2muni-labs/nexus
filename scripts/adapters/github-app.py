@@ -1,5 +1,7 @@
 """One App token for one existing adapter call; no credentials on stdout or disk."""
 import base64
+import copy
+import importlib.util
 from datetime import datetime, timezone
 import json
 import os
@@ -13,6 +15,7 @@ import sys
 import tempfile
 import time
 import urllib.request
+import urllib.parse
 
 ROOT = Path(__file__).resolve().parents[2]
 FIELDS = "url,headRefOid,reviewDecision,statusCheckRollup,mergedAt,isDraft"
@@ -37,6 +40,8 @@ def command_permissions(repository, args):
     """Accept only the two command shapes used by the adapter, never arbitrary gh."""
     require(re.fullmatch(REPOSITORY, repository), "Exact repository required.")
     needed = {"metadata": "read"}
+    if args == ["identity"]:
+        return needed
     if args[:2] == ["pr", "view"]:
         require(len(args) == 7 and re.fullmatch(r"[1-9][0-9]*", args[2]) and
                 args[3:] == ["--repo", repository, "--json", FIELDS],
@@ -92,6 +97,8 @@ def command_permissions(repository, args):
         else:
             needed["issues" if suffix.startswith("issues") else "pull_requests"] = (
                 "read" if method == "GET" else "write")
+            if suffix == "pulls" and method == "POST":
+                needed["contents"] = "read"  # Pin identity range to the actual target base.
         require((method == "GET" and "--input" not in flags) or
                 (method != "GET" and "--input" in flags and "--paginate" not in flags
                  and "?" not in endpoint), "Unsupported REST request shape.")
@@ -225,15 +232,70 @@ def installation_identity(record, config, binding, repository):
             "App installation identity mismatch or suspended.")
 
 
-def run(repository, args):
+def identity_module():
+    spec = importlib.util.spec_from_file_location("nexus_identity", Path(__file__).with_name("github-identity.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def bot_identity(app, user, repository):
+    require(type(app) is dict and positive(app.get("id")) and
+            type(app.get("slug")) is str and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]*", app["slug"]),
+            "Authenticated App slug missing or invalid.")
+    require(type(user) is dict and user.get("login") == app["slug"] + "[bot]" and
+            positive(user.get("id")) and user.get("type") == "Bot",
+            "Authenticated App bot user missing or mismatched.")
+    return {"app_id": app["id"], "app_slug": app["slug"], "bot_login": user["login"],
+            "bot_user_id": user["id"], "bot_type": user["type"], "repository": repository,
+            "email": str(user["id"]) + "+" + user["login"] + "@users.noreply.github.com"}
+
+
+def run(repository, args, identity_request=None):
     needed = command_permissions(repository, args)
+    # Keep caller-owned objects/paths out of the post-authentication write.
+    identity_request = copy.deepcopy(identity_request)
+    args = list(args)
+    input_bytes = None
+    if "--input" in args:
+        index = args.index("--input") + 1
+        input_bytes = (sys.stdin.buffer.read() if args[index] == "-" else
+                       Path(args[index]).read_bytes())
+        args[index] = "-"
+    pr_create = (args[:4] == ["api", "--hostname", "github.com", f"repos/{repository}/pulls"]
+                 and "--method" in args and args[args.index("--method") + 1] == "POST")
+    require((identity_request is not None) == pr_create,
+            "PR creation requires exact commit identity request; other commands refuse it.")
+    if pr_create:
+        identity_module().request_identity(identity_request)
+        require("--input" in args, "PR publication payload required.")
+        def unique(pairs):
+            result = {}
+            for key, value in pairs:
+                require(key not in result, "Duplicate PR payload key.")
+                result[key] = value
+            return result
+        payload = json.loads(input_bytes.decode("utf-8"), object_pairs_hook=unique)
+        source = identity_request["head_repository"]
+        expected_head = identity_request["head"] if source == repository else source.split("/")[0] + ":" + identity_request["head"]
+        require(type(payload) is dict and payload.get("head") == expected_head and
+                payload.get("base") == identity_request["base"] and
+                (payload.get("head_repo") is None if source == repository else
+                 payload.get("head_repo") == source.split("/")[1]),
+                "PR payload differs from identity candidate.")
     fixture = os.environ.get("NEXUS_GITHUB_OFFLINE_FIXTURE")
     if fixture is not None:
         require(Path(fixture).is_absolute() and os.access(fixture, os.X_OK),
                 "Offline fixture must be an explicit executable absolute path.")
         env = child_environment()
         env.update({k: v for k, v in os.environ.items() if k.startswith("MOCK_")})
-        result = subprocess.run([fixture, *args], env=env, capture_output=True, timeout=120)
+        if pr_create:
+            code, output = run(repository, ["identity"])
+            require(code == 0, "Offline bot fixture unavailable.")
+            identity_module().verify_request(identity_request, json.loads(output))
+        result = subprocess.run([fixture, *args], input=input_bytes, env=env, capture_output=True, timeout=120)
+        if args == ["identity"] and result.returncode == 0:
+            identity_module().validate_identity(json.loads(result.stdout), repository)
         return result.returncode, result.stdout if result.returncode == 0 else b""
     require("NEXUS_GH_COMMAND" not in os.environ,
             "Legacy command override refused; use explicit offline fixture for tests.")
@@ -273,12 +335,46 @@ def run(repository, args):
         record = inventory["repositories"][0]
         require(type(record) is dict and positive(record.get("id")) and record.get("id") == binding["id"] and record.get("full_name") == repository,
                 "Token repository identity mismatch.")
+        if args == ["identity"] or pr_create:
+            require(type(app.get("slug")) is str and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]*", app["slug"]),
+                    "Authenticated App slug missing or invalid.")
+            user, _ = request("GET", "/users/" + app["slug"] + "%5Bbot%5D", token)
+            bot = bot_identity(app, user, repository)
+            if pr_create:
+                # Verify again with the SAME authenticated App as the provider write.
+                identity_module().verify_request(identity_request, bot)
+                require(type(identity_request.get("base")) is str and
+                        re.fullmatch(r"[A-Za-z0-9_.\-/]+", identity_request["base"]),
+                        "Exact target base branch required.")
+                base_ref, _ = request("GET", f"/repos/{repository}/git/ref/heads/" +
+                                      urllib.parse.quote(identity_request["base"], safe=""), token)
+                require(type(base_ref) is dict and base_ref.get("ref") == "refs/heads/" + identity_request["base"] and
+                        base_ref.get("object", {}).get("type") == "commit" and
+                        base_ref["object"].get("sha") == identity_request["commit_identity"]["base_revision"],
+                        "Target base revision changed; identity range must be reapproved.")
+                source_path = "repos/" + source + "/git/ref/heads/" + urllib.parse.quote(identity_request["head"], safe="")
+                if source == repository:
+                    source_ref, _ = request("GET", "/" + source_path, token)
+                else:
+                    # A fork requires its own exact repository binding/token.
+                    code, output = run(source, ["api", "--hostname", "github.com", source_path, "--method", "GET"])
+                    require(code == 0, "Fork source identity observation failed.")
+                    source_ref = json.loads(output)
+                require(type(source_ref) is dict and source_ref.get("ref") == "refs/heads/" + identity_request["head"] and
+                        source_ref.get("url") == "https://api.github.com/repos/" + source + "/git/refs/heads/" + identity_request["head"] and
+                        source_ref.get("object", {}).get("type") == "commit" and
+                        source_ref["object"].get("sha") == identity_request["expected_head_revision"] and
+                        source_ref["object"].get("url") == "https://api.github.com/repos/" + source + "/git/commits/" + identity_request["expected_head_revision"],
+                        "Source candidate changed before publication; reconcile and reapprove.")
         with tempfile.TemporaryDirectory(prefix="nexus-gh-config-") as config_dir:
             env = child_environment()
             env.update(GH_TOKEN=token, GH_HOST="github.com", GH_CONFIG_DIR=config_dir,
                        HOME=config_dir, GH_PROMPT_DISABLED="1", GH_NO_UPDATE_NOTIFIER="1",
                        GH_NO_EXTENSION_UPDATE_NOTIFIER="1", GH_TELEMETRY="false")
-            result = subprocess.run([executable, *args], env=env, capture_output=True, timeout=120)
+            if args == ["identity"]:
+                result = subprocess.CompletedProcess([], 0, json.dumps(bot).encode(), b"")
+            else:
+                result = subprocess.run([executable, *args], input=input_bytes, env=env, capture_output=True, timeout=120)
         if result.returncode == 0:
             require(token.encode() not in result.stdout and app_jwt.encode() not in result.stdout and
                     b"PRIVATE KEY-----" not in result.stdout, "Credential-bearing provider output refused.")
@@ -297,7 +393,16 @@ def run(repository, args):
 def main():
     try:
         require(len(sys.argv) >= 3, "Repository and provider command required.")
-        code, output = run(sys.argv[1], sys.argv[2:])
+        args = sys.argv[2:]
+        identity_request = None
+        if args[:1] == ["--identity-request"]:
+            require(len(args) >= 3, "Identity request file and provider command required.")
+            identity_request = identity_module().load_request(args[1])
+            args = args[2:]
+        if identity_request is None:
+            code, output = run(sys.argv[1], args)
+        else:
+            code, output = run(sys.argv[1], args, identity_request)
         if code:
             print("GitHub command failed; preserve plan and reconcile before any retry.", file=sys.stderr)
         else:

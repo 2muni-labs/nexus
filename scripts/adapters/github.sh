@@ -51,7 +51,7 @@ nexus_github_verify_write() {
 }
 
 nexus_github_operation() {
-    local op=$1 repo=$2 argument=$3 apply=$4 approved=$5 approval=$6 endpoint method payload plan oid temp marker found current number='' candidate='null' head_repo head_branch
+    local op=$1 repo=$2 argument=$3 apply=$4 approved=$5 approval=$6 endpoint method payload plan oid request marker found current number='' candidate='null' head_repo head_branch
     case "$op" in
         issue-read|pr-read|review-checks-read|association-read)
             [[ "$argument" =~ ^[1-9][0-9]*$ ]] || nexus_fail 'Positive item number required.'
@@ -99,47 +99,50 @@ nexus_github_operation() {
         *) nexus_fail "Unsupported provider operation: $op" ;;
     esac
     [[ -f "$argument" && -r "$argument" ]] || nexus_fail 'Write requires readable JSON request file.'
-    jq -e 'type == "object" and (.operation_id | type == "string" and test("^[a-zA-Z0-9_-]+$"))' "$argument" >/dev/null || nexus_fail 'Stable operation_id required.'
-    marker="<!-- nexus-operation:$(jq -r .operation_id "$argument") -->"
+    # Read the caller path once; every plan/preflight/write uses this snapshot.
+    request=$(cat -- "$argument") || nexus_fail 'Request snapshot unavailable.'
+    jq -e 'type == "object" and (.operation_id | type == "string" and test("^[a-zA-Z0-9_-]+$"))' <<< "$request" >/dev/null || nexus_fail 'Stable operation_id required.'
+    marker="<!-- nexus-operation:$(jq -r .operation_id <<< "$request") -->"
     case "$op" in
         issue-create|pr-create)
-            jq -e '.title | type == "string" and length > 0' "$argument" >/dev/null || nexus_fail 'Title required.'
-            jq -e '.body | type == "string"' "$argument" >/dev/null || nexus_fail 'Body required.'
+            jq -e '.title | type == "string" and length > 0' <<< "$request" >/dev/null || nexus_fail 'Title required.'
+            jq -e '.body | type == "string"' <<< "$request" >/dev/null || nexus_fail 'Body required.'
             endpoint="repos/$repo/issues"; method=POST
-            payload=$(jq -c --arg marker "$marker" '{title,body:(.body+"\n\n"+$marker)}' "$argument")
+            payload=$(jq -c --arg marker "$marker" '{title,body:(.body+"\n\n"+$marker)}' <<< "$request")
             if [[ "$op" == pr-create ]]; then
-                jq -e '(.head|type == "string" and length>0) and (.base|type == "string" and length>0) and (.head_repository|type == "string" and test("^[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$")) and (.expected_head_revision|type == "string" and test("^[0-9a-f]{40}$"))' "$argument" >/dev/null || nexus_fail 'Explicit PR head/base, head_repository and exact 40-character expected_head_revision required.'
-                jq -e '.draft == null or (.draft|type == "boolean")' "$argument" >/dev/null || nexus_fail 'PR draft must be boolean or null (default true).'
-                head_repo=$(jq -r .head_repository "$argument"); head_branch=$(jq -r .head "$argument")
+                jq -e '(.head|type == "string" and length>0) and (.base|type == "string" and length>0) and (.head_repository|type == "string" and test("^[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$")) and (.expected_head_revision|type == "string" and test("^[0-9a-f]{40}$"))' <<< "$request" >/dev/null || nexus_fail 'Explicit PR head/base, head_repository and exact 40-character expected_head_revision required.'
+                jq -e '.draft == null or (.draft|type == "boolean")' <<< "$request" >/dev/null || nexus_fail 'PR draft must be boolean or null (default true).'
+                head_repo=$(jq -r .head_repository <<< "$request"); head_branch=$(jq -r .head <<< "$request")
                 git check-ref-format "refs/heads/$head_branch" >/dev/null &&
-                    git check-ref-format "refs/heads/$(jq -r .base "$argument")" >/dev/null || nexus_fail 'PR head/base must be branch names, not owner-qualified refs.'
-                [[ "$head_repo" != "$repo" || "$head_branch" != "$(jq -r .base "$argument")" ]] || nexus_fail 'Distinct PR head/base required in the same repository.'
-                candidate=$(jq -c '{repository:.head_repository,branch:.head,revision:.expected_head_revision}' "$argument")
+                    git check-ref-format "refs/heads/$(jq -r .base <<< "$request")" >/dev/null || nexus_fail 'PR head/base must be branch names, not owner-qualified refs.'
+                [[ "$head_repo" != "$repo" || "$head_branch" != "$(jq -r .base <<< "$request")" ]] || nexus_fail 'Distinct PR head/base required in the same repository.'
+                python3 -I -B "$(dirname -- "${BASH_SOURCE[0]}")/github-identity.py" plan /dev/stdin <<< "$request" >/dev/null || nexus_fail 'Exact PR commit identity request required; old requests must be re-prepared.'
+                candidate=$(jq -c '{repository:.head_repository,branch:.head,revision:.expected_head_revision}' <<< "$request")
                 endpoint="repos/$repo/pulls"
                 payload=$(jq -c --arg marker "$marker" --arg repo "$repo" '
                   {title,body:(.body+"\n\n"+$marker),
                    head:(if .head_repository == $repo then .head else (.head_repository|split("/")[0])+":"+.head end),
                    base,draft:(if .draft == null then true else .draft end)} +
-                  (if .head_repository == $repo then {} else {head_repo:(.head_repository|split("/")[1])} end)' "$argument")
+                  (if .head_repository == $repo then {} else {head_repo:(.head_repository|split("/")[1])} end)' <<< "$request")
             fi ;;
         issue-update|association-comment)
-            jq -e '(.number|type == "number" and floor == . and .>0) and (.expected_updated_at|type == "string" and length>0)' "$argument" >/dev/null || nexus_fail 'Number and expected_updated_at required.'
-            number=$(jq -r .number "$argument")
+            jq -e '(.number|type == "number" and floor == . and .>0) and (.expected_updated_at|type == "string" and length>0)' <<< "$request" >/dev/null || nexus_fail 'Number and expected_updated_at required.'
+            number=$(jq -r .number <<< "$request")
             endpoint="repos/$repo/issues/$number"; method=PATCH
             if [[ "$op" == association-comment ]]; then
                 method=POST; endpoint="$endpoint/comments"
-                jq -e '.body | type == "string" and length>0' "$argument" >/dev/null || nexus_fail 'Reviewed association body required.'
-                payload=$(jq -c --arg marker "$marker" '{body:(.body+"\n\n"+$marker)}' "$argument")
+                jq -e '.body | type == "string" and length>0' <<< "$request" >/dev/null || nexus_fail 'Reviewed association body required.'
+                payload=$(jq -c --arg marker "$marker" '{body:(.body+"\n\n"+$marker)}' <<< "$request")
             else
-                jq -e '.changes | type == "object" and length>0 and ((keys-["title","body","labels","milestone","state"])|length==0)' "$argument" >/dev/null || nexus_fail 'Unsupported Issue changes.'
-                payload=$(jq -c .changes "$argument")
+                jq -e '.changes | type == "object" and length>0 and ((keys-["title","body","labels","milestone","state"])|length==0)' <<< "$request" >/dev/null || nexus_fail 'Unsupported Issue changes.'
+                payload=$(jq -c .changes <<< "$request")
             fi ;;
     esac
     plan=$(jq -cn --arg op "$op" --arg repo "$repo" --arg endpoint "$endpoint" --arg method "$method" \
-        --argjson candidate "$candidate" --argjson payload "$payload" --slurpfile request "$argument" \
+        --argjson candidate "$candidate" --argjson payload "$payload" --slurpfile request /dev/stdin \
         '{provider:"github",operation:$op,repository:$repo,endpoint:$endpoint,method:$method,
           operation_id:$request[0].operation_id,expected_updated_at:$request[0].expected_updated_at,payload:$payload}
-          + (if $op == "pr-create" then {candidate:$candidate} else {} end)')
+          + (if $op == "pr-create" then {candidate:$candidate,commit_identity:$request[0].commit_identity} else {} end)' <<< "$request")
     oid=$(printf '%s\n' "$plan" | git hash-object --stdin)
     if [[ "$apply" == false ]]; then
         [[ -z "$approved$approval" ]] || nexus_fail 'Approval flags require --apply.'
@@ -147,6 +150,10 @@ nexus_github_operation() {
         return
     fi
     [[ "$approved" == "$oid" && -n "$approval" && "$approval" == *[![:space:]]* ]] || nexus_fail 'Exact prepared plan digest and explicit human approval reference required.'
+    if [[ "$op" == pr-create ]]; then
+        # Check exact raw commit metadata even before recovery, never just a promise.
+        python3 -I -B "$(dirname -- "${BASH_SOURCE[0]}")/github-identity.py" verify "$repo" /dev/stdin <<< "$request" >/dev/null || nexus_fail 'PR commit identity preflight failed; publication blocked.'
+    fi
     if [[ "$op" == issue-update || "$op" == association-comment ]]; then
         current=$(nexus_github_api "repos/$repo/issues/$number" --method GET)
         nexus_github_normalize "$repo" issue "$number" <<< "$current" >/dev/null || nexus_fail 'Item identity changed; reobserve ownership and approve a new target.'
@@ -173,7 +180,7 @@ nexus_github_operation() {
         return
     fi
     if [[ "$op" == issue-update || "$op" == association-comment ]]; then
-        jq -e --arg expected "$(jq -r .expected_updated_at "$argument")" '.updated_at == $expected and (has("pull_request") | not)' <<< "$current" >/dev/null || nexus_fail 'Item changed or is a PR; reobserve and approve a new plan.'
+        jq -e --arg expected "$(jq -r .expected_updated_at <<< "$request")" '.updated_at == $expected and (has("pull_request") | not)' <<< "$current" >/dev/null || nexus_fail 'Item changed or is a PR; reobserve and approve a new plan.'
     fi
     if [[ "$op" == pr-create ]]; then
         current=$(nexus_github_api "repos/$head_repo/git/ref/heads/$(jq -rn --arg branch "$head_branch" '$branch|@uri')" --method GET)
@@ -184,14 +191,17 @@ nexus_github_operation() {
           .object.url == ("https://api.github.com/repos/"+$candidate.repository+"/git/commits/"+$candidate.revision)
         ' <<< "$current" >/dev/null || nexus_fail 'PR source branch identity or revision changed; reobserve and approve a new plan.'
     fi
-    temp=$(mktemp "${TMPDIR:-/tmp}/nexus-github.XXXXXX")
-    printf '%s\n' "$payload" > "$temp"
-    if current=$(nexus_github_api "$endpoint" --method "$method" --input "$temp"); then
-        rm -f -- "$temp"
+    local write_status=0
+    if [[ "$op" == pr-create ]]; then
+        # Separate inherited request descriptor from the public payload stdin.
+        current=$(nexus_github_command "$repo" --identity-request /dev/fd/3 api --hostname github.com "$endpoint" --method "$method" --input - 3<<< "$request" <<< "$payload") || write_status=$?
+    else
+        current=$(nexus_github_api "$endpoint" --method "$method" --input - <<< "$payload") || write_status=$?
+    fi
+    if [[ "$write_status" == 0 ]]; then
         nexus_github_verify_write "$op" "$repo" "$payload" "$number" "$candidate" <<< "$current" >/dev/null || nexus_fail 'Provider write response is ambiguous or mismatched. Preserve plan and reconcile; do not retry.'
         jq -cn --argjson record "$current" --arg oid "$oid" --arg approval "$approval" '{applied:true,plan_oid:$oid,approval_reference:$approval,record:$record}'
     else
-        rm -f -- "$temp"
         nexus_fail 'Provider write failed or response is unknown. Preserve plan; reconcile by operation marker. Do not blindly retry.'
     fi
 }
