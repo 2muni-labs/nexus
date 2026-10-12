@@ -31,13 +31,17 @@ planning:
     conflicting_mutation_scopes: serialize_or_split
   assignments:
     contract: schemas/agent-assignment.yaml
+    task_placement: newly_created_isolated_non_main_worktree_for_every_task_including_DIRECT_and_read_only
+    main_checkout: intake_read_only_coordination_and_ignored_operational_evidence_only
+    main_worker_execution_tests_and_repair: forbidden
+    active_attempt_continuation: may_continue_its_own_worktree
     mutable_parallelism: one_isolated_owner_worktree_per_independently_mutable_task
     issue_split: prefer_linked_independently_reviewable_work_items_over_shared_mutable_workspace
-    backend_replacement: preserve_work_identity_and_reverify_host_placement_capabilities
+    backend_replacement: new_worktree_after_prior_settlement_editor_exit_and_preserved_immutable_results
   baselines:
     require_immutable_revision: true
     uncommitted_changes: preserve_and_explicitly_include_or_exclude
-    read_only_context_reuse: allowed_if_no_concurrent_mutation
+    read_only_context_reuse: same_active_attempt_only_new_tasks_require_new_worktrees
   integration_gate:
     required_after_parallel_mutation: true
     required_for_cross_repository_contracts: true
@@ -57,7 +61,7 @@ planning:
       - explicit_single_owner_mutable_task
       - passed_compatibility_gate
       - immutable_inputs_and_recorded_provenance
-      - isolated_non_main_worktree
+      - newly_created_isolated_non_main_worktree
       - preserve_upstream_worktrees
       - no_automatic_main_merge_or_publish
     cross_repository_baseline: separate_revision_per_repository
@@ -68,6 +72,8 @@ planning:
       - prior_attempt_definitively_settled_or_fenced_per_execution_backend
       - concrete_recoverable_cause
       - coordinator_decision_and_attempt_budget
+      - proven_editor_exit_and_preserved_immutable_results
+      - newly_created_isolated_non_main_worktree
     unknown_liveness: preserve_and_investigate
   records:
     plans: .runtime/runs/<run-id>/plan.yaml

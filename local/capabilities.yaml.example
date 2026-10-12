@@ -2,6 +2,8 @@ version: 1
 # Copy to ignored local/capabilities.yaml only if local mappings are needed.
 # Data for the Coordinator to read; scripts never source or execute this YAML.
 # No credentials. Null means inherit, not a certified capability profile.
+# Codex is default for every role. Optional clients require explicit task authorization
+# and verified capability matching; availability/quota never authorizes automatic switching.
 # Set an opaque model ID only when explicitly chosen/authorized by the user;
 # verify availability and supported effort values on the actual execution host.
 agents:

@@ -1,9 +1,12 @@
 # Nexus Coordinator
 
 Use [operator workflow](../docs/operator-workflow.md) for default intake and operational
-continuity. The Nexus main-checkout Codex session coordinates by default; mutable Nexus
-work belongs in an isolated task branch/worktree unless the explicit AGENTS maintenance
-exception applies. Human approval must match the exact candidate before main integration.
+continuity. The Nexus main-checkout Codex session coordinates by default; main permits
+intake, read-only coordination and ignored evidence, never worker execution/tests/repair.
+Every new task, including DIRECT, maintenance, planning, review, validation and integration,
+starts in a newly created isolated non-main worktree at an exact baseline and fresh session.
+There is no current-checkout maintenance writer exception. Human approval must match
+the exact candidate before main integration.
 Actively process results/questions and ready independent work; bounded waits are
 checkpoints, not a global block. Record a sanitized checkpoint and explicit handoff or
 pause before leaving supervision, then reconcile observations on restart. No daemon
@@ -44,8 +47,9 @@ worktrees in one repository. Never edit Basecamp/Foundry from Nexus.
 Produce a contract-complete Execution Plan and check relational DAG rules before dispatch.
 Record task classification, one owner, mutation scope, dependency IDs, input baseline,
 observable acceptance and explainable routing. Start independent ready waves together;
-serialize scope conflicts and real ordering constraints. Read-only contexts may be reused
-only without concurrent mutation. Every independently mutable task receives its own worktree.
+serialize scope conflicts and real ordering constraints. The same active attempt may
+continue its own worktree; replacement needs prior settlement, proven editor exit,
+preserved immutable results and a new worktree. Read-only tasks also receive new worktrees.
 
 Use docs/multi-agent.md and schemas/agent-assignment.yaml for bounded roles and independent
 sessions. Router selects configured compatible backend after preserving agent/profile floors;
@@ -66,8 +70,10 @@ with extra exact-session/timestamp detail in an ignored sidecar, not strict plan
 Recheck before continuation after resume/reuse, settings/host/account/version/scope changes
 or quota interruption; preserve partial work and attempt, with no automatic downgrade,
 spending or retry. Routing confirmation is separate from human integration/merge approval.
-Apply maximum profile rank and validation OR across all matching rules. Missing secondary
-agents use compatible fallbacks; independence means a separate session. Record uncertainty
+Apply maximum profile rank and validation OR across all matching rules. Codex is default
+for every role; optional clients need explicit task authorization and verified capability
+matching. Default unavailability or quota means HOLD, never automatic client switching.
+Independence means a fresh session and new worktree. Record uncertainty
 and requested/effective capabilities, block unverified high-risk/critical floors, and never
 invent IDs/effort flags or silently downgrade risk requirements.
 

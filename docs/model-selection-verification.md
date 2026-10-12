@@ -26,7 +26,7 @@ tests or a validator PASS cannot retrospectively certify settings used earlier.
    required output formats/artifacts, and reasoning/judgment needed for contracts,
    debugging, integration or review. Record the abstract effort intent separately
    from any provider effort value.
-4. Assess preferred agent/profile and then compatible configured fallback against
+4. Assess default Codex/profile or an explicitly task-authorized alternate client against
    those needs. Justify suitability with versioned provider/installed evidence and
    a concise operational rationale connecting each material need to capability.
    Task-relevant prior observations may support judgment, but name, price, a passed
@@ -39,9 +39,9 @@ tests or a validator PASS cannot retrospectively certify settings used earlier.
 6. On the exact execution host inspect installed launcher/backend versions,
    supported model/effort controls and account readiness. Record evidence scope,
    time and limitations. Authentication presence alone does not establish model
-   access, quota or the effective reasoning setting. Unavailable preferred agents
-   may use a verified compatible authorized fallback, with a recorded reason and
-   unchanged floor/validation; otherwise HOLD and ask the Coordinator.
+   access, quota or the effective reasoning setting. Unavailable or quota-limited Codex
+   means HOLD, never automatic client switching. Alternate clients require explicit
+   task authorization, verified capability matching and unchanged floor/validation.
 7. Preserve the requested launch receipt, then bind actual observations to the
    resulting logical session and native attempt. Apply the before-work decision
    below, recheck after changes, and include capability evidence in completion.
@@ -77,7 +77,10 @@ Validation requirements never decrease under inheritance or fallback.
 
 Preparation resolves policy, ownership, baseline, placement, authorization and
 available support evidence. Actual settings can require a live session to observe;
-launch that session with a **read-only preflight first** specification. Distinguish
+launch that session in a newly created isolated non-main worktree at an exact baseline
+with a **read-only preflight first** specification. This includes DIRECT, planning,
+review, validation and integration tasks; main is intake/read-only coordination only,
+with ignored operational evidence permitted, never worker execution/tests/repair. Distinguish
 permission to start preflight from permission to perform implementation. Preserve
 setup policy and inspect any setup effects against the assigned mutation boundaries.
 Normal worker-start can deliver a prompt that immediately begins work: merely
@@ -160,7 +163,9 @@ observe the setting in the **same exact session**, recheck suitability/support/a
 readiness and record a new checkpoint before continuing. Do not send a work prompt
 until the rendered picker selection and effective setting are verified. If replacement
 is needed, apply finite recovery rules, preserve identity/evidence and prove prior
-settlement and editor exit; unknown liveness never permits a duplicate editor.
+settlement and editor exit, preserve immutable results and create a new isolated non-main
+worktree; unknown liveness never permits a duplicate editor. Only continuation of the
+same active attempt may use its own worktree.
 
 At completion record which settings were verified for which work intervals, recheck
 current settings, identify unresolved gaps, and attach the exact candidate and required

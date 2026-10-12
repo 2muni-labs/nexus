@@ -93,8 +93,11 @@ standard. Review-only authority does not grant implementation or merge permissio
 One mutable task = one owner = one repository. One independently mutable task = one
 isolated worktree = one diff. A worker modifying A must never modify B. Each
 implementation result eventually maps to exactly one final human review decision.
-Read-only planning/review may reuse a suitable context when no concurrent mutation can
-change its baseline; record the exact revisions. Cross-repository analysis is allowed,
+Every new task, including DIRECT, planning, read-only review, validation and integration,
+starts in a newly created isolated non-main worktree at an exact baseline. Independent
+review/validation also uses a fresh session. The same active attempt may continue in its
+own worktree; replacement requires a new worktree after prior settlement, proven editor
+exit and preserved immutable results. Cross-repository analysis is allowed,
 preferably through normalized inputs. Cross-repository mutation and commits are forbidden.
 
 Nexus owns intake, plans, routing, policies, prompts, workflows, gate decisions, normalized
@@ -127,7 +130,8 @@ embed repositories as submodules, subtrees, copied source directories or monorep
 - **Supervisor:** use the selected backend's exact attempt/lifecycle authority. Require explicit outcomes
   and structured results; idle terminals, heartbeat, timeout or contact loss are not
   completion. Process questions, preserve failure evidence, prevent duplicate mutation
-  attempts, and choose release/reuse/user-requested retention after accepted settlement.
+  attempts, and choose release/user-requested retention after accepted settlement; new
+  tasks require new worktrees and sessions.
 - **Integrator:** assess prerequisites and semantic compatibility before shared downstream
   work. Require a recorded integration PASS and resolved immutable baseline map. A
   successful gate worker or a native task marked completed is insufficient by itself.
@@ -135,12 +139,12 @@ embed repositories as submodules, subtrees, copied source directories or monorep
 The Coordinator routes managed-repository implementation rather than editing it from
 Nexus. The Codex Coordinator in Nexus's main checkout is the default intake; see
 docs/operator-workflow.md. Main is the protected accepted policy baseline under Nexus
-operating policy; this does not claim installed GitHub branch protection or rulesets. Default all
-mutable Nexus work to a task branch in an isolated non-main worktree; integration into
-main requires explicit human approval of the exact reviewed candidate.
-The sole current-checkout exception is a directly assigned Nexus maintenance task with
-explicit user scope authorizing that checkout, including main modification if on main.
-Use it as the sole mutable workspace; never share it with another mutation worker.
+operating policy; this does not claim installed GitHub branch protection or rulesets. Main
+permits intake, read-only coordination and ignored operational evidence, never worker
+execution, tests, implementation or repair. All task execution uses new isolated non-main
+worktrees, including maintenance and DIRECT tasks; there is no current-checkout writer
+exception. Authorized final integration into main is a separate controlled operation
+requiring explicit human approval of the exact reviewed candidate, not implementation on main.
 Prior authorized direct commits remain the existing authorized baseline; do not rewrite
 history or retrospectively certify their final acceptance under this prospective default.
 Independent validation must use a separate session. A plan, review or validation task
@@ -196,8 +200,9 @@ authorization decisions. Durable approval evidence must be externally recoverabl
 
 Independent validation is mandatory for P0/P1, high risk, critical complexity,
 architecture-sensitive changes, and integration changes with multiple mutable upstream
-results. Use a fresh session distinct from the implementer; another agent family is
-preferred but optional. Validate original finding or feature acceptance, root cause,
+results. Use a fresh session and newly created isolated non-main worktree distinct from the
+implementer. Codex is the default; another agent client requires explicit task authorization
+and verified capability matching. Validate original finding or feature acceptance, root cause,
 minimal scope, compatibility, meaningful tests, docs and managed contracts against the
 exact immutable proposal. Return PASS/FAIL/NEEDS-WORK; missing evidence is not PASS.
 Read-only validators may run safe tests and explicitly authorized exact candidate
@@ -215,9 +220,12 @@ invent commands or flags. Bind tasks to one owning repository and verify returne
 workspace identities. Preserve setup policy and inspect active attempt IDs/results.
 
 Policy profile names and abstract reasoning levels are not provider IDs or literal
-CLI effort flags. Local `capabilities.yaml` is data, never executable. Missing optional
-agents use an available compatible fallback; a Codex validator in a fresh session is
-still independent. Unsupported effort must use a verified supported equivalent or
+CLI effort flags. Local `capabilities.yaml` is data, never executable. Codex is the default
+for every agent role. Optional Antigravity/OpenCode clients remain
+catalog extensions requiring explicit task authorization and verified capability matching;
+Codex unavailability or quota means HOLD, never automatic client switching. A Codex
+validator in a fresh session and new worktree is independent. Unsupported effort must
+use a verified supported equivalent or
 configured default with recorded uncertainty, never silently drop a required capability
 floor. Unverified high-risk/critical capabilities block dispatch; lower-risk configured
 defaults can be used with explicit uncertainty and appropriate validation. Honor the

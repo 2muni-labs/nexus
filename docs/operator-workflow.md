@@ -12,8 +12,10 @@ for substantive assessments and [operating model](operating-model.md) for peer b
 GitHub owns persistent project intent and history; Nexus owns workflow policy; the
 selected execution backend owns environments and factual attempt observations.
 These responsibilities remain unchanged when agents, models or compatible providers
-change. Codex is the configured Coordinator default, not a requirement on all workers
-or validators. Only configured, verified capabilities may be used; this procedure
+change. Codex is the configured default for every agent assignment, including workers,
+reviewers and validators. Alternate clients require explicit task authorization and
+verified capability matching; default unavailability or quota means HOLD. Only configured,
+verified capabilities may be used; this procedure
 does not advertise additional providers or agents.
 
 Direct human edits to Issues and Projects remain valid intake and control signals.
@@ -34,18 +36,17 @@ eligibility condition holds; otherwise create an ORCHESTRATED plan under ignored
 
 Nexus main is the protected accepted policy baseline under Nexus operating policy.
 This does not claim that GitHub branch protection or rulesets are installed.
-By default, all mutable Nexus
-work uses a task branch in an isolated non-main worktree. Intake, planning and review
-in the main checkout do not authorize editing it. Integration into main requires
+Main permits intake, read-only coordination and ignored operational evidence only;
+worker execution, tests, implementation and repair there are forbidden. Every new task,
+including DIRECT, maintenance, planning, review, validation and integration, starts in a
+newly created isolated non-main worktree at an exact baseline. Integration into main requires
 explicit human approval of the exact reviewed candidate; changed inputs require a
 new decision. Approval to implement, a worker outcome or validation PASS supplies
 no main integration authority.
 
-The sole current-checkout exception is a directly assigned Nexus maintenance task
-whose explicit user scope authorizes that checkout and its bounded changes. If the
-checkout is on main, the scope must explicitly include main modification. It remains
-one sole mutable workspace with no concurrent mutation worker, and all applicable
-validation and publication boundaries still apply. Prior authorized direct commits
+There is no current-checkout maintenance writer exception. Authorized final main
+integration is a separate controlled operation, not implementation on main. Prior
+authorized direct commits
 remain the existing authorized baseline; this does not retrospectively certify their
 final acceptance. Do not rewrite history to retrofit this default.
 
@@ -53,15 +54,17 @@ One mutable task has one owner, one repository, one worktree and one diff. Route
 managed-repository implementation to its owning repository; never edit another
 repository from Nexus. Serialize overlapping mutation scopes, or split only when
 independence can be demonstrated. Start independent ready work together in separate
-worktrees; avoid artificial dependencies or unnecessary workers. Safe read-only
-contexts may be reused against a recorded exact baseline without concurrent mutation.
+worktrees; avoid artificial dependencies or unnecessary workers. The same active attempt
+may continue its own worktree. Replacement requires a new worktree after prior settlement,
+proven editor exit and preserved immutable results; new read-only tasks also get new worktrees.
 
 ## Capability routing and dependency gates
 
 Classify each task's type, complexity, risk, context, scope and acceptance first.
 Apply all matching [routing rules](../config/routing.yaml) by maximum profile rank
-and validation logical OR. Choose compatible available agents/fallbacks by actual
-capabilities, then verify effective model/effort and backend placement on the host.
+and validation logical OR. Use Codex by default; alternate clients require explicit
+task authorization and compatible verified capabilities. Unavailability or quota holds
+work, with no automatic client fallback. Verify effective model/effort and placement.
 Profiles are floors, not model brands or literal CLI flags. Record requested versus
 effective capabilities and uncertainty; missing optional agents cannot lower floors
 or waive independence. Unverified high-risk/critical capability blocks dispatch.
@@ -97,10 +100,10 @@ settlement and editor exit. Cancellation is a request, not proof of termination.
 | Validation | Fresh session distinct from implementer verifies the exact candidate and original acceptance; PASS/FAIL/NEEDS-WORK with evidence. Same agent family is permitted. Mandatory triggers remain in review/routing policy. |
 | Human acceptance | Explicit decision bound to the exact reviewed result; accounts for each implementation result and grants only its stated operation scope. |
 | Merge / main integration | Separately authorized operation is observed and checked against the approved candidate; implementation Done needs observed merge and acceptance, while non-code work may use explicit accepted disposition. |
-| Worker release | After accepted settlement, decide reuse, user-requested retention or release through the backend; release does not delete the worktree. |
+| Worker release | After accepted settlement, release or record user-requested retention through the backend; a new task requires a new worktree/session. Release does not delete the worktree. |
 | Checkout cleanup | Default retained; deletion needs separate exact human approval and every [lifecycle eligibility check](worktree-lifecycle.md). Report delivery and cleanup separately. |
 
-Required independent validation uses a fresh session, even when Codex validates a
+Required independent validation uses a fresh session and new isolated non-main worktree, even when Codex validates a
 Codex implementation. Validators report defects without repairs; assign corrections
 as bounded implementation work and revalidate the changed exact candidate. Missing
 evidence is NEEDS-WORK, never PASS. No milestone implies automatic publication,
@@ -118,7 +121,7 @@ ignored `reviews/`. Include:
 - Active/settled attempts, authoritative host/backend receipts, observed liveness and its source.
 - Outcomes, checks, validation, gate inputs/results and exact human decision scope.
 - Outstanding questions, dependency holds, consumers, next action/owner and finite retry budget.
-- Worker reuse/release/retention decisions and retained checkout reasons/next cleanup trigger.
+- Same-attempt continuation and worker release/retention decisions and retained checkout reasons/next cleanup trigger.
 
 Keep recovery-critical sanitized associations and decisions in durable external
 records before claiming recovery after local loss, following

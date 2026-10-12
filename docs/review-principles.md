@@ -111,11 +111,14 @@ Do not serialize conceptual relatives without an execution dependency. Paralleli
 independent scopes, compatible bases and a definable downstream integration path.
 Unresolved owners, scopes, baselines or routing block dispatch.
 
-One independently mutable task = one isolated worktree. Do not create worktrees or agents
-merely to increase activity. Verify actual Orca-returned repository/worktree identity,
-initial dirty-state inclusion/exclusion and absence of concurrent mutation in reused
-read-only contexts. The user's current checkout is mutable only under explicit controlled
-assignment; preserve existing user changes.
+Every new task, including DIRECT, planning, review, validation and integration, starts
+in a newly created isolated non-main worktree at an exact baseline and fresh session.
+Do not create unnecessary tasks or agents merely to increase activity. Verify actual
+Orca-returned repository/worktree identity and initial dirty-state inclusion/exclusion.
+Main permits intake, read-only coordination and ignored evidence, never worker execution,
+tests or repair. The same active attempt may continue its own worktree; replacement
+requires prior settlement, proven editor exit and preserved immutable results. Preserve
+existing user changes; final main integration remains a separately authorized operation.
 
 ## Integration and independent validation
 
@@ -134,8 +137,10 @@ validate the combined candidate, not merely the individual upstream results.
 
 Validation checks original requirements/finding, root cause, minimal scope, regressions,
 meaningful tests, repository contracts and documentation consistency. Independence means
-separate session and separate context where appropriate; another agent family is preferred
-but optional. A fresh compatible Codex session can be independent. Validators do not repair;
+a fresh session and newly created isolated non-main worktree. Codex is default; alternate
+clients require explicit task authorization and verified capability matching. Default
+unavailability or quota means HOLD without automatic client switching. A fresh compatible
+Codex session can be independent. Validators do not repair;
 corrections require a new implementation task. Preserve mandatory triggers in config/review.yaml.
 
 HOLD is a dispatch/supervision decision, not a fourth gate/validation result. Use NEEDS-WORK

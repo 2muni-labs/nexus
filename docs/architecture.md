@@ -114,8 +114,12 @@ Cross-repository baselines remain separate revisions; there is no combined Git t
 ## Safety, failures and state
 
 Record committed revisions and explicitly included/excluded dirty state. Preserve user
-changes. Mutable tasks each receive an isolated worktree; read-only tasks may reuse an
-immutable context without concurrent mutation. Review, implementation and validation
+changes. Every new task, including DIRECT, planning, review, validation and integration,
+starts in a newly created isolated non-main worktree at an exact baseline and fresh session.
+Main permits intake, read-only coordination and ignored evidence, never worker execution,
+tests or repair. Same active attempt continuation may use its own worktree; replacement
+requires prior settlement, proven editor exit and preserved immutable results. Review,
+implementation and validation
 have separate responsibilities; independent validation uses a separate session.
 
 Explicit `worker_done` is evidence to inspect, not automatic acceptance. Infrastructure,

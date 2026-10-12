@@ -8,7 +8,10 @@ clarifies existing safety boundaries; it adds no cleanup daemon, scheduler or TT
 ## Default disposition
 
 After accepted settlement, handle the worker using the installed Orca lifecycle
-contract: immediate reuse, user-requested retention, or release. Release a settled
+contract: user-requested retention or release. New tasks, including DIRECT and read-only
+review/validation, require newly created isolated non-main worktrees at exact baselines
+and fresh sessions. The same active attempt may continue its own worktree; replacement
+requires prior settlement, proven editor exit and preserved immutable results. Release a settled
 worker when it is no longer needed; do not keep its terminal alive merely to keep
 its worktree. A released worker does not imply a deleted worktree.
 
@@ -25,7 +28,8 @@ Treat an instruction as the user's objective and its related follow-up decisions
 not as one chat turn. Record which objective/task/run owns each workspace. A new
 message that clarifies scope, requests status or orders a repair continues that
 objective; it does not implicitly cancel it or authorize cleanup. A genuinely new
-objective has its own scope even when it uses a previously retained workspace.
+objective has its own scope and new task workspace; retained workspaces are evidence,
+not execution placement for new tasks.
 
 The default deletion window is **after final task disposition and before the final
 closure report**, provided exact deletion approval and all eligibility conditions
@@ -36,11 +40,11 @@ these checks at natural instruction boundaries; Nexus runs no background cleanup
 | --- | --- | --- |
 | Submission / intake | Inspect workspaces relevant to this objective and known retained work from previous objectives; identify ownership, activity, retention reasons and consumers. Record the expected closure disposition. | Identify candidates only. A new instruction does not authorize deleting previous work. Execute prior specifically approved cleanup only after fresh eligibility/scope checks and without disrupting the new objective. |
 | Planning / dispatch | Bind task, repository, baseline and workspace; preserve prior user state. | No cleanup merely to obtain a convenient name, path or baseline. |
-| Execution / task completion | Accept explicit outcomes and promptly reuse, retain or release settled worker terminals through Orca. | Keep checkouts through their consumers, integration and validation. A completed subtask is not instruction closure. |
+| Execution / task completion | Accept explicit outcomes and promptly retain or release settled worker terminals through Orca. | Keep checkouts through their consumers, integration and validation. A completed subtask is not instruction closure. |
 | Result delivery / awaiting human decision | Present candidate, validation and outstanding merge/rejection decisions. Identify retained workspaces. | No default deletion while human review or required validation is pending. A delivered implementation report is not final disposition. |
 | Final human disposition | Verify actual approved merge, or explicit rejection/cancellation and data disposition; read-only results require acceptance and preserved evidence. Prepare exact deletion candidates and effects. | Enter the cleanup window only for eligible, separately deletion-approved workspaces. Merge/rejection instructions alone confer no deletion authority. |
 | Closure / reconciliation | Recheck, remove approved eligible workspaces through Orca, verify results, and record every workspace's disposition outside deletion targets. | Perform authorized deletion before the final closure report. Otherwise record retention or HOLD and its next trigger; do not wait indefinitely or claim complete cleanup. |
-| Later instruction / resumption | Revisit a retained workspace when the user supplies the missing decision, requests cleanup, resolves a blocker or resumes the objective. Recheck identity, evidence and approval scope. | A later explicit cleanup instruction can finish the original objective's workspace lifecycle. Resumption requires a valid new attempt before editing; old settled lifecycle IDs are not reused. |
+| Later instruction / resumption | Revisit a retained workspace when the user supplies the missing decision, requests cleanup, resolves a blocker or resumes the objective. Recheck identity, evidence and approval scope. | A later explicit cleanup instruction can finish the original objective's workspace lifecycle. Continuation of the same active attempt may use its own worktree; replacement requires a new worktree after prior settlement/exit and preserved results. Old settled lifecycle IDs are not reused. |
 
 Default to keeping even disposable review/validation checkouts until instruction
 closure accounting. Earlier retirement is allowed only as a separately authorized

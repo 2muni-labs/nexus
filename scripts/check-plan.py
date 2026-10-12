@@ -8,15 +8,16 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-# Reviewed policy syntax/semantics at e41e615; hashes exclude blank/full-comment lines.
+# Reviewed policy syntax/semantics for Codex defaults and fresh task placement;
+# hashes exclude blank/full-comment lines. Placement/live authority remain operator checks.
 # Unsupported revisions HOLD rather than silently guessing new policy semantics.
 SUPPORTED = {
-    'config/planning.yaml': '4071363a303ae0ff8b923835c5407c7edea9df91aba38ca28982257e130fad63',
-    'config/routing.yaml': 'dc1abfd6accd0b3c900b9f166e46db8507bd7f07eb1a1fe9343d12524a3d298c',
+    'config/planning.yaml': '4e86d3d915684b00530956818358db5f33ba0bd424d1e0391da34703c83bf9a2',
+    'config/routing.yaml': '8de288e4585454588743afb52af9dfbd7591fe092e3a14386780ca6874515329',
     'config/review.yaml': '8dbe71e6ddeb73bd6c950b42c5229b6a2a179af04f9d2b64acc05437250efc6a',
     'config/repositories.yaml': '996a1c7a5d97d55fb646beaa6f47bef6704174d3f25b25f9823c7b8f26c626e4',
-    'schemas/execution-plan.yaml': 'c3741796c149764965d09c11b6aa851584cb1560fa43b36fbe1d027445d09cee',
-    'schemas/agent-assignment.yaml': 'd23463c881603de4bf9397468fe857c7f1616798f0f341aa8947b66ceb1e745f',
+    'schemas/execution-plan.yaml': '5142607cfdadc31c1eafa70d5503f3895ddb9bf7f44c0a6c310d4f75e72a5338',
+    'schemas/agent-assignment.yaml': '98a19827834b6ede945fdd5eb679c97a30aed13a09733e90192a9147a0464159',
     'config/execution-backends.yaml': '62967798a1f207fdda98eb012a6455df087243c9bb72cb4569d6e003cdae1f1f',
     'config/acceptance.json': '3c4d2a5fc28333022f794b8a038ff161677169e661a01268d8c495c28dcbf8f8',
 }
@@ -191,13 +192,17 @@ class Check:
             base = self.obj(t.get('base'), 'base', ('source', 'ref'), task=tid)
             self.string(base.get('source'), 'base.source', tid)
             self.ref(base.get('ref'), 'base.ref', tid, True)
-            r = self.obj(t.get('routing'), 'routing', ('task_class', 'agent', 'fallback_agent', 'model_profile', 'effort', 'reasons', 'validation', 'resolution'), task=tid)
+            r = self.obj(t.get('routing'), 'routing', ('task_class', 'agent', 'fallback_agent', 'model_profile', 'effort', 'reasons', 'validation', 'resolution'), ('agent_authorization',), task=tid)
             for field, choices in [('task_class', p['classes']), ('agent', p['agents']), ('model_profile', p['profiles'])]:
                 self.string(r.get(field), 'routing.' + field, tid, choices)
             if r.get('fallback_agent') is not None:
                 self.string(r['fallback_agent'], 'routing.fallback_agent', tid, p['agents'])
             self.string(r.get('effort'), 'routing.effort', tid, ('low', 'medium', 'high', 'maximum'))
             self.strings(r.get('reasons'), 'routing.reasons', tid)
+            if 'agent_authorization' in r:
+                authorization = self.obj(r['agent_authorization'], 'routing.agent_authorization', ('agent', 'evidence'), task=tid)
+                self.string(authorization.get('agent'), 'routing.agent_authorization.agent', tid, p['agents'])
+                self.string(authorization.get('evidence'), 'routing.agent_authorization.evidence', tid)
             v = self.obj(r.get('validation'), 'routing.validation', ('required', 'independent_session', 'preferred_agent'), task=tid)
             for field in ('required', 'independent_session'):
                 self.boolean(v.get(field), 'routing.validation.' + field, tid)
@@ -444,10 +449,16 @@ class Check:
         effort_order = ('low', 'medium', 'high', 'maximum')
         if effort_order.index(r['effort']) < effort_order.index(p['reasoning'][r['model_profile']]):
             self.error('routing.effort', 'abstract effort intent below selected policy profile', tid)
-        compatible = {cls['preferred_agent'], cls['fallback_agent']}
-        if r['agent'] not in compatible or (r['fallback_agent'] is not None and r['fallback_agent'] not in compatible):
-            self.error('routing.agent', 'agent/fallback outside configured task-class pair', tid)
+        authorization = r.get('agent_authorization')
+        if authorization and authorization['agent'] != r['agent']:
+            self.error('routing.agent_authorization.agent', 'authorization must name selected task agent', tid)
+        if r['agent'] != cls['preferred_agent'] and not authorization:
+            self.error('routing.agent', 'alternate client requires explicit task-scoped authorization and verified capability matching', tid)
+        if r['fallback_agent'] is not None:
+            self.error('routing.agent', 'automatic client fallback is disabled; unavailable/quota-limited default means HOLD', tid)
         v = r['validation']
+        if v['preferred_agent'] != cls['preferred_agent'] and (not authorization or v['preferred_agent'] != authorization['agent']):
+            self.error('routing.validation.preferred_agent', 'alternate validation client needs explicit task authorization', tid)
         if required and not v['required']:
             self.error('routing.validation.required', 'mandatory matching validation rule cannot be lowered', tid)
         if (required or independent or v['required']) and not v['independent_session']:
@@ -457,6 +468,8 @@ class Check:
             if not s or s['implementation'] == s['validation']:
                 self.error('validation_sessions', 'declare distinct implementation and validation sessions', tid)
         res = r['resolution']
+        if selected and r['agent'] != cls['preferred_agent'] and res['status'] != 'verified':
+            self.error('routing.resolution.status', 'explicit alternate client needs verified capability matching; static checker cannot verify host', tid)
         if selected and res['status'] not in ('verified', 'inherit-with-uncertainty'):
             self.error('routing.resolution.status', 'ready check needs resolved routing intent', tid)
         if selected and (t['risk'] == 'high' or t['complexity'] == 'critical') and res['status'] != 'verified':

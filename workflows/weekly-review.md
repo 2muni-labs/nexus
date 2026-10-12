@@ -12,8 +12,10 @@ lifecycle details belong to its binding.
 ## Wave 1 — Independent reviews
 
 Review Basecamp and Foundry in parallel with their prompts. Record immutable revisions,
-checks, included/excluded dirty state, limitations and producer/consumer contracts. Safe
-read-only contexts can be reused; never share a context undergoing concurrent mutation.
+checks, included/excluded dirty state, limitations and producer/consumer contracts. Every
+review/planning/validation task uses a fresh session and newly created isolated non-main
+worktree at an exact baseline, as do DIRECT and implementation/integration tasks. Main
+permits intake, read-only coordination and ignored evidence, never worker execution/tests/repair.
 
 ## Wave 2 — Synthesis and contract review
 
@@ -32,7 +34,9 @@ unresolved assumptions. Only concrete accepted findings produce implementation t
 
 Replan accepted findings as bounded single-owner tasks, each with an isolated worktree,
 immutable base, scope and acceptance criteria. Parallelize independent work, serialize
-conflicts. Resolve agent/profile/effort with compatible fallback; preserve capability floors.
+conflicts. Resolve agent/profile/effort using default Codex for every role; optional clients
+need explicit task authorization and verified capability matching. Default unavailability
+or quota means HOLD without automatic client switching; preserve capability floors.
 Parallel mutation requires an integration gate before dependent work; combined baselines
 need a separately scoped integration task and independent validation. Manual-review gates
 HOLD all dependents until explicit human approval matches exact gate/input/baseline scope;

@@ -15,7 +15,14 @@ recovery-and-cleanup references at their action gates. Examples below use `orca`
 as the selected executable; replace it if the session selected another binary.
 Commands were checked against installed 1.4.222; reverify on a different host/version.
 Do not pass a model unless the user named one; abstract capability intent is not a CLI
-argument. Verify requested/effective receipts and preserve user setup policy.
+argument. Verify requested/effective receipts and preserve user setup policy. Codex is
+the default for all roles; alternate clients require explicit task authorization and
+capability matching. Unavailability/quota holds work without automatic client switching.
+Every new task, including DIRECT and read-only review/validation, launches in a newly
+created isolated non-main worktree at an exact baseline. Main permits intake/read-only
+coordination and ignored evidence only, never worker execution/tests/repair. Same active
+attempt continuation may use its own worktree; replacement needs prior settlement,
+proven editor exit, preserved immutable results and a new worktree.
 
 ## Operation binding
 
@@ -26,7 +33,7 @@ argument. Verify requested/effective receipts and preserve user setup policy.
 | observe | Use scoped paginated `worker-list --run <native-run> --include-remote --json`, then exact `worker-show --dispatch <native-attempt> --json` as warranted by installed recovery guidance. Normalize proven live/exited versus unknown; terminal liveness is not agent liveness. |
 | collect | Consume explicit completion delivery for the active native attempt; inspect result artifacts, provenance, tests and capability receipts. `worker-read --dispatch <native-attempt>` may supply diagnostic evidence, never invented success. Completion is not Nexus acceptance. |
 | cancel | Use the installed recovery contract and exact authorized attempt. `worker-stop` requires positive authority/evidence; `worker-abandon` fences orchestration without killing resources. Unknown liveness authorizes neither. Record requested/confirmed/unknown separately. |
-| release | After accepted settlement use exact `worker-release --dispatch <native-attempt> --json`, proven immediate reuse, or user-requested retention. Observe ambiguous cleanup through installed recovery instructions. Never substitute terminal close. |
+| release | After accepted settlement use exact `worker-release --dispatch <native-attempt> --json`, or user-requested retention; new tasks require new worktrees and sessions. Observe ambiguous cleanup through installed recovery instructions. Never substitute terminal close. |
 | delete checkout | Separate human-approved operation under `docs/worktree-lifecycle.md`; no port release calls removal. |
 
 A native task/worker in ready/running/completed state does not choose project status or
@@ -49,8 +56,9 @@ for a new request. This observation does not test every possible UUID; do not
 repeatedly start workers to test it.
 Read completed receipts instead of replaying; an absent receipt is not proof no worker exists.
 
-Retry of a proven failed/stopped attempt uses the same native task and explicit placement
-with `--retry-of <native-attempt>`. Nexus decides finite budget, agent/capability and gates.
+Retry of a proven failed/stopped attempt uses the same native task and new isolated
+non-main worktree after prior settlement/editor exit and preserved immutable results,
+using explicit placement with `--retry-of <native-attempt>`. Nexus decides finite budget, agent/capability and gates.
 Unverifiable host or attempt state holds dispatch and backend switching. An abandon fence
 alone does not prove a previous editor stopped and cannot authorize conflicting mutation.
 
@@ -134,7 +142,7 @@ Verify launcher/account readiness, user-authorized model choice and observed lau
 PATH presence and requested args alone cannot certify the required floor. On inspected
 1.4.222, OpenCode model overrides require existing-worktree placement and do not support
 reasoning-effort overrides. Never weaken isolated mutable placement to obtain an override;
-use verified inheritance or a compatible agent. Always recheck installed guidance.
+HOLD or use an explicitly task-authorized capability-matched agent. Always recheck installed guidance.
 
 ## Model and effort observation
 
@@ -175,7 +183,7 @@ returned message ID, never create a duplicate question. Coordinator routing conf
 does not supply human integration/merge/publication/deletion approval. Existing backend
 messaging carries the checkpoint; no automatic enforcement is added.
 
-For proven same-terminal reuse, reobserve settings before work; `--terminal` cannot
+For continuation of the same active attempt, reobserve settings before work; `--terminal` cannot
 apply model/effort overrides. A previous launch receipt cannot certify retained settings
 or validator independence. Resume, host/account/version/scope or setting changes and
 quota interruptions invalidate stale confirmation. Preserve the attempt/partial edits

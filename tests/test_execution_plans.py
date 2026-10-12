@@ -20,9 +20,9 @@ def task(tid='T1', repository='nexus', dependencies=(), write=False):
             'mutation_scope': {'mode': 'write' if write else 'read-only', 'targets': ['docs/' + tid + '.md'], 'do_not_touch': ['other repositories', 'main']},
             'base': {'source': 'initial', 'ref': REF}, 'acceptance': ['Expected observable checks pass'], 'architecture_sensitive': False,
             'routing': {'task_class': 'implementation-standard' if write else 'research', 'agent': 'codex',
-                        'fallback_agent': 'opencode' if write else 'antigravity', 'model_profile': 'standard',
+                        'fallback_agent': None, 'model_profile': 'standard',
                         'effort': 'medium', 'reasons': ['Bounded scope with inherited uncertainty'],
-                        'validation': {'required': False, 'independent_session': False, 'preferred_agent': 'antigravity'},
+                        'validation': {'required': False, 'independent_session': False, 'preferred_agent': 'codex'},
                         'resolution': {'status': 'inherit-with-uncertainty', 'model': None, 'effort': None}}}
 
 
@@ -52,7 +52,7 @@ def gated(manual=True):
     a, b = completed(task('A', write=True)), completed(task('B', write=True), 'c' * 40)
     g = completed(task('G', dependencies=['A', 'B']))
     g['type'] = 'integration'
-    g['routing'].update(task_class='integration', fallback_agent='antigravity', model_profile='deep', effort='high')
+    g['routing'].update(task_class='integration', fallback_agent=None, model_profile='deep', effort='high')
     g['gate'] = {'kind': 'integration', 'upstream': ['A', 'B'], 'result': 'PASS', 'evidence': ['compatibility report'],
                  'baselines': {'nexus': OUTPUT}, 'manual_review_required': manual,
                  'approval': {'status': 'not-required', 'evidence': None, 'scope': None}}
@@ -63,7 +63,7 @@ def gated(manual=True):
     consumer['base'] = {'source': 'G', 'ref': OUTPUT}
     consumer['type'] = 'integration'
     consumer['upstream_mutations'] = ['A', 'B']
-    consumer['routing'].update(task_class='integration', fallback_agent='antigravity')
+    consumer['routing'].update(task_class='integration', fallback_agent=None)
     validation(consumer)
     return plan(a, b, g, consumer, waves=[{'id': 'W1', 'tasks': ['A', 'B']}, {'id': 'W2', 'tasks': ['G']}, {'id': 'W3', 'tasks': ['C']}])
 
@@ -99,6 +99,66 @@ class ExecutionPlans(unittest.TestCase):
         p = plan()
         p['mode'] = 'DIRECT'
         self.passes(p)
+
+    def test_codex_defaults_across_all_task_classes(self):
+        policy = CHECKER['policies'](ROOT)
+        for name, cls in policy['classes'].items():
+            with self.subTest(task_class=name):
+                self.assertEqual('codex', cls['preferred_agent'])
+                self.assertEqual('null', cls['fallback_agent'])
+                t = task()
+                t['type'] = ('mechanical' if name == 'implementation-mechanical' else
+                             'implementation' if name.startswith('implementation-') else
+                             'review' if name == 'independent-review' else name)
+                t['routing'].update(task_class=name, model_profile=cls['model_profile'])
+                t['routing']['effort'] = policy['reasoning'][cls['model_profile']]
+                if cls.get('independent_validation') == 'true':
+                    validation(t)
+                if name in ('independent-review', 'validation'):
+                    t['routing']['validation']['independent_session'] = True
+                    t['validation_sessions'] = {'implementation': 'impl', 'validation': 'fresh'}
+                self.passes(plan(t))
+
+    def test_optional_clients_require_explicit_authorization_and_verified_resolution(self):
+        for agent in ('antigravity', 'opencode'):
+            with self.subTest(agent=agent):
+                t = task()
+                t['routing']['agent'] = agent
+                self.rejects(plan(t), 'routing.agent')
+                t['routing']['agent_authorization'] = {'agent': agent, 'evidence': 'exact task-scoped human authorization reference'}
+                self.rejects(plan(t), 'routing.resolution.status')
+                t['routing']['resolution'] = {'status': 'verified', 'model': 'supplied-model', 'effort': 'supplied-supported-effort'}
+                self.passes(plan(t))
+                t['routing']['agent_authorization']['agent'] = 'codex'
+                self.rejects(plan(t), 'agent_authorization.agent')
+                t['routing']['agent_authorization'].update(agent=agent, evidence='')
+                self.rejects(plan(t), 'agent_authorization.evidence')
+
+    def test_no_automatic_client_fallback_or_alternate_validator_default(self):
+        for agent in ('codex', 'antigravity', 'opencode'):
+            t = task()
+            t['routing']['fallback_agent'] = agent
+            self.rejects(plan(t), 'routing.agent')
+        t = task()
+        t['routing']['resolution']['status'] = 'blocked'
+        self.rejects(plan(t), 'routing.resolution.status')
+        t = task()
+        t['routing']['validation']['preferred_agent'] = 'antigravity'
+        self.rejects(plan(t), 'routing.validation.preferred_agent')
+
+    def test_optional_client_authorization_never_lowers_max_or_floors(self):
+        t = task()
+        t.update(risk='high', complexity='critical', architecture_sensitive=True)
+        t['routing'].update(agent='antigravity', agent_authorization={'agent': 'antigravity', 'evidence': 'explicit task authorization'},
+                            resolution={'status': 'verified', 'model': 'supplied-model', 'effort': 'supplied-supported-effort'})
+        self.rejects(plan(t), 'routing.model_profile')
+        validation(t, 'critical')
+        self.passes(plan(t))
+        t['routing']['validation']['required'] = False
+        self.rejects(plan(t), 'routing.validation.required')
+        t['routing']['validation']['required'] = True
+        t['validation_sessions']['validation'] = t['validation_sessions']['implementation']
+        self.rejects(plan(t), 'validation_sessions')
 
     def test_resolved_multi_repo_read_only_parallel(self):
         self.passes(plan(task('A', 'basecamp'), task('B', 'foundry'), waves=[{'id': 'W', 'tasks': ['A', 'B']}]))

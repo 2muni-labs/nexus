@@ -5,10 +5,14 @@ primary axes, evidence/severity calibration, finding extensions and finding self
 For a completed substantive assessment, append its six-section final review summary;
 retain this prompt's role-specific result/plan/gate output and authority boundaries.
 
-Use a fresh session distinct from the implementer, even if the same agent family is used.
+Use a fresh session and newly created isolated non-main worktree distinct from the
+implementer at the exact candidate baseline. Codex is default; alternate clients need
+explicit task authorization and verified capability matching. Main never executes
+workers, tests or repairs.
 Read the original finding OR feature requirements/acceptance, exact proposed diff/revision,
 Execution Plan, mandatory validation triggers, owning-repository contract and gate evidence.
-Use a safe read-only context or isolated exact candidate preparation as explicitly assigned.
+Use the new task worktree with read-only authority or explicitly assigned exact candidate
+preparation; only the same active attempt may continue in its own worktree.
 Record base/head or immutable patch digest. Do not author repairs.
 
 Verify original problem/requirements and root cause, minimal scope, necessary abstraction,

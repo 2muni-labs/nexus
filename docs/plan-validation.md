@@ -70,10 +70,15 @@ class; mechanical uses `implementation-mechanical`; review uses
 `independent-review`; other types use the correspondingly named class. Routing
 combines the actual supported class default and every matching rule by maximum
 profile rank and validation OR. Abstract effort intent must meet the selected
-profile's configured reasoning intent. Optional fallbacks stay within the
-configured class pair; this cannot establish host/model compatibility.
-Verified resolution claims require concrete model/effort values. Selected
-high-risk/critical tasks cannot inherit uncertainty. Other selected tasks can
+profile's configured reasoning intent. Every task class defaults to Codex with
+`fallback_agent: null`; automatic client fallback is rejected. An alternate
+catalog client needs optional `routing.agent_authorization` containing `agent`
+and a nonempty `evidence` reference to explicit task-scoped authorization. The
+agent must match the selected task agent; an alternate validation preference
+also must match that authorized agent. Selected alternate clients require
+verified resolution claims with concrete model/effort values. These are supplied
+claims, not proof of real authority or host capability. Selected high-risk/critical
+tasks also cannot inherit uncertainty. Other selected tasks can
 use explicit inherited uncertainty with reasons; no supplied claim is host proof.
 
 Compatibility gates are read-only integration tasks. `gate.upstream` exactly
@@ -121,13 +126,22 @@ array. `requested` and `effective` each contain `agent`, `model_profile`, `model
 `effort`, `status` (`verified` or `inherit-with-uncertainty`); effective claims
 match routing resolution and cannot lower its profile or validation flags.
 The checker cannot prove a real sole writer, live attempt settlement, placement,
-backend isolation or an observed effective receipt.
+backend isolation or an observed effective receipt. Every new task, including
+DIRECT, read-only review/validation and integration, requires a newly created
+isolated non-main worktree at an exact baseline and fresh session. The same
+active attempt may continue its own worktree; replacement requires prior
+settlement, proven editor exit and preserved immutable results. These placement
+and lifecycle requirements remain manual Coordinator checks, not static PASS
+evidence. Main permits intake, read-only coordination and ignored evidence,
+never worker execution, tests or repair.
 
 ## Explicit policy support and maintenance
 
-The supported policy content is the reviewed snapshot at
-`e41e6150db00c9d068b8684f592c4ec593e62968`: the four governance configs,
-`config/acceptance.json`, backend registry, Execution Plan and assignment contracts.
+The supported policy content consists of the four governance configs,
+`config/acceptance.json`, backend registry, Execution Plan and assignment contracts,
+including Codex defaults, explicit alternate-client authorization claims and fresh
+task-worktree requirements. The exact supported content is identified by the
+script's fingerprints rather than a historical commit whose policy has changed.
 The script's `SUPPORTED` allowlist contains SHA256 fingerprints of those files
 with blank and full-comment lines removed. PASS includes these fingerprints as
 `policy_provenance`. Catalog keys, task-class defaults, profile reasoning/rank,
