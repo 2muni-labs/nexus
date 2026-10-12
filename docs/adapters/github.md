@@ -25,7 +25,8 @@ not automatic acceptance. Native details remain opaque adapter metadata. Missing
 
 Write: `issue-create`, `issue-update`, `pr-create`, `association-comment` take a JSON file.
 All require `operation_id`; creates also title/body, PRs explicit branch names head/base, head_repository (OWNER/REPO), and
-expected_head_revision (40 lowercase hexadecimal characters);
+expected_head_revision (40 lowercase hexadecimal characters), and private
+commit_identity (checkout, exact target base_revision, preserved_commits);
 updates/comments require number and expected_updated_at. Issue changes support title,
 body, labels, milestone and state. Preserve current human content when constructing a
 body update. PR draft defaults to true for omitted/null; explicit false is preserved,
@@ -51,8 +52,13 @@ new approval. This intentionally rejects old PR requests lacking candidate ident
 The ref lookup and PR POST are not atomic: strict exact-diff publication requires a
 controlled dedicated source branch with one writer through registration. A mismatched
 post-write head is HOLD/reconciliation, not success, and cannot undo an already published
-PR. The base branch may also move; this binding pins source head, not an immutable base
-comparison or merge authorization. On timeout/error preserve the
+PR. The [commit identity preflight](../github-app-authentication.md#git-commit-identity-and-publication)
+checks actual raw metadata and unchanged original-source exemptions before recovery
+and publication; identity context is digest-bound and excluded from the public payload.
+Missing context requires a new request/approval. It pins the actual target base revision
+for the identity range too; a moved base requires re-preparation. Caller-selected later
+bases and unreviewed provenance cannot bypass checks. Independent review and exact
+human approval remain necessary, and this supplies no merge authorization. On timeout/error preserve the
 plan and inspect external state; never automate a retry or presume an absent lookup proves
 absence. GitHub mutations are not globally transactional or guaranteed exactly-once.
 

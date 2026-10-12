@@ -114,6 +114,7 @@ nexus_github_operation() {
                 git check-ref-format "refs/heads/$head_branch" >/dev/null &&
                     git check-ref-format "refs/heads/$(jq -r .base "$argument")" >/dev/null || nexus_fail 'PR head/base must be branch names, not owner-qualified refs.'
                 [[ "$head_repo" != "$repo" || "$head_branch" != "$(jq -r .base "$argument")" ]] || nexus_fail 'Distinct PR head/base required in the same repository.'
+                python3 -I -B "$(dirname -- "${BASH_SOURCE[0]}")/github-identity.py" plan "$argument" >/dev/null || nexus_fail 'Exact PR commit identity request required; old requests must be re-prepared.'
                 candidate=$(jq -c '{repository:.head_repository,branch:.head,revision:.expected_head_revision}' "$argument")
                 endpoint="repos/$repo/pulls"
                 payload=$(jq -c --arg marker "$marker" --arg repo "$repo" '
@@ -139,7 +140,7 @@ nexus_github_operation() {
         --argjson candidate "$candidate" --argjson payload "$payload" --slurpfile request "$argument" \
         '{provider:"github",operation:$op,repository:$repo,endpoint:$endpoint,method:$method,
           operation_id:$request[0].operation_id,expected_updated_at:$request[0].expected_updated_at,payload:$payload}
-          + (if $op == "pr-create" then {candidate:$candidate} else {} end)')
+          + (if $op == "pr-create" then {candidate:$candidate,commit_identity:$request[0].commit_identity} else {} end)')
     oid=$(printf '%s\n' "$plan" | git hash-object --stdin)
     if [[ "$apply" == false ]]; then
         [[ -z "$approved$approval" ]] || nexus_fail 'Approval flags require --apply.'
@@ -147,6 +148,10 @@ nexus_github_operation() {
         return
     fi
     [[ "$approved" == "$oid" && -n "$approval" && "$approval" == *[![:space:]]* ]] || nexus_fail 'Exact prepared plan digest and explicit human approval reference required.'
+    if [[ "$op" == pr-create ]]; then
+        # Check exact raw commit metadata even before recovery, never just a promise.
+        python3 -I -B "$(dirname -- "${BASH_SOURCE[0]}")/github-identity.py" verify "$repo" "$argument" >/dev/null || nexus_fail 'PR commit identity preflight failed; publication blocked.'
+    fi
     if [[ "$op" == issue-update || "$op" == association-comment ]]; then
         current=$(nexus_github_api "repos/$repo/issues/$number" --method GET)
         nexus_github_normalize "$repo" issue "$number" <<< "$current" >/dev/null || nexus_fail 'Item identity changed; reobserve ownership and approve a new target.'
@@ -186,7 +191,13 @@ nexus_github_operation() {
     fi
     temp=$(mktemp "${TMPDIR:-/tmp}/nexus-github.XXXXXX")
     printf '%s\n' "$payload" > "$temp"
-    if current=$(nexus_github_api "$endpoint" --method "$method" --input "$temp"); then
+    local write_status=0
+    if [[ "$op" == pr-create ]]; then
+        current=$(nexus_github_command "$repo" --identity-request "$argument" api --hostname github.com "$endpoint" --method "$method" --input "$temp") || write_status=$?
+    else
+        current=$(nexus_github_api "$endpoint" --method "$method" --input "$temp") || write_status=$?
+    fi
+    if [[ "$write_status" == 0 ]]; then
         rm -f -- "$temp"
         nexus_github_verify_write "$op" "$repo" "$payload" "$number" "$candidate" <<< "$current" >/dev/null || nexus_fail 'Provider write response is ambiguous or mismatched. Preserve plan and reconcile; do not retry.'
         jq -cn --argjson record "$current" --arg oid "$oid" --arg approval "$approval" '{applied:true,plan_oid:$oid,approval_reference:$approval,record:$record}'

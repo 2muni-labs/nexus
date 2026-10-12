@@ -278,6 +278,14 @@ policy and architecture rationale belong in `config/` and `docs/`. Do not automa
 promote generated reviews or run logs into Git; curate durable changes only when
 explicitly requested. No raw transcript archival or credentials in Nexus/local mappings.
 
+New automation commits require verified App bot author and committer under the scoped
+[Git identity preflight](docs/github-app-authentication.md#git-commit-identity-and-publication).
+Verify raw exact-candidate metadata before publication; retain original human/upstream
+objects and independently reviewed immutable provenance exemptions. Unknown identity
+or exemption authority means HOLD, including manual pushes outside the PR adapter.
+Bot metadata never substitutes for App authentication, validation or human approval;
+never change global/shared identity settings or rewrite accepted history.
+
 Human approval is the final merge boundary. No automatic merge, push, PR creation,
 important-branch deletion, ownership-policy change or destructive Git operation.
 Explicit user authorization applies to the exact reviewed change, not future changes.

@@ -88,7 +88,10 @@ class AppTests(unittest.TestCase):
         self.calls.append((method, path, credential, body))
         installation = dict(id=456, app_id=123, account={"login": "a"}, target_type="Organization",
                             suspended_at=None, permissions={k: "write" for k in APP.PERMISSIONS})
-        responses = {"/app": {"id": 123}, "/app/installations/456": installation,
+        responses = {"/app": {"id": 123, "slug": "test-app"}, "/app/installations/456": installation,
+                     "/users/test-app%5Bbot%5D": {"login": "test-app[bot]", "id": 987, "type": "Bot"},
+                     "/repos/a/b/git/ref/heads/main": {"ref":"refs/heads/main", "object":{"type":"commit", "sha":getattr(self, "base", "a"*40)}},
+                     "/repos/a/b/git/ref/heads/feature": {"ref":"refs/heads/feature", "url":"https://api.github.com/repos/a/b/git/refs/heads/feature", "object":{"type":"commit", "sha":getattr(self, "head", "a"*40), "url":"https://api.github.com/repos/a/b/git/commits/"+getattr(self, "head", "a"*40)}},
                      "/repos/a/b/installation": installation,
                      "/app/installations/456/access_tokens": {
                          "token": TOKEN, "permissions": self.needed,
@@ -104,11 +107,109 @@ class AppTests(unittest.TestCase):
             response = change(response)
         return response, self.link if path.startswith("/installation/repositories") else ""
 
-    def execute(self, args=API_ARGS):
+    def execute(self, args=API_ARGS, identity_request=None):
         self.needed = APP.command_permissions("a/b", args)
         with patch.dict(os.environ, self.env, clear=True), patch.object(APP, "request", self.transport), \
                 patch.object(APP.shutil, "which", side_effect=lambda name: str(self.gh) if name == "gh" else OPENSSL):
-            return APP.run("a/b", args)
+            return APP.run("a/b", args, identity_request)
+
+    def test_authenticated_bot_resolution_numeric_user_id_and_revocation(self):
+        code, output = self.execute(["identity"])
+        self.assertEqual(code, 0)
+        bot = json.loads(output)
+        self.assertEqual(bot["email"], "987+test-app[bot]@users.noreply.github.com")
+        self.assertEqual(bot["bot_user_id"], 987)
+        self.assertEqual(bot["app_id"], 123)
+        self.assertEqual(self.calls[-1][:2], ("DELETE", "/installation/token"))
+        self.assertEqual(self.needed, {"metadata":"read"})
+        for path, change in [("/app", lambda r: dict(r, slug=None)),
+                             ("/users/test-app%5Bbot%5D", lambda r: dict(r, login="human")),
+                             ("/users/test-app%5Bbot%5D", lambda r: dict(r, id=True)),
+                             ("/users/test-app%5Bbot%5D", lambda r: dict(r, type="User")),
+                             ("/users/test-app%5Bbot%5D", OSError("secret-token"))]:
+            self.calls.clear(); self.changes = {path:change}
+            with self.assertRaises(APP.AuthError if not isinstance(change, Exception) else Exception):
+                self.execute(["identity"])
+            self.assertEqual(self.calls[-1][:2], ("DELETE", "/installation/token"))
+
+    def publication(self, personal=False):
+        checkout = self.dir / "checkout"; checkout.mkdir()
+        env = {"PATH":os.environ["PATH"], "HOME":str(self.dir)}
+        def git(*args):
+            return subprocess.check_output(["git", "-C", str(checkout), *args], env=env, text=True, stderr=subprocess.DEVNULL).strip()
+        git("init", "-b", "feature")
+        git("-c", "user.name=Human", "-c", "user.email=human@example.test", "commit", "--allow-empty", "-m", "base")
+        self.base = git("rev-parse", "HEAD")
+        name, email = ("Human", "human@example.test") if personal else ("test-app[bot]", "987+test-app[bot]@users.noreply.github.com")
+        git("-c", "user.name="+name, "-c", "user.email="+email, "commit", "--allow-empty", "-m", "candidate")
+        self.head = git("rev-parse", "HEAD")
+        request = dict(head_repository="a/b", head="feature", base="main", expected_head_revision=git("rev-parse", "HEAD"),
+                       commit_identity=dict(checkout=str(checkout),base_revision=self.base,preserved_commits=[]))
+        payload = self.dir / "payload.json"; payload.write_text(json.dumps(dict(head="feature",base="main",title="Title",body="Body",draft=True)))
+        args = ["api", "--hostname", "github.com", "repos/a/b/pulls", "--method", "POST", "--input", str(payload)]
+        return args, request
+
+    def test_pr_transport_rechecks_identity_against_same_authenticated_app_and_base(self):
+        args, request = self.publication()
+        code, output = self.execute(args, request)
+        self.assertEqual(code, 0)
+        self.assertTrue(output)
+        self.assertEqual(self.needed, {"metadata":"read", "pull_requests":"write", "contents":"read"})
+        self.assertIn("/users/test-app%5Bbot%5D", [c[1] for c in self.calls])
+        self.assertEqual(self.calls[-1][:2], ("DELETE", "/installation/token"))
+        for change in [{"/users/test-app%5Bbot%5D":lambda r:dict(r,id=111)},
+                       {"/repos/a/b/git/ref/heads/main":lambda r:dict(r,object={"type":"commit","sha":"b"*40})},
+                       {"/repos/a/b/git/ref/heads/feature":lambda r:dict(r,object={"type":"commit","sha":"b"*40})}]:
+            self.changes = change
+            with self.assertRaises(Exception): self.execute(args, request)
+            self.assertEqual(self.calls[-1][:2], ("DELETE", "/installation/token"))
+        self.changes = {}
+        with self.assertRaises(APP.AuthError): self.execute(args)
+        payload = Path(args[-1]); payload.write_text(json.dumps(dict(head="different",base="main")))
+        with self.assertRaises(APP.AuthError): self.execute(args, request)
+
+    def test_pr_transport_rejects_actual_personal_metadata_before_gh_write(self):
+        args, request = self.publication(personal=True)
+        original = subprocess.run
+        gh_calls = []
+        def spy(argv, **kwargs):
+            if argv[0] == str(self.gh): gh_calls.append(argv)
+            return original(argv, **kwargs)
+        with patch.object(APP.subprocess, "run", side_effect=spy):
+            with self.assertRaises(Exception): self.execute(args, request)
+        self.assertEqual(gh_calls, [])
+        self.assertEqual(self.calls[-1][:2], ("DELETE", "/installation/token"))
+
+    def test_fork_pr_source_uses_separate_exact_installation_token(self):
+        args, request = self.publication()
+        request["head_repository"] = "fork/b"
+        Path(args[-1]).write_text(json.dumps(dict(head="fork:feature",head_repo="b",base="main",title="Title",body="Body")))
+        self.config["repositories"]["fork/b"] = dict(id=790, installation_id=457, permissions={k:"write" for k in APP.PERMISSIONS})
+        self.save_config()
+        source_ref = dict(ref="refs/heads/feature",url="https://api.github.com/repos/fork/b/git/refs/heads/feature",
+                          object=dict(type="commit",sha=self.head,url="https://api.github.com/repos/fork/b/git/commits/"+self.head))
+        self.gh.write_text(GH.replace('print(json.dumps({"args":sys.argv[1:], "authenticated_fixture_token":bool(token)}))',
+            'print(json.dumps(' + repr(source_ref) + ') if "repos/fork/b/git/ref/heads/feature" in sys.argv else json.dumps({"args":sys.argv[1:]}))'))
+        fork_token = "ghs_fixture_app_fork_" + "x"*32
+        original_transport = self.transport
+        def transport(method, path, credential, body=None):
+            if path in {"/app/installations/457","/repos/fork/b/installation"}:
+                self.calls.append((method,path,credential,body))
+                return dict(id=457,app_id=123,account={"login":"fork"},target_type="Organization",
+                            suspended_at=None,permissions={k:"write" for k in APP.PERMISSIONS}), ""
+            if path == "/app/installations/457/access_tokens":
+                self.calls.append((method,path,credential,body))
+                return dict(token=fork_token,permissions=body["permissions"],expires_at=(datetime.now(timezone.utc)+timedelta(minutes=59)).strftime("%Y-%m-%dT%H:%M:%SZ")), ""
+            if path == "/installation/repositories?per_page=100" and credential == fork_token:
+                self.calls.append((method,path,credential,body))
+                return dict(total_count=1,repositories=[dict(id=790,full_name="fork/b")]), ""
+            return original_transport(method,path,credential,body)
+        self.transport = transport
+        self.assertEqual(self.execute(args,request)[0],0)
+        issued = [c[3] for c in self.calls if c[0] == "POST"]
+        self.assertEqual([p["repository_ids"] for p in issued], [[789],[790]])
+        self.assertEqual(issued[1]["permissions"], {"metadata":"read","contents":"read"})
+        self.assertEqual([c[2] for c in self.calls if c[0] == "DELETE"], [fork_token,TOKEN])
 
     def test_api_pr_and_pagination_authenticated_commands(self):
         for args in [API_ARGS, PR_ARGS, ["api", "--hostname", "github.com",

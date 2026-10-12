@@ -113,6 +113,20 @@ as bounded implementation work and revalidate the changed exact candidate. Missi
 evidence is NEEDS-WORK, never PASS. No milestone implies automatic publication,
 push, PR creation, merge, branch deletion or checkout deletion.
 
+## Automated Git identity
+
+Before a new automation commit, use the scoped [Git identity operations](github-app-authentication.md#git-commit-identity-and-publication)
+in the owned isolated worktree; confirm both effective author/committer and actual
+new commit metadata. Inherited personal defaults and conflicting overrides are not
+acceptable automation identity. Preserve exact original human/upstream objects and
+independently verify any digest-bound reviewed exemption; unknown provenance HOLDs.
+Before separately authorized publication, bind the exact source head, actual target
+base and private checkout/provenance context in the PR request and run `verify`.
+The PR adapter enforces this check; manual pushes need the same explicit preflight
+because no Nexus push adapter exists. Continue App installation authentication,
+independent validation and exact human publication/merge approval separately.
+Never rewrite accepted history or change global/shared Git identity settings.
+
 ## Human review handoff
 
 Draft is the PR preparation default, including when `pr-create` omits `draft` or

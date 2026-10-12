@@ -13,6 +13,8 @@ import json,os,sys
 from pathlib import Path
 args=sys.argv[1:]
 with open(os.environ["MOCK_CALLS"],"a") as f: f.write(json.dumps(args)+"\\n")
+if args == ["identity"]:
+ print(os.environ.get("MOCK_BOT",json.dumps({"app_id":123,"app_slug":"test-app","bot_login":"test-app[bot]","bot_user_id":987,"bot_type":"Bot","repository":"a/b","email":"987+test-app[bot]@users.noreply.github.com"}))); sys.exit()
 if "pr" in args:
  if os.environ.get("MOCK_CHECKS") is not None:
   print(os.environ["MOCK_CHECKS"]); sys.exit()
@@ -29,7 +31,7 @@ if "--input" in args:
   head=payload["head"]; base=payload["base"]
   source="a/b" if ":" not in head else head.split(":")[0]+"/"+payload["head_repo"]
   branch=head.split(":")[-1]
-  payload.update(number=2,html_url="https://github.com/a/b/pull/2",head={"label":head,"ref":branch,"repo":{"full_name":source},"sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},base={"ref":base,"repo":{"full_name":"a/b"}})
+  payload.update(number=2,html_url="https://github.com/a/b/pull/2",head={"label":head,"ref":branch,"repo":{"full_name":source},"sha":os.environ["MOCK_SHA"]},base={"ref":base,"repo":{"full_name":"a/b"}})
  else:
   payload.update(number=1,html_url="https://github.com/a/b/issues/1")
   if "labels" in payload: payload["labels"]=[{"name":x} for x in payload["labels"]]
@@ -40,7 +42,7 @@ if "/git/ref/heads/" in endpoint:
   print(os.environ["MOCK_REF"]); sys.exit()
  from urllib.parse import unquote
  source,branch=endpoint[6:].split("/git/ref/heads/",1); branch=unquote(branch)
- revision="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+ revision=os.environ["MOCK_BASE"] if branch == "main" else os.environ["MOCK_SHA"]
  print(json.dumps({"ref":"refs/heads/"+branch,"url":"https://api.github.com/repos/"+source+"/git/refs/heads/"+branch,"object":{"type":"commit","sha":revision,"url":"https://api.github.com/repos/"+source+"/git/commits/"+revision}})); sys.exit()
 if "--slurp" in args:
  print(json.dumps([json.loads(os.environ.get("MOCK_FOUND","[]"))])); sys.exit()
@@ -57,8 +59,25 @@ class ProviderTests(unittest.TestCase):
         self.mock.write_text(MOCK)
         self.mock.chmod(0o755)
         self.calls = self.dir / "calls"
-        self.env = dict(os.environ, NEXUS_GITHUB_OFFLINE_FIXTURE=str(self.mock), MOCK_CALLS=str(self.calls))
+        self.env = {k:v for k,v in os.environ.items() if not k.startswith("GIT_")}
+        self.env.update(NEXUS_GITHUB_OFFLINE_FIXTURE=str(self.mock), MOCK_CALLS=str(self.calls))
         self.request = self.dir / "request.json"
+        self.checkout = self.dir / "checkout"
+        self.checkout.mkdir()
+        self.git_env = {k:v for k,v in os.environ.items() if not k.startswith("GIT_")}
+        self.git_env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=str(self.dir / "empty-config"))
+        self.git("init", "-b", "feature")
+        self.git("-c", "user.name=Human", "-c", "user.email=human@example.test", "commit", "--allow-empty", "-m", "base")
+        self.base = self.git("rev-parse", "HEAD").strip()
+        self.git("-c", "user.name=test-app[bot]", "-c", "user.email=987+test-app[bot]@users.noreply.github.com", "commit", "--allow-empty", "-m", "automated")
+        self.head = self.git("rev-parse", "HEAD").strip()
+        self.env.update(MOCK_SHA=self.head, MOCK_BASE=self.base)
+
+    def git(self, *args):
+        return subprocess.check_output(["git", "-C", str(self.checkout), *args], env=self.git_env, text=True, stderr=subprocess.DEVNULL)
+
+    def identity_request(self):
+        return dict(checkout=str(self.checkout), base_revision=self.base, preserved_commits=[])
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -71,6 +90,8 @@ class ProviderTests(unittest.TestCase):
     def prepare(self, op="issue-create", **fields):
         request = {"operation_id":"op1", "title":"Title", "body":"Multiline\n`literal` $(not-shell)"}
         request.update(fields)
+        if op == "pr-create":
+            request.setdefault("commit_identity", self.identity_request())
         self.request.write_text(json.dumps(request))
         return self.run_cli(op,"a/b",str(self.request))
 
@@ -153,7 +174,7 @@ class ProviderTests(unittest.TestCase):
             self.apply(plan,good=False)
 
     def test_pr_comment_and_successful_update(self):
-        plan=self.prepare("pr-create",head="feature",base="main",head_repository="a/b",expected_head_revision="a"*40)
+        plan=self.prepare("pr-create",head="feature",base="main",head_repository="a/b",expected_head_revision=self.head)
         self.assertTrue(self.apply(plan,"pr-create")["applied"])
         plan=self.prepare("association-comment",number=1,expected_updated_at="t1")
         self.assertTrue(self.apply(plan,"association-comment")["applied"])
@@ -161,8 +182,10 @@ class ProviderTests(unittest.TestCase):
         self.assertTrue(self.apply(plan,"issue-update")["applied"])
 
     def pr_plan(self, **fields):
-        request = dict(head="feature", base="main", head_repository="a/b", expected_head_revision="a"*40)
+        request = dict(head="feature", base="main", head_repository="a/b", expected_head_revision=self.head)
         request.update(fields)
+        if "head" in fields and ":" not in fields["head"] and fields["head"] != "main":
+            self.git("branch", "-m", fields["head"])
         return self.prepare("pr-create", **request)
 
     def write_calls(self):
@@ -171,7 +194,7 @@ class ProviderTests(unittest.TestCase):
 
     def pr_record(self, plan, **changes):
         record = dict(plan["plan"]["payload"], number=2, html_url="https://github.com/a/b/pull/2",
-                      head={"ref":plan["plan"]["candidate"]["branch"], "repo":{"full_name":plan["plan"]["candidate"]["repository"]}, "sha":"a"*40},
+                      head={"ref":plan["plan"]["candidate"]["branch"], "repo":{"full_name":plan["plan"]["candidate"]["repository"]}, "sha":self.head},
                       base={"ref":"main", "repo":{"full_name":"a/b"}})
         record.update(changes)
         return record
@@ -180,21 +203,55 @@ class ProviderTests(unittest.TestCase):
         first = self.pr_plan()
         second = self.pr_plan(expected_head_revision="b"*40)
         self.assertNotEqual(first["plan_oid"], second["plan_oid"])
-        self.assertEqual(first["plan"]["candidate"]["revision"], "a"*40)
+        self.assertEqual(first["plan"]["candidate"]["revision"], self.head)
         self.apply(first, "pr-create", good=False)
         self.assertFalse(self.calls.exists())
+
         for fields in [{"expected_head_revision":None}, {"head_repository":None}, {"expected_head_revision":"abc"}, {"head_repository":"../b"}, {"head":"owner:feature"}, {"head":"main"}]:
-            request=dict(operation_id="op1", title="Title", body="Body", head="feature", base="main", head_repository="a/b", expected_head_revision="a"*40)
+            request=dict(operation_id="op1", title="Title", body="Body", head="feature", base="main", head_repository="a/b", expected_head_revision=self.head)
             request.update(fields)
             request = {key:value for key,value in request.items() if value is not None}
             self.request.write_text(json.dumps(request))
             self.run_cli("pr-create","a/b",str(self.request),good=False)
         self.assertFalse(self.calls.exists())
 
+    def test_pr_identity_context_required_private_and_digest_bound(self):
+        plan = self.pr_plan()
+        self.assertEqual(plan["plan"]["commit_identity"], self.identity_request())
+        self.assertNotIn("commit_identity", plan["plan"]["payload"])
+        self.assertNotIn(str(self.checkout), json.dumps(plan["plan"]["payload"]))
+        request = json.loads(self.request.read_text())
+        del request["commit_identity"]
+        self.request.write_text(json.dumps(request))
+        self.run_cli("pr-create", "a/b", str(self.request), good=False)
+        self.assertFalse(self.calls.exists())
+        changed = self.pr_plan(commit_identity=dict(self.identity_request(),base_revision="b"*40))
+        self.assertNotEqual(plan["plan_oid"], changed["plan_oid"])
+
+    def test_pr_identity_personal_commit_unknown_bot_conflicts_and_target_base_block_writes(self):
+        plan = self.pr_plan()
+        for change in [{"MOCK_BOT":"{}"}, {"GIT_AUTHOR_NAME":"hostile-secret"},
+                       {"GIT_CONFIG_COUNT":"1","GIT_CONFIG_KEY_0":"user.name","GIT_CONFIG_VALUE_0":"hostile-secret"},
+                       {"MOCK_BASE":self.head}]:
+            original = self.env.copy(); self.env.update(change)
+            result = self.apply(plan, "pr-create", good=False)
+            self.assertNotIn("hostile-secret", result.stderr)
+            self.env = original
+            self.assertEqual(self.write_calls(), [])
+        # Attempt to skip an inherited personal commit by choosing a later base.
+        self.git("-c", "user.name=Human", "-c", "user.email=human@example.test", "commit", "--allow-empty", "-m", "personal")
+        personal = self.git("rev-parse", "HEAD").strip()
+        self.git("-c", "user.name=test-app[bot]", "-c", "user.email=987+test-app[bot]@users.noreply.github.com", "commit", "--allow-empty", "-m", "bot after personal")
+        self.head = self.git("rev-parse", "HEAD").strip(); self.env["MOCK_SHA"] = self.head
+        plan = self.pr_plan()
+        self.apply(plan, "pr-create", good=False)
+        skipped = self.pr_plan(commit_identity=dict(self.identity_request(),base_revision=personal))
+        self.apply(skipped, "pr-create", good=False)
+        self.assertEqual(self.write_calls(), [])
     def test_pr_moved_or_wrong_source_precheck_never_writes(self):
         plan = self.pr_plan()
         for ref in [{"ref":"refs/heads/feature","url":"https://api.github.com/repos/a/b/git/refs/heads/feature","object":{"type":"commit","sha":"b"*40,"url":"https://api.github.com/repos/a/b/git/commits/"+"b"*40}},
-                    {"ref":"refs/heads/feature","object":{"type":"commit","sha":"a"*40}}]:
+                    {"ref":"refs/heads/feature","object":{"type":"commit","sha":self.head}}]:
             self.env["MOCK_REF"] = json.dumps(ref)
             self.apply(plan,"pr-create",good=False)
         self.assertEqual(self.write_calls(), [])
@@ -216,7 +273,7 @@ class ProviderTests(unittest.TestCase):
         plan = self.pr_plan(head="topic/change", head_repository="fork/b")
         self.assertEqual(plan["plan"]["payload"]["head"],"fork:topic/change")
         self.assertTrue(self.apply(plan,"pr-create")["applied"])
-        bad = self.pr_record(plan, head={"ref":"topic/change", "repo":{"full_name":"other/b"}, "sha":"a"*40})
+        bad = self.pr_record(plan, head={"ref":"topic/change", "repo":{"full_name":"other/b"}, "sha":self.head})
         self.env["MOCK_FOUND"] = json.dumps([bad])
         self.apply(plan,"pr-create",good=False)
         self.assertEqual(len(self.write_calls()),1)
@@ -300,7 +357,7 @@ class ProviderTests(unittest.TestCase):
     def test_pr_draft_invalid_types_rejected_without_api(self):
         for value in ["false", "true", 0, 1, [], {}]:
             request=dict(operation_id="op1",title="Title",body="Body",head="feature",base="main",
-                         head_repository="a/b",expected_head_revision="a"*40,draft=value)
+                         head_repository="a/b",expected_head_revision=self.head,draft=value)
             self.request.write_text(json.dumps(request))
             self.run_cli("pr-create","a/b",str(self.request),good=False)
         self.assertFalse(self.calls.exists())
