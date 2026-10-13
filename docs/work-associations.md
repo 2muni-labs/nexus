@@ -28,7 +28,10 @@ supersession references so selection and corrections remain inspectable. Split w
 only with recorded reasons and links under the existing default cardinality policy.
 
 Policy repository/revision and resolved requirements provenance remain separate from
-validation and current-head review evidence. Validation records bind attempt, head,
+validation and conditionally required current-head review evidence. Resolve
+`review_required` explicitly true/false from repository/user/native policy in the
+requirements provenance; `reviews` may be empty when separate review is not required.
+Validation records bind attempt, head,
 artifact, actual commands/results and sanitized evidence references. Record implementer
 and validator session references and verify distinct sessions when independence is
 required; `independent: true` alone proves nothing. Apply all
@@ -39,8 +42,13 @@ and HOLD, never an inferred empty set.
 Human decisions reference the exact real decision, verified author and repository-specific
 permission evidence. Scope includes operation, canonical target and exact artifact
 revision/digest; a gate decision also names its gate and upstream inputs/baselines.
-Publication, intermediate gate release, final merge/main integration and checkout deletion
-are separate operations. None can be inferred from another decision or validation PASS.
+An observed authorized human direct merge of the exact reviewed candidate/result may
+supply final human acceptance and merge decision, with independently verified human
+identity, repository permission and head/result mapping. It does not manufacture an
+APPROVED review or waive explicit review/native CI, known failures or independent
+technical validation. Publication, intermediate gate release, agent merge/main integration
+and checkout deletion retain separate operation authority. None can be inferred from
+another decision or validation PASS.
 A local-only approval receipt cannot become durable approval after local loss without an
 independently verifiable real external human-decision source. If that source cannot be
 verified, HOLD; a nonempty reference string cannot manufacture it.
@@ -52,7 +60,7 @@ verified, HOLD; a nonempty reference string cannot manufacture it.
 | planned | Identity and policy provenance; attempt/PR inventories may be empty and unknown facts null. Incomplete records cannot satisfy acceptance or recovery. |
 | running | Known attempt identities, verified path-free backend receipt references and source repository/branch. Unknown head/artifact or outcomes remain explicit; observe current backend/Git facts before any recovery action. |
 | result | Selected exact artifact/head, explicit authoritative outcome, settlement and editor exit, applicable local/independent validation and source/PR crosschecks. Worker completion still supplies neither acceptance nor Done. |
-| accepted | Result facts plus complete applicable acceptance evidence, fresh current-head review/CI, exact human decisions and observed authorized merge for implementation, or explicit accepted disposition for non-code work. Other attempts/PRs require evidenced settlement/disposition. |
+| accepted | Result facts plus complete applicable acceptance evidence, fresh current-head review only when resolved policy requires it, native CI, exact human decisions and observed authorized merge for implementation, or explicit accepted disposition for non-code work. Other attempts/PRs require evidenced settlement/disposition. |
 
 No phase label proves facts. Even a complete accepted record requires fresh cross-system
 identity, revision and backend observations before recovery or an operation. Claims about

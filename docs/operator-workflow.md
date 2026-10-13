@@ -169,10 +169,22 @@ settlement and editor exit. Cancellation is a request, not proof of termination.
 | --- | --- |
 | Worker outcome | Explicit active-attempt success/failure with artifacts and actual checks; settles assigned execution, not acceptance. |
 | Validation | Fresh session distinct from implementer verifies the exact candidate and original acceptance; PASS/FAIL/NEEDS-WORK with evidence. Same agent family is permitted. Mandatory triggers remain in review/routing policy. |
-| Human acceptance | Explicit decision bound to the exact reviewed result; accounts for each implementation result and grants only its stated operation scope. |
-| Merge / main integration | Separately authorized operation is observed and checked against the approved candidate; implementation Done needs observed merge and acceptance, while non-code work may use explicit accepted disposition. |
+| Human acceptance | Explicit decision bound to the exact reviewed result; an observed authorized human direct merge may supply this final decision after verified human identity, repository permission and exact head/result mapping. Separate GitHub Approve is optional unless resolved repository/user/native policy requires it. |
+| Merge / main integration | Human direct merge or separately human-authorized agent operation is observed and checked against the exact reviewed candidate/result; implementation Done needs observed merge and acceptance, while non-code work may use explicit accepted disposition. |
 | Worker release | After accepted settlement, release or record user-requested retention through the backend; a new task requires a new worktree/session. Release does not delete the worktree. |
 | Checkout cleanup | Default retained; deletion needs separate exact human approval and every [lifecycle eligibility check](worktree-lifecycle.md). Report delivery and cleanup separately. |
+
+Resolve review_required explicitly true/false with policy provenance. Require authoritative
+current-head approved review only when true; never manufacture it from merge evidence.
+Direct human merge cannot waive explicit review/native checks, known failures, unresolved
+changes requested or required independent technical validation; unknown merger authority
+or candidate/result mapping means HOLD. Agent publication/merge and deletion retain their
+separate exact human authorization boundaries.
+
+Local validation is proportionate: relevant content/link/format checks for documentation-only
+changes, meaningful affected tests for behavior changes, full suite only for concrete broader
+regression risk. Reuse exact unchanged evidence and rerun for changed inputs, failures or
+new concerns. Automated CI and required native checks remain applicable.
 
 Required independent validation uses a fresh session and new isolated non-main worktree, even when Codex validates a
 Codex implementation. Validators report defects without repairs; assign corrections
@@ -246,8 +258,10 @@ at the exact unchanged candidate using this procedure:
 
 Ready for review initiates human review; it is not review approval, merge authorization,
 acceptance or Done, nor the Work Item's Ready state. Human review approval is not a
-prerequisite for asking that human review. Current-head approved review, exact human
-merge approval and all final acceptance requirements still apply before acceptance/Done.
+prerequisite for asking that human review. Current-head approved review applies only
+when resolved policy requires a separate review. Exact human merge decision and all
+resolved acceptance requirements still apply before acceptance/Done; verified authorized
+human direct merge may supply that final decision as described above.
 Do not hand a held Draft to a human as completed review preparation.
 
 ## Board reconciliation

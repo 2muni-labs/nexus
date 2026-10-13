@@ -16,9 +16,14 @@ Resolve repository acceptance from `config/acceptance.json` and
 `docs/acceptance-policy.md` before dispatch and acceptance. Keep policy requirements
 separate from fresh exact-head evidence; missing policy/provenance or native check
 discovery means HOLD. All matching requirements combine by union/OR, preserving
-routing/review floors. Managed implementation requires local validation and current-head
-review; unknown required CI is null, never an inferred empty set. Explicit legacy local
-runs remain limited and cannot supply a permissive default for new managed work.
+routing/review floors. Managed implementation requires proportionate local validation;
+separate current-head approved review is required only by resolved repository/user/native
+policy, with explicit review_required true/false and provenance, never omission. An observed
+authorized human merge of the exact reviewed candidate/result may supply final human
+acceptance and merge decision after identity, permission and candidate/result mapping checks;
+it never fabricates APPROVED evidence or waives required review, CI, known failures or
+independent technical validation. Unknown required CI is null, never an inferred empty set.
+Explicit legacy local runs remain limited and cannot supply a permissive default for new managed work.
 
 ## Permanent workflow architecture
 
@@ -229,6 +234,10 @@ implementer. Codex is the default; another agent client requires explicit task a
 and verified capability matching. Validate original finding or feature acceptance, root cause,
 minimal scope, compatibility, meaningful tests, docs and managed contracts against the
 exact immutable proposal. Return PASS/FAIL/NEEDS-WORK; missing evidence is not PASS.
+Local validation follows affected paths and concrete risk: documentation-only work uses
+relevant content/link/format checks; behavior changes use meaningful affected tests; a full
+suite requires concrete broader regression risk. Reuse exact unchanged evidence and rerun
+only for changed inputs, failures or new concerns. Required native CI still applies.
 Read-only validators may run safe tests and explicitly authorized exact candidate
 materialization/cleanup, never author repairs. P2 is risk-based; P3 is recorded by default.
 

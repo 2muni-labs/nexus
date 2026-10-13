@@ -17,7 +17,7 @@
     "legacy_local_runs": "explicitly designated limited runs only; omission is never a permissive default for new managed work"
   },
   "common": {
-    "managed_implementation_review_required": true,
+    "managed_implementation_review_required": false,
     "local_validation_required": true,
     "local_validation_binding": "exact candidate head; frozen precommit patch digest requires verified mapping to the final head",
     "independent_validation": {
@@ -27,13 +27,13 @@
       "P2": "risk-based; cannot waive another mandatory trigger",
       "P3": "record by default; cannot waive another mandatory trigger"
     },
-    "acceptance_evidence": ["policy revision and resolved requirements provenance", "local validation PASS with commands, results and exact head", "independent validation PASS when required", "approved review of current head with authoritative evidence", "fresh native required-check discovery and current-head check results", "exact human merge approval and observed merge facts", "authoritative attempt settlement and editor exit"],
+    "acceptance_evidence": ["policy revision and resolved requirements provenance", "local validation PASS with commands, results and exact head", "independent validation PASS when required", "approved review of current head with authoritative evidence only when resolved repository, user or native policy requires a separate review", "fresh native required-check discovery and current-head check results", "exact human merge decision and observed merge facts; authorized human direct merge of the exact reviewed candidate/result may supply final acceptance, with verified identity, repository permission and candidate/result mapping", "authoritative attempt settlement and editor exit"],
     "missing_or_stale_evidence": "HOLD; validation with missing evidence is NEEDS-WORK, never PASS",
     "native_ci": {
       "unknown_required_checks": null,
       "unknown_discovery": "HOLD; never infer an empty set from absent CI files, missing access or incomplete discovery",
       "verified_empty_requirements": "empty array only with fresh native evidence for the exact repository and target branch plus explicit bounded owning-repository disposition",
-      "empty_does_not_waive": ["local validation", "managed implementation review", "mandatory independent validation", "human merge approval"],
+      "empty_does_not_waive": ["local validation", "explicitly required separate review", "mandatory independent validation", "human merge approval"],
       "check_binding": "complete authoritative observations at current PR head for every resolved required check"
     }
   },
@@ -41,7 +41,7 @@
     "nexus": {
       "inspection_revision": "9954ba02efb729b6d9bfceeaa0307708ef10cde1",
       "sources": ["AGENTS.md", "README.md", "tests/run.sh", "scripts/validate.sh"],
-      "local_validation": ["bash tests/run.sh", "documentation and link acceptance for affected content"],
+      "local_validation": ["documentation-only: relevant content, links and format checks", "behavior changes: meaningful tests for affected paths and risks", "bash tests/run.sh only when concrete broader regression risk justifies the full suite", "reuse exact unchanged evidence; rerun for changed candidate inputs, failures or concrete new concerns"],
       "change_specific_test_plan_required": true,
       "native_required_checks": null
     },
