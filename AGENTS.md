@@ -52,8 +52,8 @@ Ready, and external outcomes after writes; ambiguous results or changed/unresolv
 mean HOLD and reobservation, never blind replay.
 
 Final human merge and main integration approval remain bound to the exact reviewed
-candidate. Destructive operations and checkout/branch deletion retain separate exact human
-approval and lifecycle checks; standing publication authority grants none of them.
+candidate. Destructive operations retain exact human approval and lifecycle checks; normal task
+cleanup may use the scoped human notice below. Standing publication authority grants neither.
 Publication is an explicitly scoped Coordinator operation under this standing user mandate,
 not an automatic publisher, daemon or new framework. Worker completion, Ready and posting
 do not prove acceptance, Done, process exit or deletion eligibility.
@@ -65,8 +65,8 @@ do not prove acceptance, Done, process exit or deletion eligibility.
 These are peer responsibility boundaries, not an ownership hierarchy. GitHub owns durable
 project records and performs CI; Nexus defines workflow, validation and acceptance policy;
 Orca owns execution environments, sessions and factual attempt observations. Humans approve
-final merge and exact checkout deletion separately. GitHub assignees are project-accountable
-people, distinct from Nexus agent assignments. See docs/operating-model.md.
+final merge and exact checkout deletion under the scoped authority below. GitHub assignees
+are project-accountable people, distinct from Nexus agent assignments. See docs/operating-model.md.
 
 The selected backend's board is an execution observability/control surface, never a competing project backlog.
 GitHub status may be displayed as read-only context; no blind bidirectional status mirroring.
@@ -216,15 +216,42 @@ must not silently become an implementation task; create a new task for changed a
 Follow docs/worktree-lifecycle.md before retiring any checkout. Worker release and
 worktree deletion are separate. Default to retaining the worktree after terminal
 cleanup; deletion requires settled activity, final disposition, preserved results
-and local data, no consumers, exact identity and explicit human deletion approval.
-Merge approval alone does not authorize deletion. Unknown liveness/data or changed
-approval scope means HOLD. Use Orca removal with verified host/version semantics;
+and local data, no consumers, exact identity and human deletion authority as defined below.
+Merge approval alone does not authorize deletion; the scoped human merge-complete notice does.
+Unknown liveness/data or changed approval scope means HOLD. Use Orca removal with verified host/version semantics;
 account for possible branch deletion and archive hooks. No automatic age-based cleanup.
 Check relevant prior retention at instruction intake. The normal deletion window is
-post-disposition and pre-closure-report, with separate exact deletion approval.
+post-disposition and pre-closure-report, with exact deletion authority.
 Report delivered work, board reconciliation and workspace cleanup separately; unresolved
 cleanup is retained or HOLD with a next trigger, never an indefinite wait or implicit
 deletion authority, and a reconciled card status is never deletion eligibility.
+
+## Human merge-complete cleanup authority
+
+A human "merge complete" notice also authorizes normal removal of the exact task
+worktrees tied unambiguously to that observed accepted human merge and Work Item/run.
+The Coordinator verifies human identity, merge authority, exact candidate/result mapping
+and acceptance, then records an enumerated cleanup plan and the actual human notice
+reference without another permission question. This central rule supersedes legacy
+separate deletion-approval clauses elsewhere; merge/main integration authority remains
+bound to the exact reviewed candidate.
+
+The scope includes that run's settled implementation, validation and superseded attempt
+worktrees only after every factual identity, liveness/editor-exit, final-disposition,
+preservation and no-consumer gate in docs/worktree-lifecycle.md passes. A historical
+FAIL/NEEDS-WORK validation may retire after its finding is resolved in the accepted final
+candidate and its report is preserved; never relabel its old outcome PASS. Normal local
+task branch removal attempted by Orca is covered only when the exact branch effects are
+known, safely merged and preserved, including surviving references/artifacts for unique
+objects. Record each checkout, branch, HEAD, removal effects and surviving evidence.
+
+Exclude main, protected or unrelated checkouts/branches, explicit retain/no-cleanup
+overrides, pending consumers and unknown liveness or data. No force, data discard,
+remote branch deletion, unrelated destructive authority or background daemon is granted.
+Changed or ambiguous identity, mapping, data, consumers or effects mean HOLD and fresh
+observation, never blind replay. A machine-observed merge, Completed card or worker
+release alone supplies no cleanup approval. Other destructive operations still require
+separate exact human authorization; report delivery and verified cleanup separately.
 
 ## Modes and plans
 

@@ -43,8 +43,25 @@ technical plan hash in `--approved-plan`; use `--approval-reference` to name the
 standing user grant. Changed candidates require fresh exact plans and affected evidence,
 not another permission question within that scope. Preserve user overrides and all source,
 target, identity, sanitation, readiness and ambiguous-result reobservation checks.
-Final merge/main integration and destructive operations/deletion retain separate exact
-human approval; registration and publication never authorize new execution scope.
+Final merge/main integration retains exact human approval; deletion follows the scoped
+human notice below or separate exact authority for other destructive operations.
+Registration and publication never authorize new execution scope.
+
+## Human merge-complete cleanup
+
+Apply [the central cleanup authority](../AGENTS.md#human-merge-complete-cleanup-authority)
+and every [worktree lifecycle gate](worktree-lifecycle.md). Verify a human "merge complete"
+notice against the observed accepted human merge and unambiguous Work Item/run mapping.
+Record the actual notice reference and exact enumerated cleanup plan for that run's settled
+implementation, validation and superseded attempt worktrees, including known safe/preserved
+Orca local task branch effects; do not ask for another permission within this scope.
+Preserve historical failed validation reports and verify their findings were resolved in
+the accepted final candidate, without changing old outcomes. Exclude main/protected/unrelated
+work, explicit retain/no-cleanup overrides, pending consumers and unknown liveness/data.
+No force, data discard, remote branch deletion or background cleanup is authorized.
+Recheck immediately before removal, reobserve outcomes and report cleanup separately;
+changed/ambiguous scope or effects mean HOLD. Mere machine merge observation, Completed
+or release supplies no approval. Other destructive operations need separate exact authority.
 
 ## Record confirmed work and wait
 
@@ -185,14 +202,14 @@ settlement and editor exit. Cancellation is a request, not proof of termination.
 | Human acceptance | Explicit decision bound to the exact reviewed result; an observed authorized human direct merge may supply this final decision after verified human identity, repository permission and exact head/result mapping. Separate GitHub Approve is optional unless resolved repository/user/native policy requires it. |
 | Merge / main integration | Human direct merge or separately human-authorized agent operation is observed and checked against the exact reviewed candidate/result; implementation Done needs observed merge and acceptance, while non-code work may use explicit accepted disposition. |
 | Worker release | After accepted settlement, release or record user-requested retention through the backend; a new task requires a new worktree/session. Release does not delete the worktree. |
-| Checkout cleanup | Default retained; deletion needs separate exact human approval and every [lifecycle eligibility check](worktree-lifecycle.md). Report delivery and cleanup separately. |
+| Checkout cleanup | Default retained; deletion needs the scoped human merge-complete notice or separate exact authority and every [lifecycle eligibility check](worktree-lifecycle.md). Report delivery and cleanup separately. |
 
 Resolve review_required explicitly true/false with policy provenance. Require authoritative
 current-head approved review only when true; never manufacture it from merge evidence.
 Direct human merge cannot waive explicit review/native checks, known failures, unresolved
 changes requested or required independent technical validation; unknown merger authority
 or candidate/result mapping means HOLD. Agent publication/merge and deletion retain their
-separate exact human authorization boundaries.
+scoped authorization boundaries under the central publication and cleanup rules.
 
 Local validation is proportionate: relevant content/link/format checks for documentation-only
 changes, meaningful affected tests for behavior changes, full suite only for concrete broader

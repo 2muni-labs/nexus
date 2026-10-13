@@ -5,6 +5,23 @@ terminal cleanup and worktree removal. Completion, validation PASS, human merge
 approval, worker release and worktree deletion are separate events. This policy
 clarifies existing safety boundaries; it adds no cleanup daemon, scheduler or TTL.
 
+## Authority and scope
+
+Apply [human merge-complete cleanup authority](../AGENTS.md#human-merge-complete-cleanup-authority),
+which supersedes legacy separate deletion-approval clauses. A human "merge complete"
+notice authorizes normal removal only when it maps unambiguously to an observed accepted
+human merge and exact Work Item/run. Verify the human's identity/authority and exact
+candidate/result mapping; record the actual notice reference and an enumerated plan of
+that run's settled implementation, validation and superseded attempt checkouts, exact
+IDs/paths/branches/HEADs, known removal effects and surviving evidence. No new permission
+question is needed within that scope, but every factual gate below still applies.
+Normal local task branch removal attempted by Orca is covered only for exact known,
+safely merged and preserved branch effects. Main/protected/unrelated work, explicit
+retain/no-cleanup overrides, pending consumers and unknown liveness/data are excluded.
+No force, data discard, remote branch deletion or other destructive authority is granted.
+Machine-observed merge, Completed or worker release alone is not approval. Other cleanup
+requires separate exact human authorization.
+
 ## Default disposition
 
 After accepted settlement, handle the worker using the installed Orca lifecycle
@@ -32,7 +49,7 @@ objective has its own scope and new task workspace; retained workspaces are evid
 not execution placement for new tasks.
 
 The default deletion window is **after final task disposition and before the final
-closure report**, provided exact deletion approval and all eligibility conditions
+closure report**, provided exact deletion authority and all eligibility conditions
 already hold. Never delay worker release until that window. The Coordinator performs
 these checks at natural instruction boundaries; Nexus runs no background cleanup.
 
@@ -42,7 +59,7 @@ these checks at natural instruction boundaries; Nexus runs no background cleanup
 | Planning / dispatch | Bind task, repository, baseline and workspace; preserve prior user state. | No cleanup merely to obtain a convenient name, path or baseline. |
 | Execution / task completion | Accept explicit outcomes and promptly retain or release settled worker terminals through Orca. | Keep checkouts through their consumers, integration and validation. A completed subtask is not instruction closure. |
 | Result delivery / awaiting human decision | Present candidate, validation and outstanding merge/rejection decisions. Identify retained workspaces. | No default deletion while human review or required validation is pending. A delivered implementation report is not final disposition. |
-| Final human disposition | Verify actual approved merge, or explicit rejection/cancellation and data disposition; read-only results require acceptance and preserved evidence. Prepare exact deletion candidates and effects. | Enter the cleanup window only for eligible, separately deletion-approved workspaces. Merge/rejection instructions alone confer no deletion authority. |
+| Final human disposition | Verify actual approved merge, or explicit rejection/cancellation and data disposition; read-only results require acceptance and preserved evidence. Prepare exact deletion candidates and effects. | Enter the cleanup window for eligible workspaces covered by the scoped human merge-complete notice or separate exact deletion approval. Mere merge observation or rejection alone confers no deletion authority. |
 | Closure / reconciliation | Recheck, remove approved eligible workspaces through Orca, verify results, and record every workspace's disposition outside deletion targets. | Perform authorized deletion before the final closure report. Otherwise record retention or HOLD and its next trigger; do not wait indefinitely or claim complete cleanup. |
 | Later instruction / resumption | Revisit a retained workspace when the user supplies the missing decision, requests cleanup, resolves a blocker or resumes the objective. Recheck identity, evidence and approval scope. | A later explicit cleanup instruction can finish the original objective's workspace lifecycle. Continuation of the same active attempt may use its own worktree; replacement requires a new worktree after prior settlement/exit and preserved results. Old settled lifecycle IDs are not reused. |
 
@@ -79,9 +96,11 @@ requires reevaluation; earlier cleanup approval cannot silently expand to new wo
    delete a workspace to cancel a worker or substitute removal for worker-release.
 3. **Final task disposition:** mutable results are human-approved and merged into
    the recorded target, or explicitly rejected/cancelled with a recorded decision
-   about preserving or discarding the candidate. Required validation is complete;
-   FAIL/NEEDS-WORK remains retained until corrected or explicitly rejected. A
-   read-only task needs an accepted report and preserved evidence, not a code merge.
+   about preserving or discarding the candidate. Required validation is complete.
+   Historical FAIL/NEEDS-WORK validation may retire when its finding is resolved in
+   the accepted final candidate and its report is preserved, without relabeling the
+   old outcome PASS; unresolved findings remain retained until corrected or explicitly
+   rejected. A read-only task needs an accepted report and preserved evidence, not a code merge.
 4. **Preserved result:** record exact revisions/digests and confirm accepted changes
    are present in the target. For squash/rebase/cherry-pick, ancestor checks alone
    are insufficient: verify the transformed result and applicable validation.
@@ -103,12 +122,13 @@ requires reevaluation; earlier cleanup approval cannot silently expand to new wo
    worktrees through integration and required validation; afterwards a verified
    surviving baseline/artifact may replace the checkout dependency. A passed
    compatibility gate does not itself create a combined baseline.
-7. **Deletion approval:** obtain explicit human authorization for this exact
-   worktree or an enumerated batch and its known removal effects. Merge approval
-   alone is not deletion approval. Approval must cover possible local branch
-   removal and any deliberately discarded local data; changes to identity, HEAD,
-   data, consumers or removal effects invalidate prior approval. This document
-   defines eligibility, and does not grant standing automatic deletion authority.
+7. **Deletion authority:** record the actual scoped human merge-complete notice
+   and enumerated exact plan under the authority above, or separate exact human
+   authorization for this checkout/batch and known effects. Merge approval alone
+   is insufficient. Covered Orca local task branch effects must be exact, known,
+   safely merged and preserved; data discard is outside normal cleanup authority.
+   Changes to identity, HEAD, data, consumers or removal effects require reevaluation;
+   changed/unresolved scope means HOLD. No automatic deletion authority is granted.
 8. **Execution recheck:** immediately before removal, recheck the above on the
    authoritative execution host. Ensure no new dispatch or editor can start in
    the checkout during cleanup using Orca's available controls and coordination.
@@ -142,6 +162,10 @@ Never report deletion from a sent request or retry blindly after contact loss.
 Keep a normalized cleanup receipt in ignored `reviews/` or `.runtime/` outside
 all deletion targets. Include task/run and worktree identity, before-HEAD, outcome,
 validation and merge/rejection evidence, surviving refs/artifacts, local-data
-inventory/disposition, dependent-consumer check, human approval reference,
-installed Orca version, cleanup result, branch disposition and remaining risks.
+inventory/disposition, dependent-consumer check, exact enumerated cleanup plan and actual
+human notice/approval reference, installed Orca version, cleanup result, branch disposition and remaining risks.
 For a batch, each worktree independently satisfies every condition.
+
+Preserve sanitized recovery-critical Work Item/run/merge/cleanup associations and the
+human notice reference externally under the existing work-association contract; keep
+private paths, inventories and reports private. Never remove their sole surviving evidence.

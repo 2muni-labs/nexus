@@ -2,7 +2,9 @@
 
 GitHub owns durable project records. Nexus owns workflow and orchestration policy.
 Orca owns execution environments and factual execution observations. Humans own final
-acceptance, merge and separate exact checkout-deletion decisions. These are peer boundaries;
+acceptance, merge and exact checkout-deletion authority, including the scoped human
+merge-complete notice in [AGENTS](../AGENTS.md#human-merge-complete-cleanup-authority).
+These are peer boundaries;
 Nexus coordination is not an ownership hierarchy or a replacement authority for either system.
 
 ## Responsibilities and interfaces
@@ -80,7 +82,8 @@ native column names/events must be checked against the installed Orca version.
 Terminal/diff/result inspection and Issue/PR navigation are observational controls. Retry,
 reassignment, review/validation and cancellation are scoped requests through normal Nexus
 policy and verified backend authority. A card drag does not itself supply exact operation
-authorization. Merge and checkout/branch deletion keep separate human decisions. In Review
+authorization. Merge and checkout/branch deletion remain distinct operations; the scoped human
+merge-complete notice may authorize normal cleanup after all factual gates. In Review
 on a board may mean execution-result inspection; distinguish it from GitHub PR review.
 
 ## Lifecycle and recovery
@@ -108,9 +111,15 @@ Known PRs prevent blind redispatch. Missing/conflicting associations and stale a
 Local cache-loss scenarios use separate temporary contexts, never deletion of retained evidence.
 
 Release settled worker resources independently from checkout disposition. Retain checkouts
-until exact separately approved deletion satisfies docs/worktree-lifecycle.md: settled activity,
-final disposition, preserved data/evidence, no consumers and exact identity. Merge is not deletion
-approval; no age-based cleanup or deletion-as-cancellation.
+until deletion covered by the scoped human merge-complete notice or separate exact approval
+satisfies [worktree lifecycle](worktree-lifecycle.md): settled activity/editor exit, final disposition,
+preserved data/evidence, no consumers and exact identity. Record the actual human notice and
+exact enumerated Work Item/run cleanup plan, including known safe/preserved local task branch
+effects. Historical failed validation may retire after its finding is resolved in the accepted
+final candidate and its report preserved; its old outcome stays unchanged. Main/protected/unrelated
+work, retain/no-cleanup overrides, pending consumers and unknown liveness/data remain excluded.
+Machine merge observation, Completed or release alone is not deletion approval; no force,
+data discard, remote branch deletion, age-based cleanup or deletion-as-cancellation.
 
 ## First application and acceptance
 
