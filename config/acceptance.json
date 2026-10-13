@@ -4,8 +4,8 @@
   "authority": {
     "workflow_decision_owner": "Nexus Coordinator",
     "change_specific_acceptance_owner": "owning repository technical owner",
-    "human_approval_required": ["main integration", "merge", "publication"],
-    "approval_scope": "exact reviewed candidate and operation; changed inputs invalidate approval",
+    "human_approval_required": ["main integration", "merge"],
+    "approval_scope": "merge/main integration: exact reviewed candidate and operation; changed inputs invalidate approval; publication: standing user mandate within authorized owner/task/repository under AGENTS.md Standing publication authority, with new exact technical plan/evidence for changed inputs and preserved user overrides; destructive operations/deletion: separate exact human approval",
     "human_overrides": "preserve pause/cancel/resume/reprioritization/reassignment/review controls without erasing mandatory acceptance or capability floors"
   },
   "resolution": {

@@ -34,6 +34,17 @@ and other types are rejected before any API call. Both draft and non-draft PRs r
 published head branches, but this tool never pushes.
 Association comments carry reviewed sanitized task/attempt/backend/PR associations.
 
+[Standing publication authority](../../AGENTS.md#standing-publication-authority) supersedes
+legacy per-operation publication approval language here and in other docs/prompts for
+already authorized owner/task/repository scope. `--approved-plan` remains the verified exact
+technical snapshot hash; `--approval-reference` names the real user standing publication
+grant. A changed candidate/target requires a new exact plan and affected evidence without
+another permission question inside that scope. Preserve stricter user overrides and every
+existing adapter guard, App/raw Bot identity check, sanitation and readiness requirement;
+ambiguous outcomes require reobservation. Final merge/main integration and destructive
+operations/deletion still require separate exact human approval. This adds no automatic
+publisher or push/Ready command to the adapter.
+
 By default a write returns a prepared plan and its Git blob `plan_oid` without an API write.
 After the exact plan has human authorization, apply with `--apply --approved-plan OID
 --approval-reference REF`. The reference names the real human decision; supplying a string

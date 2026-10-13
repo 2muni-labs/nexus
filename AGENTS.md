@@ -25,6 +25,39 @@ it never fabricates APPROVED evidence or waives required review, CI, known failu
 independent technical validation. Unknown required CI is null, never an inferred empty set.
 Explicit legacy local runs remain limited and cannot supply a permissive default for new managed work.
 
+## Standing publication authority
+
+The user's standing publication grant authorizes Nexus to post and update Issues and
+linked workflow records, safely push dedicated non-protected task branches, create PRs,
+and transition PRs to Ready for review for already authorized work without another human
+permission question. Keep every operation within the authorized owner, task and repository;
+this grant does not authorize execution of new work or expansion of ownership/scope.
+This central section explicitly supersedes older per-operation human publication approval
+language elsewhere in Nexus docs, prompts and workflows, including references in this
+contract. Preserve stricter task-specific pause, no-publication and Draft-only instructions;
+Draft-only requires an exact Ready instruction before promotion.
+
+Publication still requires a verified exact technical plan and fresh evidence for the
+actual source, target and candidate, with applicable validation, native checks and readiness
+gates. Changed candidates or targets require a new exact plan and affected technical
+evidence, without newly requested human permission while still within the standing scope.
+Keep existing interfaces and guards: `--approved-plan` is the verified technical snapshot
+hash, and `--approval-reference` genuinely names the user's standing publication grant;
+a reference string never creates authority or supplies fabricated approval. Preserve
+sanitation of private data, credentials, transcripts and reports; App authentication and
+raw Bot author/committer identity checks remain mandatory, with verified original-source
+provenance exemptions preserved. Retain one writer, no force push and no protected-branch
+push. Reobserve exact source/target/head and human controls before writes, readiness before
+Ready, and external outcomes after writes; ambiguous results or changed/unresolved facts
+mean HOLD and reobservation, never blind replay.
+
+Final human merge and main integration approval remain bound to the exact reviewed
+candidate. Destructive operations and checkout/branch deletion retain separate exact human
+approval and lifecycle checks; standing publication authority grants none of them.
+Publication is an explicitly scoped Coordinator operation under this standing user mandate,
+not an automatic publisher, daemon or new framework. Worker completion, Ready and posting
+do not prove acceptance, Done, process exit or deletion eligibility.
+
 ## Permanent workflow architecture
 
 **Nexus owns the workflow. GitHub owns the state. Orca is an execution backend.**

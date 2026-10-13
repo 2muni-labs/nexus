@@ -33,6 +33,19 @@ ORCHESTRATED plan under ignored
 `.runtime/runs/<run-id>/plan.yaml` and check the relational rules in the
 [execution-plan contract](../schemas/execution-plan.yaml) before dispatch.
 
+## Standing publication mandate
+
+Apply [standing publication authority](../AGENTS.md#standing-publication-authority)
+to authorized task/repository publications, including Issue/workflow records, dedicated
+non-protected task branch pushes, PR creation and Ready transitions. It supersedes legacy
+per-operation publication approval wording below and in other docs/prompts. Keep the exact
+technical plan hash in `--approved-plan`; use `--approval-reference` to name the genuine
+standing user grant. Changed candidates require fresh exact plans and affected evidence,
+not another permission question within that scope. Preserve user overrides and all source,
+target, identity, sanitation, readiness and ambiguous-result reobservation checks.
+Final merge/main integration and destructive operations/deletion retain separate exact
+human approval; registration and publication never authorize new execution scope.
+
 ## Record confirmed work and wait
 
 Questions, ideas and proposed review corrections do not implicitly authorize Issue
