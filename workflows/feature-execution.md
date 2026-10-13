@@ -124,10 +124,21 @@ P2 validation is risk-based. FAIL/NEEDS-WORK returns to a new bounded correction
 validator cannot silently implement. Use the original requirements or accepted finding
 and exact final candidate as evidence.
 
-Managed implementation additionally requires local validation and authoritative approved
-review of the current head. Discover native required checks freshly for the repository and
+Managed implementation additionally requires proportionate local validation: relevant
+content/link/format checks for documentation-only changes, meaningful affected tests for
+behavior changes, and a full suite only for concrete broader regression risk. Reuse exact
+unchanged evidence; rerun for changed inputs, failures or new concerns. Automated CI is
+unchanged. Resolve review_required explicitly true/false with repository/user/native
+provenance. Separate GitHub Approve is optional by default; authoritative current-head
+approved review is required only when resolved policy requires it. Never omit the flag
+or manufacture APPROVED evidence. An observed authorized human direct merge of the exact
+reviewed candidate/result may supply final human acceptance/merge decision after verified
+human identity, repository permission and head/result mapping. Explicit review requirements,
+known failures, unresolved changes requested and independent technical validation remain.
+Discover native required checks freshly for the repository and
 target branch; unknown is null/HOLD. Verified-empty CI requires native evidence and bounded
-owner disposition, without waiving local validation/review or mandatory independent floors.
+owner disposition, without waiving local validation, explicitly required review or mandatory
+independent floors.
 Check current-head review/check/merge facts and backend settlement under the acceptance
 policy before accepting any existing evaluator proposal; the scripts do not enforce this
 new declarative input. Human main/merge/publication authority remains exact and separate.

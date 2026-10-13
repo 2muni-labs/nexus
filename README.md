@@ -82,7 +82,11 @@ its Python tests use the standard library only:
 ./scripts/weekly-review.sh
 ```
 
-For local validation, run `bash tests/run.sh`. Native GitHub Actions
+Choose local validation by affected paths and concrete risk under the
+[acceptance policy](docs/acceptance-policy.md): documentation-only work uses relevant
+content/link/format checks; behavior changes use meaningful affected tests. Use
+`bash tests/run.sh` for concrete broader regression risk. Reuse exact unchanged
+evidence and rerun for changed inputs, failures or new concerns. Native GitHub Actions
 [CI](.github/workflows/ci.yml) runs the same offline suite on hosted `ubuntu-24.04`
 for pull requests (opened, synchronized, reopened or marked ready for review) and
 pushes to `main`. The stable job/check name is `Nexus tests`, with a 10-minute

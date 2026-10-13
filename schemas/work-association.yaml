@@ -40,18 +40,19 @@ record:
   policy:
     required: [repository, revision, requirements_ref]
     revision: exact_immutable_policy_revision_separate_from_candidate_evidence
-    requirements_ref: resolved_acceptance_union_OR_and_routing_review_floor_provenance
+    requirements_ref: resolved_acceptance_union_OR_and_routing_review_floor_provenance_including_explicit_review_required_true_or_false_from_repository_user_native_policy
   validations:
     each_required: [attempt_id, artifact, head, result, evidence_ref, session_ref, implementer_session_ref, independent]
     result: [PASS, FAIL, NEEDS-WORK]
     evidence_ref: verifiable_sanitized_commands_results_scope_and_exact_candidate_evidence
     independent: verified_distinct_session_when_required_never_boolean_alone
   reviews:
+    # Empty allowed when resolved policy does not require separate review; never fabricate APPROVED.
     each_required: [pr_url, head, evidence_ref]
     evidence_ref: authoritative_current_head_approved_review_not_worker_success
   human_decisions:
     each_required: [decision_ref, author_ref, permission_evidence_ref, operation, scope]
-    decision_ref: exact_real_human_decision_independently_verifiable_after_local_loss
+    decision_ref: exact_real_human_decision_independently_verifiable_after_local_loss_authorized_human_direct_merge_may_supply_final_acceptance_and_merge_decision_with_verified_head_result_mapping
     permission_evidence_ref: repository_specific_authorized_author_permission_and_provenance
     scope: exact_operation_target_artifact_revision_or_digest_and_gate_inputs_when_applicable
   prior_association_refs: canonical_verified_prior_comment_refs_preserving_history
@@ -60,7 +61,7 @@ phase_requirements:
   planned: incomplete_attempt_PR_and_evidence_fields_allowed_no_acceptance_or_recovery_authority
   running: known_attempt_receipts_and_source_identity_required_missing_facts_HOLD_recovery
   result: selected_exact_artifact_explicit_outcome_settlement_exit_and_applicable_validation_required
-  accepted: result_facts_plus_acceptance_policy_current_head_review_CI_exact_human_decision_and_observed_merge_or_accepted_noncode_disposition
+  accepted: result_facts_plus_resolved_acceptance_policy_current_head_review_only_when_required_native_CI_exact_human_decision_and_observed_authorized_merge_or_accepted_noncode_disposition_no_known_failures_waived
 crosschecks:
   - stable_work_task_attempt_ids_and_canonical_Issue_target_agree_across_all_sources
   - selected_attempt_and_PR_match_unique_complete_external_inventories_no_missing_known_pointer

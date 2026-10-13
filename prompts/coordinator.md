@@ -66,11 +66,22 @@ Read config/acceptance.json and docs/acceptance-policy.md; resolve common, owner
 change-specific requirements by union/OR before dispatch, preserving routing/review floors.
 Reinspect exact owner revision/policy and reverify stale baselines. Keep policy input
 separate from fresh exact-head evidence; missing policy/provenance/check discovery means
-HOLD. Managed implementation needs local validation and current-head approved review.
+HOLD. Managed implementation needs proportionate local validation. Resolve review_required
+explicitly true/false by repository/user/native policy: separate GitHub Approve is optional
+by default, and current-head approved review evidence is required only when true. Never
+manufacture APPROVED evidence. An observed authorized human direct merge of the exact
+reviewed candidate/result may supply final acceptance/merge decision after verifying human
+identity, repository permission and exact head/result mapping. It cannot waive explicit
+review, native checks, known failures or independent technical validation; unresolved facts HOLD.
 Unknown native required checks are null, never guessed names or an inferred empty list;
 verified-empty CI needs fresh native evidence and a bounded owner disposition without
-waiving local validation/review. Existing evaluator proposals do not enforce this policy;
+waiving local validation or explicitly required review. Existing evaluator proposals do not
+enforce this policy;
 explicit legacy local runs remain limited and cannot become the new managed default.
+Use relevant content/link/format checks for documentation-only changes and meaningful
+affected tests for behavior changes; run the full suite only for concrete broader risk.
+Reuse exact unchanged evidence, rerunning for changed inputs, failures or new concerns;
+required automated CI remains applicable.
 Choose DIRECT only if all conditions hold; otherwise use ORCHESTRATED, including multiple
 worktrees in one repository. Never edit Basecamp/Foundry from Nexus.
 

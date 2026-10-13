@@ -16,9 +16,47 @@ Resolve repository acceptance from `config/acceptance.json` and
 `docs/acceptance-policy.md` before dispatch and acceptance. Keep policy requirements
 separate from fresh exact-head evidence; missing policy/provenance or native check
 discovery means HOLD. All matching requirements combine by union/OR, preserving
-routing/review floors. Managed implementation requires local validation and current-head
-review; unknown required CI is null, never an inferred empty set. Explicit legacy local
-runs remain limited and cannot supply a permissive default for new managed work.
+routing/review floors. Managed implementation requires proportionate local validation;
+separate current-head approved review is required only by resolved repository/user/native
+policy, with explicit review_required true/false and provenance, never omission. An observed
+authorized human merge of the exact reviewed candidate/result may supply final human
+acceptance and merge decision after identity, permission and candidate/result mapping checks;
+it never fabricates APPROVED evidence or waives required review, CI, known failures or
+independent technical validation. Unknown required CI is null, never an inferred empty set.
+Explicit legacy local runs remain limited and cannot supply a permissive default for new managed work.
+
+## Standing publication authority
+
+The user's standing publication grant authorizes Nexus to post and update Issues and
+linked workflow records, safely push dedicated non-protected task branches, create PRs,
+and transition PRs to Ready for review for already authorized work without another human
+permission question. Keep every operation within the authorized owner, task and repository;
+this grant does not authorize execution of new work or expansion of ownership/scope.
+This central section explicitly supersedes older per-operation human publication approval
+language elsewhere in Nexus docs, prompts and workflows, including references in this
+contract. Preserve stricter task-specific pause, no-publication and Draft-only instructions;
+Draft-only requires an exact Ready instruction before promotion.
+
+Publication still requires a verified exact technical plan and fresh evidence for the
+actual source, target and candidate, with applicable validation, native checks and readiness
+gates. Changed candidates or targets require a new exact plan and affected technical
+evidence, without newly requested human permission while still within the standing scope.
+Keep existing interfaces and guards: `--approved-plan` is the verified technical snapshot
+hash, and `--approval-reference` genuinely names the user's standing publication grant;
+a reference string never creates authority or supplies fabricated approval. Preserve
+sanitation of private data, credentials, transcripts and reports; App authentication and
+raw Bot author/committer identity checks remain mandatory, with verified original-source
+provenance exemptions preserved. Retain one writer, no force push and no protected-branch
+push. Reobserve exact source/target/head and human controls before writes, readiness before
+Ready, and external outcomes after writes; ambiguous results or changed/unresolved facts
+mean HOLD and reobservation, never blind replay.
+
+Final human merge and main integration approval remain bound to the exact reviewed
+candidate. Destructive operations and checkout/branch deletion retain separate exact human
+approval and lifecycle checks; standing publication authority grants none of them.
+Publication is an explicitly scoped Coordinator operation under this standing user mandate,
+not an automatic publisher, daemon or new framework. Worker completion, Ready and posting
+do not prove acceptance, Done, process exit or deletion eligibility.
 
 ## Permanent workflow architecture
 
@@ -229,6 +267,10 @@ implementer. Codex is the default; another agent client requires explicit task a
 and verified capability matching. Validate original finding or feature acceptance, root cause,
 minimal scope, compatibility, meaningful tests, docs and managed contracts against the
 exact immutable proposal. Return PASS/FAIL/NEEDS-WORK; missing evidence is not PASS.
+Local validation follows affected paths and concrete risk: documentation-only work uses
+relevant content/link/format checks; behavior changes use meaningful affected tests; a full
+suite requires concrete broader regression risk. Reuse exact unchanged evidence and rerun
+only for changed inputs, failures or new concerns. Required native CI still applies.
 Read-only validators may run safe tests and explicitly authorized exact candidate
 materialization/cleanup, never author repairs. P2 is risk-based; P3 is recorded by default.
 
