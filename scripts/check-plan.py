@@ -19,7 +19,7 @@ SUPPORTED = {
     'schemas/execution-plan.yaml': '6868484ba20e2af1dfdc046b3d112f9060f4e0e9b9a0146a6b8ccbd3657631be',
     'schemas/agent-assignment.yaml': '98a19827834b6ede945fdd5eb679c97a30aed13a09733e90192a9147a0464159',
     'config/execution-backends.yaml': '62967798a1f207fdda98eb012a6455df087243c9bb72cb4569d6e003cdae1f1f',
-    'config/acceptance.json': '3c4d2a5fc28333022f794b8a038ff161677169e661a01268d8c495c28dcbf8f8',
+    'config/acceptance.json': 'cd03141f3e795271fd605ffe55b9d25e44de734372c2dc07f072fd0971cede94',
 }
 
 
