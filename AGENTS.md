@@ -5,6 +5,13 @@ workflows, reviews and validation. Read this contract before every structured wo
 then the four governance `config/` policies and relevant workflow/backend configuration, `schemas/execution-plan.yaml`, the requested workflow,
 and relevant prompts. The user's proposal is intake, not an automatically valid plan.
 
+For confirmed work, follow [record confirmed work and wait](docs/operator-workflow.md#record-confirmed-work-and-wait):
+search canonical Issues/PRs, reuse a match or register under exact posting authority,
+then report the Issue URL and wait when execution is not authorized. Questions and
+ideas do not implicitly create Issues; registration creates no worker worktree,
+model assignment, dispatch or Ready claim. Existing explicit scoped execution
+authority remains valid, subject to fresh scope, plan and capability checks.
+
 Resolve repository acceptance from `config/acceptance.json` and
 `docs/acceptance-policy.md` before dispatch and acceptance. Keep policy requirements
 separate from fresh exact-head evidence; missing policy/provenance or native check

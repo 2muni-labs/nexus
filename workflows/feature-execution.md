@@ -17,6 +17,15 @@ only on verified complete snapshots. Local cache loss cannot authorize duplicate
 
 ## Intake and plan
 
+First apply [record confirmed work and wait](../docs/operator-workflow.md#record-confirmed-work-and-wait).
+Questions/ideas do not implicitly create Issues. Reuse a canonical match or register
+confirmed work under exact posting authority, then report its Issue URL. Record-only
+instructions stop without worker worktrees, model assignments, dispatch or Ready claims;
+unpublished requests and uncertain posting outcomes remain explicit. The execution
+steps below require scoped execution authority and fresh scope, plan and capability
+checks. Existing explicit execution authority is not cancelled by registration;
+Project display is independent and the registration note is not an Execution Plan.
+
 Read AGENTS, all four config policies, the execution-plan contract, Coordinator and Planner
 prompts. Inspect repository context and validate the user's proposal against requirements.
 Identify non-goals, ownership, acceptance criteria and dirty-state inclusion. Use DIRECT

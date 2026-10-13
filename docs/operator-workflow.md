@@ -27,10 +27,77 @@ conflicts and seek an explicit resolution while preserving safety floors.
 
 Validate the proposed outcome, benefit, owner, constraints, non-goals and observable
 acceptance. Inspect exact revisions, dirty-state inclusion/exclusion, known PRs and
-relevant retained workspaces. Preserve existing work. Use DIRECT only when every
-eligibility condition holds; otherwise create an ORCHESTRATED plan under ignored
+relevant retained workspaces. Preserve existing work. When execution is authorized,
+use DIRECT only when every eligibility condition holds; otherwise create an
+ORCHESTRATED plan under ignored
 `.runtime/runs/<run-id>/plan.yaml` and check the relational rules in the
 [execution-plan contract](../schemas/execution-plan.yaml) before dispatch.
+
+## Record confirmed work and wait
+
+Questions, ideas and proposed review corrections do not implicitly authorize Issue
+creation or execution. Establish whether the human wants an answer, a recorded task
+or execution of a defined scope; clarify uncertain intent before posting or dispatch.
+Confirmed work follows this intake procedure. It is Coordinator intake and read-only
+coordination, not a worker planning or implementation assignment.
+
+1. Establish the objective and benefit, owning repository, bounded scope and non-goals,
+   observable acceptance and known uncertainties. Resolve ambiguity that prevents an
+   accurate registration request. A registration note is not an Execution Plan:
+   unresolved execution baselines, dependencies or capabilities remain unknown until
+   execution planning, and must not be reported as satisfied.
+2. Search the owning repository's canonical Issues and PRs through the
+   [GitHub provider](adapters/github.md): use `scripts/work-items.sh issue-list OWNER/REPO`
+   and `scripts/work-items.sh pr-list OWNER/REPO`, then `issue-read` or `pr-read` with
+   the exact number to inspect a possible match. Inspect complete results, including
+   closed work and known PRs. Reuse a matching Issue's canonical identity; a known PR
+   prevents blind redispatch. Resolve ambiguous matches or incomplete reads before a
+   new registration, rather than creating a duplicate. A separately reviewable split
+   needs recorded reasons and links under the existing one-Issue default.
+3. If no match exists, prepare a sanitized title/body and stable `operation_id` in an
+   ignored request file. Include the agreed scope, acceptance and uncertainties;
+   exclude credentials, raw conversations, private reports and absolute host paths.
+   `scripts/work-items.sh issue-create OWNER/REPO REQUEST.json` prepares the exact
+   posting plan without publishing it. Apply only when real human posting authority
+   covers that repository and exact request, using the matching `--approved-plan OID`
+   and real `--approval-reference REF` with `--apply`. Honor existing exact authority
+   without asking again; a reference string cannot create it. Changed content or target
+   requires matching authority. Without it, report the prepared request as unpublished.
+   Updating an existing Issue or publishing a comment needs its own exact write plan
+   and authority; matching an Issue does not authorize overwriting human content.
+4. Reobserve the canonical Issue with `scripts/work-items.sh issue-read OWNER/REPO NUMBER`
+   after a post. If posting times out or its outcome is uncertain, preserve the request,
+   plan and operation marker, and inspect complete Issue results for a uniquely matching
+   target/content/marker before deciding what happened. Conflicts, incomplete reads or
+   unresolved outcomes mean HOLD; never blindly repeat creation or use a new marker to
+   evade uncertainty. Report an observed existing or newly registered Issue accurately;
+   do not claim a successful write from an uncertain response.
+5. Report the canonical Issue URL, whether execution has started, and the next action.
+   When authority covers registration only, stop and wait for an explicit instruction
+   to execute that work. An unpublished request or unresolved posting outcome is reported
+   as such, with the missing authority or next reobservation. Registration alone creates
+   no worker worktree, agent/model assignment, Dispatch or Ready claim. Waiting is a
+   next action, not an added workflow state.
+6. Treat [Project membership and field display](github-projects.md) separately. Missing
+   or incomplete display does not erase the Issue, permit duplicate registration or
+   authorize execution. Use existing exact-authorized membership/field operations only;
+   do not create a Project automatically or infer readiness from its display.
+
+An earlier explicit execution instruction remains valid for its unchanged scope;
+registration does not cancel it or require a repeated instruction. If execution is
+already authorized, report that authority and proceed only after fresh checks of
+current Issue/Project intent, policy, exact source/dirty state, retained workspaces,
+attempts and known PRs. Resolve the full plan, scope, acceptance, capability and
+dependency gates before dispatch, including the
+[blocking model/workspace checkpoint](model-selection-verification.md#two-stage-start-before-source-mutation).
+For Orca, follow the [adapter's preflight mechanics](adapters/orca.md#model-and-effort-observation):
+`orca orchestration worker-start` starts an attempt, and the worker blocks through its
+live preamble's `orca orchestration ask` until the same-attempt routing reply. Neither
+launch alone nor Issue registration releases source mutation.
+New planning, implementation and independent-validation tasks still require new isolated
+non-main worktrees and fresh sessions. Keep the same Issue/Work Item through bounded
+remediation. Issue posting grants no PR publication, push, merge or checkout deletion
+authority; their exact human boundaries remain separate.
 
 ## Protected main and bounded ownership
 
