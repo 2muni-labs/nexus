@@ -294,6 +294,60 @@ resolved acceptance requirements still apply before acceptance/Done; verified au
 human direct merge may supply that final decision as described above.
 Do not hand a held Draft to a human as completed review preparation.
 
+## Completion accounting before subsequent dispatch
+
+For every explicit worker completion, including success, failure, superseded attempts
+and read-only work, the Coordinator must complete this ordered checkpoint and report
+its facts **before the next sequential or dependent dispatch**. This is procedural
+Coordinator enforcement using existing backend operations, not a daemon or automatic
+guard. A valid native `worker_done` still settles its Task/Dispatch automatically;
+incomplete Nexus accounting does not erase that factual result or require a second
+native completion/status write.
+
+1. Verify the completion against the exact Task/Issue, authoritative Dispatch/attempt,
+   head or immutable artifact, explicit outcome and actual validation evidence.
+   A stale attempt, mismatched artifact or unsupported outcome is not acceptance.
+2. Preserve the exact result and required evidence outside the worker checkout;
+   verify readable artifacts/digests and surviving references for needed Git objects.
+   Keep private reports ignored and never publish raw transcripts or credentials.
+3. Settle the exact worker terminal's next owner through the installed backend
+   contract: release after accepted settlement or record user-requested retention.
+   Record the observed disposition and actual process-exit evidence separately.
+   A known user-retained live PTY with a recorded next owner is resolved retention;
+   it proves neither exit nor safe checkout reuse/deletion. Unresolved resource
+   disposition or unknown liveness remains HOLD; never guess cleanup success.
+4. Freshly observe the exact environment identity, source head/branch, all attempts
+   sharing it (including other runs), and human status/comment/links/controls.
+   Preserve a snapshot and refresh it immediately before any factual write.
+5. Apply only the factual board status/context under
+   [board reconciliation](#board-reconciliation) through the selected adapter.
+   Another running attempt keeps the environment active; one completion cannot
+   falsely complete a shared card. An unchanged correct display permits a verified
+   no-op, with a new factual comment only when authorized and conflict-free.
+6. Read back the board **and attempt state**, verifying identity/head, intended and
+   unchanged metadata, and complete scoped attempt inventory against the snapshot.
+   Missing/mismatched readback, conflicting human metadata, backend contact loss or
+   unresolved resource state means HOLD affected subsequent dispatch. Preserve the
+   native outcome, report the blocker/owner/next trigger and reobserve; never blindly
+   replay a write. Continue supervising already-running independent work.
+7. Report the following observed facts and evidence references before releasing the
+   next sequential/dependent dispatch; completing accounting does not waive any
+   dependency, validation, capability or authority gate. Unknown values stay unknown.
+
+| Completion report | Required facts |
+| --- | --- |
+| Work/result | Task, canonical Issue and exact Dispatch/attempt; exact head/artifact; explicit outcome and validation commands/results/evidence. |
+| Capabilities | Requested and effective agent/model/effort, observation source and interval; gaps remain unknown. |
+| Board | Observed environment status/context and board/attempt readback evidence, including a verified no-op or conflict/HOLD. |
+| Terminal | Exact worker release/retention and next owner; actual process-exit evidence or uncertainty separately. |
+| Project/workspace | Observed PR/Issue/Project state; checkout/branch retained, cleaned or HOLD with evidence; next action/owner/trigger. |
+
+Board Completed proves neither project Done, acceptance, process exit nor deletion
+eligibility. Keep result delivery, board reconciliation and workspace cleanup distinct.
+Publication uses the existing [standing mandate](#standing-publication-mandate);
+final merge remains human-controlled, and deletion still requires the exact scoped
+[human merge-complete authority](#human-merge-complete-cleanup) and all lifecycle gates.
+
 ## Board reconciliation
 
 The selected backend's execution board is an observation/control surface, never a competing backlog. After
