@@ -15,10 +15,14 @@ args=sys.argv[1:]
 with open(os.environ["MOCK_CALLS"],"a") as f: f.write(json.dumps(args)+"\\n")
 if args == ["identity"]:
  print(os.environ.get("MOCK_BOT",json.dumps({"app_id":123,"app_slug":"test-app","bot_login":"test-app[bot]","bot_user_id":987,"bot_type":"Bot","repository":"a/b","email":"987+test-app[bot]@users.noreply.github.com"}))); sys.exit()
-if "pr" in args:
+if any(x.startswith("query=") and "pullRequest(number:" in x for x in args):
  if os.environ.get("MOCK_CHECKS") is not None:
   print(os.environ["MOCK_CHECKS"]); sys.exit()
- print(json.dumps({"url":"https://github.com/a/b/pull/2","headRefOid":"abc","reviewDecision":"APPROVED","statusCheckRollup":[{"name":"test","conclusion":"SUCCESS"},{"name":"build","conclusion":"FAILURE"}],"mergedAt":None,"isDraft":False})); sys.exit()
+ head="a"*40
+ runs=[dict(__typename="CheckRun",id="run"+str(i),name=name,status="COMPLETED",conclusion=state,checkSuite={"commit":{"oid":head},"app":{"databaseId":123}}) for i,(name,state) in enumerate([("test","SUCCESS"),("build","FAILURE")])]
+ rollup=dict(commit={"oid":head},contexts=dict(totalCount=2,pageInfo=dict(hasNextPage=False,hasPreviousPage=False),nodes=runs))
+ pr=dict(url="https://github.com/a/b/pull/2",headRefOid=head,reviewDecision="APPROVED",mergedAt=None,isDraft=False,commits={"nodes":[{"commit":{"oid":head,"statusCheckRollup":rollup}}]})
+ print(json.dumps({"data":{"repository":{"pullRequest":pr}}})); sys.exit()
 if "--input" in args:
  if os.environ.get("MOCK_FAIL"): sys.exit(1)
  input_path=args[args.index("--input")+1]
@@ -146,6 +150,74 @@ class ProviderTests(unittest.TestCase):
         checks=self.run_cli("review-checks-read","a/b","2")
         self.assertEqual(checks["review_state"],"approved")
         self.assertEqual([x["state"] for x in checks["checks"]],["pass","fail"])
+        self.assertTrue(checks["checks_complete"])
+        self.assertEqual(checks["checks_head"], "a"*40)
+        self.assertEqual(checks["checks"][0]["producer_ref"], "github-app:123")
+        self.assertTrue(checks["checks"][0]["provenance_verified"])
+
+    def review_response(self, runs, **connection):
+        head="a"*40
+        contexts=dict(totalCount=len(runs),pageInfo=dict(hasNextPage=False,hasPreviousPage=False),nodes=runs)
+        contexts.update(connection)
+        return {"data":{"repository":{"pullRequest":dict(url="https://github.com/a/b/pull/2",headRefOid=head,
+            reviewDecision="APPROVED",mergedAt=None,isDraft=False,commits={"nodes":[{"commit":dict(oid=head,
+            statusCheckRollup=dict(commit={"oid":head},contexts=contexts))}]})}}}
+
+    def check_run(self, identity="run1", **fields):
+        run=dict(__typename="CheckRun",id=identity,name="test",status="COMPLETED",conclusion="SUCCESS",
+                 checkSuite={"commit":{"oid":"a"*40},"app":{"databaseId":123}})
+        run.update(fields)
+        return run
+
+    def read_response(self, response):
+        self.env["MOCK_CHECKS"]=json.dumps(response)
+        return self.run_cli("review-checks-read","a/b","2")
+
+    def test_check_inventory_preserves_distinct_runs_and_conflicting_states(self):
+        runs=[self.check_run(),self.check_run("run2"),self.check_run("run3",conclusion="FAILURE"),
+              self.check_run("run4",status="IN_PROGRESS",conclusion=None),self.check_run("run5",conclusion="NEUTRAL")]
+        result=self.read_response(self.review_response(runs))
+        self.assertTrue(result["checks_complete"])
+        self.assertEqual([c["id"] for c in result["checks"]],[r["id"] for r in runs])
+        self.assertEqual([c["state"] for c in result["checks"]],["pass","pass","fail","pending","unknown"])
+        repeated=self.read_response(self.review_response([runs[0],runs[0]]))
+        self.assertFalse(repeated["checks_complete"])  # Duplicate nodes cannot stand in for unseen runs.
+        self.assertEqual(len(repeated["checks"]),2)
+
+    def test_missing_truncated_and_stale_check_inventory_never_attested(self):
+        for connection in [dict(totalCount=2),dict(pageInfo=dict(hasNextPage=True,hasPreviousPage=False)),
+                           dict(pageInfo=dict(hasNextPage=False)),dict(nodes=None)]:
+            with self.subTest(connection=connection):
+                result=self.read_response(self.review_response([self.check_run()],**connection))
+                self.assertFalse(result["checks_complete"])
+        response=self.review_response([self.check_run()])
+        response["data"]["repository"]["pullRequest"]["commits"]["nodes"][0]["commit"]["oid"]="b"*40
+        self.assertFalse(self.read_response(response)["checks_complete"])
+        response=self.review_response([self.check_run()]);response["errors"]=[dict(message="partial")]
+        self.env["MOCK_CHECKS"]=json.dumps(response)
+        self.run_cli("review-checks-read","a/b","2",good=False)
+
+    def test_missing_app_status_creator_and_stale_run_are_unverified(self):
+        status=dict(__typename="StatusContext",id="status1",context="test",state="SUCCESS",commit={"oid":"a"*40},creator={"login":"human"})
+        runs=[self.check_run(checkSuite={"commit":{"oid":"a"*40},"app":None}),status,
+              self.check_run("run3",checkSuite={"commit":{"oid":"b"*40},"app":{"databaseId":123}}),
+              self.check_run("run4",checkSuite={"commit":{"oid":"a"*40},"app":{"databaseId":999}})]
+        result=self.read_response(self.review_response(runs))
+        self.assertTrue(result["checks_complete"])
+        self.assertEqual([c["provenance_verified"] for c in result["checks"]],[False,False,False,True])
+        self.assertEqual(result["checks"][-1]["producer_ref"],"github-app:999")  # Adapter reports, core checks expected source.
+
+    def test_provider_checks_feed_exact_workflow_acceptance(self):
+        from test_workflow import merged_runs, WorkflowTests
+        response=self.review_response([self.check_run(),self.check_run("run2")])
+        observations=self.read_response(response)
+        s=merged_runs(); s["pr"].update(observations)
+        s["pr"].update(merged=True,merge_approval_head="a"*40,required_check_producers={"test":["github-app:123"]})
+        s["validation"]["candidate_head"]="a"*40
+        self.assertEqual(WorkflowTests().decide(s)["proposed_status"],"Done")
+        response["data"]["repository"]["pullRequest"]["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"]["nodes"][1]["checkSuite"]["app"]["databaseId"]=999
+        s["pr"].update(self.read_response(response));s["pr"]["merged"]=True
+        self.assertEqual(WorkflowTests().decide(s)["decision"],"HOLD")
 
     def test_recovered_create_no_second_write_and_conflict(self):
         plan=self.prepare()

@@ -68,17 +68,44 @@ nexus_github_operation() {
                          metadata:{external_comment_id:.id,author_relationship:.author_association}}
                         else error("Association comment identity mismatch") end]'
             elif [[ "$op" == review-checks-read ]]; then
-                nexus_github_command "$repo" pr view "$argument" --repo "$repo" \
-                    --json url,headRefOid,reviewDecision,statusCheckRollup,mergedAt,isDraft |
+                nexus_github_command "$repo" review-checks "$argument" |
                     jq -e --arg repo "$repo" --arg number "$argument" '
-                      if .url != ("https://github.com/"+$repo+"/pull/"+$number) then error("PR observation identity mismatch") else
-                      {url,head_revision:.headRefOid,merged:(.mergedAt != null),draft:.isDraft,
-                      review_state:(if .reviewDecision == "APPROVED" then "approved" elif .reviewDecision == "CHANGES_REQUESTED" then "changes-requested" elif .reviewDecision == "REVIEW_REQUIRED" then "pending" else "unknown" end),
-                      checks:[.statusCheckRollup[]? | {name:(.name // .context),
-                        state:(if (.conclusion // .state) == "SUCCESS" then "pass"
-                          elif ((.conclusion // .state) as $s | ["FAILURE","ERROR","TIMED_OUT","CANCELLED","ACTION_REQUIRED"]|index($s)) != null then "fail"
-                          elif (.status == "IN_PROGRESS" or .status == "QUEUED" or .state == "PENDING") then "pending"
-                          else "unknown" end),metadata:{status,conclusion,state}}]} end'
+                      def text: type == "string" and length>0;
+                      def count: type == "number" and floor == . and .>=0;
+                      def revision: type == "string" and test("^[0-9a-f]{40}$");
+                      if (.errors != null and .errors != []) then error("PR observation contains GraphQL errors") else
+                      .data.repository.pullRequest as $pr |
+                      if $pr.url != ("https://github.com/"+$repo+"/pull/"+$number) or
+                         ($pr.headRefOid|revision|not) or ($pr.isDraft|type != "boolean") then
+                        error("PR observation identity mismatch") else
+                      $pr.commits.nodes as $commits | $commits[0].commit.statusCheckRollup as $rollup |
+                      $rollup.contexts as $contexts |
+                      {url:$pr.url,head_revision:$pr.headRefOid,merged:($pr.mergedAt != null),draft:$pr.isDraft,
+                       review_state:(if $pr.reviewDecision == "APPROVED" then "approved" elif $pr.reviewDecision == "CHANGES_REQUESTED" then "changes-requested" elif $pr.reviewDecision == "REVIEW_REQUIRED" then "pending" else "unknown" end),
+                       checks_mode:"verified-runs",
+                       checks_complete:((($commits|type) == "array") and ($commits|length) == 1 and
+                         $commits[0].commit.oid == $pr.headRefOid and $rollup.commit.oid == $pr.headRefOid and
+                         ($contexts.totalCount|count) and ($contexts.nodes|type == "array") and
+                         $contexts.pageInfo.hasNextPage == false and $contexts.pageInfo.hasPreviousPage == false and
+                         ($contexts.nodes|length) == $contexts.totalCount and
+                         ([$contexts.nodes[]?.id]|unique|length) == $contexts.totalCount and
+                         all($contexts.nodes[]?; (.id|text) and
+                           (.name // .context|text) and (.__typename == "CheckRun" or .__typename == "StatusContext"))),
+                       checks_head:$pr.headRefOid,
+                       checks:[ $contexts.nodes[]? |
+                         . as $run | (if .__typename == "CheckRun" then .checkSuite.commit.oid else .commit.oid end) as $head |
+                         (if .__typename == "CheckRun" and (.checkSuite.app.databaseId|type == "number" and floor == . and .>0)
+                          then "github-app:"+(.checkSuite.app.databaseId|tostring) else null end) as $producer |
+                         {id,name:(.name // .context),head_revision:$head,producer_ref:$producer,
+                          provenance_verified:((.id|text) and ($head|revision) and $head == $pr.headRefOid and $producer != null),
+                          state:(if (.__typename == "CheckRun" and .status == "COMPLETED" and .conclusion == "SUCCESS") or
+                                    (.__typename == "StatusContext" and .state == "SUCCESS") then "pass"
+                            elif ((.conclusion // .state) as $s | ["FAILURE","ERROR","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE"]|index($s)) != null then "fail"
+                            elif ((.status // .state) as $s | ["IN_PROGRESS","QUEUED","PENDING","WAITING","REQUESTED"]|index($s)) != null then "pending"
+                            else "unknown" end),
+                          metadata:{native_type:.__typename,status,conclusion,state,check_suite:.checkSuite,creator}}
+                       ],metadata:{inventory_total:$contexts.totalCount,page_info:$contexts.pageInfo}}
+                      end end'
             else
                 endpoint=issues; [[ "$op" != pr-read ]] || endpoint=pulls
                 current=$(nexus_github_api "repos/$repo/$endpoint/$argument" --method GET)
