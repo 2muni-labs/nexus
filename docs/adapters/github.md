@@ -89,6 +89,37 @@ Issue; record linked splits for independently reviewable scope. GitHub record op
 state is distinct from the six-state workflow. Projects status is added separately.
 No merge, push, deletion or automatic Project/Issue publication is implemented.
 
+`review-checks-read` uses one fixed, read-only GraphQL request scoped to the exact
+repository and PR, under `metadata: read` and `pull_requests: read`. The App helper
+constructs that request from the bounded internal `review-checks NUMBER` command;
+callers cannot supply its query, repository variables or extra flags. Field access
+errors remain failures without credential fallback or replay.
+
+The current-head rollup retains every returned CheckRun/StatusContext identity and
+state. CheckRun provenance uses its suite commit and creating App database ID, mapped
+to an opaque `producer_ref` such as `github-app:123`; only the adapter interprets the
+native ID. An App identity is a factual source, never permission to accept that source.
+The Coordinator separately resolves expected producer policy. A StatusContext creator
+does not attest the originating integration: its `producer_ref` stays null and
+`provenance_verified` false, so a required status cannot satisfy managed acceptance
+through this read alone. Missing App/suite/head evidence likewise stays unverified.
+
+The bounded request returns at most 100 rollup contexts. `checks_complete` is true
+only with a matching PR/latest-commit/rollup head, explicit end-of-connection page
+facts, count equality, unique node identities and recognized named record types.
+Additional pages, absent rollup, partial GraphQL errors or conflicting heads cannot
+certify inventory completeness; no truncated read becomes a passing inventory.
+No returned runs are de-duplicated, sorted by time or selected as newest. Distinct
+successes and all conflicting states remain visible. Pending and unknown conclusions
+remain non-passing, including skipped, neutral and stale results. This is a bounded
+rollup observation, not historical run archival or fresh native requirement discovery;
+reobserve after head/source changes before accepting any decision.
+
+These fields follow GitHub's [GraphQL checks](https://docs.github.com/en/graphql/reference/checks)
+and [commit rollup/context contracts](https://docs.github.com/en/graphql/reference/commits).
+Offline tests exercise authentication scope and normalization; live query conformance
+does not certify policy expectations, future access or final acceptance.
+
 API behavior is grounded in installed `gh api` help and
 [GitHub Issues REST documentation](https://docs.github.com/en/rest/issues/issues) and
 [Pull Requests REST documentation](https://docs.github.com/en/rest/pulls/pulls).

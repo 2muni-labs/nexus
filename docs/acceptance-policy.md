@@ -90,6 +90,29 @@ When checks are required, every resolved name needs a complete authoritative pas
 observation bound to the current PR head. Changed head, branch or native rules require
 rediscovery/reverification; missing, stale, pending or failing evidence blocks acceptance.
 
+Managed workflow snapshots use `checks_mode: "verified-runs"`, a complete exact-head
+inventory with `checks_evidence_ref`, and `required_check_producers`: a map from each
+required name to nonempty unique opaque expected producer references. The Coordinator
+resolves those expectations from native requirements and, where native policy leaves
+the producer unspecified, an explicit bounded owner policy disposition. Record that
+provenance separately; observed successes cannot choose their own expected producer.
+Core policy compares opaque references without interpreting GitHub App IDs or payloads.
+
+Every required name and expected producer must be present. All matching observations
+must pass with verified provenance at the current head; an unexpected producer or any
+failing, pending, unknown or stale run blocks acceptance. Multiple successful distinct
+runs are acceptable. Repeated observations of one identity are acceptable only when all
+contract facts agree; a conflicting identity anywhere in the inventory blocks acceptance.
+No arbitrary newest-run selection or name-only de-duplication is permitted. Missing
+inventory, run identity, expected producer or provenance evidence remains HOLD.
+
+Explicit pre-existing local/manual snapshots may use `checks_mode: "legacy-single"`
+with a nonempty `legacy_checks_reference` naming their bounded legacy scope. That mode
+retains the old exactly-one-passing-observation rule and accepts only name/state checks,
+without run/provenance fields or a producer map. It cannot release new managed work or
+serve as fallback from incomplete `verified-runs` evidence. Omission of the mode holds
+CI acceptance; the old snapshot must be explicitly labeled before reuse.
+
 ## Repository local acceptance
 
 These are inspected native contracts, not a Nexus cross-repository execution script.

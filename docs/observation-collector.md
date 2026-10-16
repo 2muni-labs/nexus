@@ -64,6 +64,15 @@ completeness attestations. In particular, the Work Item adapter can normalize an
 empty page stream to `[]`; the collector cannot certify absence from that result.
 Consequently `inventory_complete` and `freshness_verified` remain null, even after
 successful reads. `requested_reads_complete` summarizes requested read success only.
+The review/check data now retains the adapter bounded rollup attestation
+`checks_complete`, `checks_head` and each run identity, state, head and producer
+provenance fact. That nested attestation covers the returned current-head rollup
+only; it does not change the source-level `inventory_complete: null`, verify
+freshness, discover required checks or choose expected producers. More than 100
+contexts or unavailable count/page/head facts leave `checks_complete` false.
+Missing integration provenance remains unverified, even for successful status
+contexts with a known creator. The bundle still requires manual trust and acceptance
+resolution; it is never direct workflow input.
 Project `known` distinguishes a received valid snapshot from an unavailable source;
 `membership_known` and `member` describe presence/absence in that returned snapshot,
 and `status` is the returned canonical field or null. They do not certify a globally

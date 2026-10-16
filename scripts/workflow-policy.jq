@@ -19,9 +19,29 @@ def validated($revision):
   (if .readiness.independent_validation_required == true then .validation.independent_session == true else true end);
 def required_checks_pass:
   . as $s | .pr.checks_complete == true and (.pr.required_checks | type == "array" and length>0 and (unique|length) == length and all(.[];text)) and
-  .pr.checks_head == .pr.head_revision and
-  all(.pr.required_checks[]; . as $name |
-    [$s.pr.checks[]? | select(.name == $name)] | length == 1 and .[0].state == "pass");
+  (.pr.head_revision | text) and .pr.checks_head == .pr.head_revision and (.pr.checks | type == "array") and
+  (if .pr.checks_mode == "legacy-single" then
+     # Explicitly scoped old snapshots only; never fallback from incomplete run facts.
+     (.pr.legacy_checks_reference | text) and .pr.required_check_producers == null and
+     all(.pr.checks[]; (has("id") or has("head_revision") or has("producer_ref") or has("provenance_verified")) | not) and
+     all(.pr.required_checks[]; . as $name |
+       [$s.pr.checks[] | select(.name == $name)] | length == 1 and .[0].state == "pass")
+   else
+     .pr.checks_mode == "verified-runs" and (.pr.checks_evidence_ref | text) and
+     (.pr.required_check_producers | type == "object") and
+     all(.pr.checks[]; (.id | text) and (.name | text) and .head_revision == $s.pr.head_revision and
+       (.state as $state | ["pass","fail","pending","unknown"] | index($state)) != null) and
+     # Repeated observations may share an identity only when contract facts agree.
+     (.pr.checks | group_by(.id) | all(.[];
+       map({name,state,head_revision,producer_ref,provenance_verified}) | unique | length == 1)) and
+     all(.pr.required_checks[]; . as $name | $s.pr.required_check_producers[$name] as $producers |
+       ($producers | type == "array" and length>0 and (unique|length) == length and all(.[];text)) and
+       [$s.pr.checks[] | select(.name == $name)] as $runs |
+       ($runs | length>0) and all($runs[];
+         .state == "pass" and .provenance_verified == true and
+         (.producer_ref as $producer | $producers | index($producer)) != null) and
+       all($producers[]; . as $producer | any($runs[]; .producer_ref == $producer)))
+   end);
 def required_review_pass:
   if .pr.review_required == true then
     .pr.review_state == "approved" and .pr.review_head == .pr.head_revision and (.pr.review_evidence_ref | text)

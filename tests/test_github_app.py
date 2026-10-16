@@ -472,6 +472,22 @@ class AppTests(unittest.TestCase):
                      [*API_ARGS[:3], "https://foreign/", *API_ARGS[4:]], PR_ARGS + ["--web"]]:
             with self.assertRaises(APP.AuthError): APP.command_permissions("a/b", args)
 
+    def test_exact_provenance_read_scope_permissions_and_authenticated_transport(self):
+        args=["review-checks","2"]
+        self.assertEqual(APP.command_permissions("a/b",args),{"metadata":"read","pull_requests":"read"})
+        code,output=self.execute(args)
+        self.assertEqual(code,0)
+        command=json.loads(output)["args"]
+        self.assertEqual(command,["api","--hostname","github.com","graphql","-f","query="+APP.REVIEW_QUERY,
+                                 "-f","owner=a","-f","name=b","-F","number=2"])
+        self.assertEqual(self.calls[-1][:2],("DELETE","/installation/token"))
+        for args in [["review-checks"],["review-checks","0"],["review-checks","2","--repo","other/repo"],
+                     ["review-checks","2","query=mutation{}"],["review-checks","2 --web"]]:
+            with self.assertRaises(APP.AuthError): APP.command_permissions("a/b",args)
+        self.config["repositories"]["a/b"]["permissions"]={"metadata":"read"}
+        self.save_config()
+        with self.assertRaises(APP.AuthError): self.execute(["review-checks","2"])
+
     def test_timeout_subprocess_failure_and_main_error_redaction(self):
         original = subprocess.run
         for failure in [OSError("secret-token"), subprocess.TimeoutExpired("secret-token", 120)]:

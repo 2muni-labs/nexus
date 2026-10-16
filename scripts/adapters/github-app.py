@@ -19,6 +19,19 @@ import urllib.parse
 
 ROOT = Path(__file__).resolve().parents[2]
 FIELDS = "url,headRefOid,reviewDecision,statusCheckRollup,mergedAt,isDraft"
+REVIEW_QUERY = """query($owner:String!,$name:String!,$number:Int!){
+  repository(owner:$owner,name:$name){pullRequest(number:$number){
+    url headRefOid reviewDecision mergedAt isDraft
+    commits(last:1){nodes{commit{oid statusCheckRollup{
+      commit{oid} contexts(first:100){totalCount pageInfo{hasNextPage hasPreviousPage}
+        nodes{__typename
+          ... on CheckRun{id name status conclusion checkSuite{commit{oid} app{databaseId}}}
+          ... on StatusContext{id context state commit{oid} creator{login}}
+        }
+      }
+    }}}}
+  }}
+}"""
 REPOSITORY = r"[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9][A-Za-z0-9_.-]*"
 PERMISSIONS = {"metadata", "issues", "pull_requests", "contents", "organization_projects"}
 
@@ -41,6 +54,11 @@ def command_permissions(repository, args):
     require(re.fullmatch(REPOSITORY, repository), "Exact repository required.")
     needed = {"metadata": "read"}
     if args == ["identity"]:
+        return needed
+    if args[:1] == ["review-checks"]:
+        require(len(args) == 2 and re.fullmatch(r"[1-9][0-9]*", args[1]),
+                "Unsupported PR provenance observation command.")
+        needed["pull_requests"] = "read"
         return needed
     if args[:2] == ["pr", "view"]:
         require(len(args) == 7 and re.fullmatch(r"[1-9][0-9]*", args[2]) and
@@ -256,6 +274,11 @@ def run(repository, args, identity_request=None):
     # Keep caller-owned objects/paths out of the post-authentication write.
     identity_request = copy.deepcopy(identity_request)
     args = list(args)
+    if args[:1] == ["review-checks"]:
+        # One fixed read at the exact repository/PR; never caller-supplied GraphQL.
+        owner, name = repository.split("/")
+        args = ["api", "--hostname", "github.com", "graphql", "-f", "query=" + REVIEW_QUERY,
+                "-f", "owner=" + owner, "-f", "name=" + name, "-F", "number=" + args[1]]
     input_bytes = None
     if "--input" in args:
         index = args.index("--input") + 1

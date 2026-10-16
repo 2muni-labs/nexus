@@ -13,7 +13,8 @@ PROVIDER_READS = '''
 mode=os.environ.get("MOCK_OBS_MODE", "")
 endpoint=next((x for x in args if x.startswith("repos/")), "")
 if mode == "unavailable": sys.exit(1)
-if endpoint or args[:2] == ["pr", "view"]:
+checks_query=any(x.startswith("query=") and "pullRequest(number:" in x for x in args)
+if endpoint or checks_query:
  if mode == "truncated": print('{"broken":');sys.exit()
  if mode == "error": print(json.dumps({"errors":[{"message":"failure"}]}));sys.exit()
  issue={"html_url":"https://github.com/a/b/issues/1","number":1,"node_id":"issue1", "title":"Task", "body":"private requirements", "state":"open", "updated_at":"2026-10-08T00:00:00Z"}
@@ -21,8 +22,12 @@ if endpoint or args[:2] == ["pr", "view"]:
  if mode == "wrong_issue": issue["html_url"]="https://github.com/other/b/issues/1"
  if mode == "issue_is_pr": issue["pull_request"]={}
  if mode == "missing_timestamp": issue.pop("updated_at")
- if args[:2] == ["pr", "view"]:
-  print(json.dumps(dict(url=pr["html_url"],headRefOid=("b" if mode == "stale_head" else "a")*40,reviewDecision="APPROVED",statusCheckRollup=[dict(name="test",status="COMPLETED",conclusion="SUCCESS")],mergedAt=None,isDraft=False)));sys.exit()
+ if checks_query:
+  head=("b" if mode == "stale_head" else "a")*40
+  runs=[dict(__typename="CheckRun",id="run1",name="test",status="COMPLETED",conclusion="SUCCESS",checkSuite=dict(commit=dict(oid=head),app=dict(databaseId=123)))]
+  rollup=dict(commit=dict(oid=head),contexts=dict(totalCount=1,pageInfo=dict(hasNextPage=False,hasPreviousPage=False),nodes=runs))
+  result=dict(url=pr["html_url"],headRefOid=head,reviewDecision="APPROVED",mergedAt=None,isDraft=False,commits=dict(nodes=[dict(commit=dict(oid=head,statusCheckRollup=rollup))]))
+  print(json.dumps(dict(data=dict(repository=dict(pullRequest=result)))));sys.exit()
  if "/comments?" in endpoint:
   comments=[dict(id=n,issue_url="https://api.github.com/repos/a/b/issues/1",html_url=f"https://github.com/a/b/issues/1#issuecomment-{n}",body='{"approved":true}',user={"login":"person"},author_association="OWNER",updated_at="2026-10-08T00:00:00Z") for n in [1,2]]
   if mode == "wrong_comment": comments[0]["issue_url"]="https://api.github.com/repos/a/b/issues/2"
@@ -82,6 +87,9 @@ class ObservationTests(unittest.TestCase):
         self.assertEqual(set(sources), {"issue", "issues", "pull_requests", "comments", "project", "selected_pr", "review_checks"})
         self.assertEqual(len(sources["comments"]["data"]), 2)
         self.assertEqual(sources["review_checks"]["data"]["head_revision"], "a" * 40)
+        self.assertTrue(sources["review_checks"]["data"]["checks_complete"])
+        self.assertEqual(sources["review_checks"]["data"]["checks"][0]["producer_ref"],"github-app:123")
+        self.assertIsNone(sources["review_checks"]["inventory_complete"])
         self.assertEqual(bundle["project"]["status"], "Backlog")
         self.assertEqual(bundle["owner"]["issue_number"], "1")
         self.assertEqual(bundle["owner"]["work_item_id"], "https://github.com/a/b/issues/1")
