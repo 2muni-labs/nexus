@@ -24,6 +24,13 @@ requires separate exact human authorization.
 
 ## Default disposition
 
+Apply [ordered completion accounting](operator-workflow.md#completion-accounting-before-subsequent-dispatch)
+for every explicit completion before the next sequential/dependent dispatch: preserve
+results outside the checkout, resolve exact terminal release/retention, verify board/attempt
+readback and report checkout/branch disposition with the next trigger. A known user-retained
+live PTY with a recorded next owner resolves retention, never exit or deletion eligibility;
+unresolved resource state HOLDs affected subsequent work, while independent supervision continues.
+
 After accepted settlement, handle the worker using the installed Orca lifecycle
 contract: user-requested retention or release. New tasks, including DIRECT and read-only
 review/validation, require newly created isolated non-main worktrees at exact baselines

@@ -73,6 +73,12 @@ GitHub status may be displayed as read-only context; no blind bidirectional stat
 Cards represent environments that may carry sequential attempts. Card movement, Completed,
 idle or fencing cannot prove acceptance, process exit or deletion eligibility. Board actions
 request exact scoped operations through normal policy/authority checks, never bypass them.
+For every explicit completion (success, failure, superseded or read-only), finish
+[ordered completion accounting](docs/operator-workflow.md#completion-accounting-before-subsequent-dispatch)
+and report its facts before the next sequential/dependent dispatch. Missing verification,
+readback or resolved resource disposition HOLDs affected subsequent work; continue
+supervising already-running independent work. Native Task/Dispatch settlement remains
+factual even while Nexus accounting is incomplete; no daemon enforces this checkpoint.
 Reconcile the board after accepted worker settlement, at lifecycle changes and before
 closure/report: observe the exact scoped environments and attempts, apply only factual
 status/context/comment through adapter mechanics and read it back. Inspect all attempts sharing

@@ -94,6 +94,12 @@ Missing Project mapping/permission is a visible blocker, never an invented local
 
 Observe and collect explicit active-attempt completion through the selected backend. Terminal idle is insufficient. Inspect every
 message in a delivery batch, handle questions/escalations and accept or reject evidence.
+For every explicit completion, follow
+[ordered completion accounting](../docs/operator-workflow.md#completion-accounting-before-subsequent-dispatch)
+before the next sequential/dependent dispatch, including failure, superseded and read-only
+results. Preserve native Task/Dispatch settlement while incomplete verification,
+release/retention, board/attempt readback or reporting HOLDs affected subsequent work;
+continue supervising already-running independent work.
 Supervise actively: start the complete ready wave, use bounded waits as checkpoints,
 and continue eligible independent work while dependencies or human decisions hold others.
 Before leaving supervision, record the checkpoint and an explicit handoff or pause;

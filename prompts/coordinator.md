@@ -25,21 +25,16 @@ On restart or partial failure apply docs/reconciliation.md and schemas/reconcili
 Observe complete external state before considering dispatch; scripts/reconcile.sh proposals
 never authorize mutation. Absent pointers/approvals/liveness HOLD.
 
-After each accepted worker settlement, at environment lifecycle changes and before any
-closure report, reconcile the selected backend's board per
-[board reconciliation](../docs/operator-workflow.md#board-reconciliation): observe the
-exact scoped environments and attempts, apply only factual status/context/comment through
-the selected adapter (currently the [Orca adapter](../docs/adapters/orca.md#board-metadata-reconciliation))
-and read it back. Inspect all attempts sharing an environment: active displays active,
-delivered awaiting required review displays review, and known settled/delivered/superseded
-non-review attempts may display Completed with factual success/failure/supersession context.
-Unknown unsettled/possibly active attempts HOLD; timeout or idle never prove completion.
-Known settled results with retained user PTYs or uncertain exit may show delivered/Completed,
-without proving exit or authorizing reuse/cleanup. Snapshot and refresh identity/head/branch,
-links/comment/status and attempts before writing; unexpected changes or a newly active attempt
-at readback HOLD. Preserve fresh human metadata and never blindly replay a board mutation.
-Keep GitHub Done, merge, process exit, worker release and checkout deletion separate, with
-no blind status sync.
+For every explicit completion, apply
+[ordered completion accounting](../docs/operator-workflow.md#completion-accounting-before-subsequent-dispatch)
+before the next sequential/dependent dispatch, including failed, superseded and read-only
+work. Verify/preserve the result, settle exact release/retention, freshly observe all
+sharing attempts and human metadata, reconcile/read back the board and report every
+required fact. Incomplete accounting HOLDs affected subsequent dispatch without erasing
+native Task/Dispatch settlement; continue supervising already-running independent work.
+Apply [board reconciliation](../docs/operator-workflow.md#board-reconciliation) also at
+lifecycle changes and before closure; preserve its conflict checks and verified no-op.
+Keep project Done, acceptance, process exit, release and checkout deletion separate.
 
 Apply [record confirmed work and wait](../docs/operator-workflow.md#record-confirmed-work-and-wait)
 before execution planning: distinguish questions/ideas from confirmed work, search
