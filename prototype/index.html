@@ -7,12 +7,18 @@
   <title>작은 오피스 · Nexus 샘플</title>
   <link rel="stylesheet" href="styles.css">
   <script defer src="sample-data.js"></script>
+  <script defer src="snapshot.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
   <header class="topbar"><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">n.</span> nexus <span class="brand-divider">/</span> 작은 오피스</a><span class="sample-tag">✳ 데모 샘플</span></header>
   <main>
     <section class="intro" aria-labelledby="page-title"><div><p class="eyebrow">A LITTLE SPACE FOR BIG IDEAS</p><h1 id="page-title">오늘도, 각자의 책상에서<span aria-hidden="true"> ✿</span></h1><p class="subtitle">작은 동료들의 하루를 둘러보세요. 책상을 누르면 이야기가 보여요.</p></div><span class="intro-note">상상 속 팀의<br><strong>아늑한 작업 공간</strong></span></section>
+    <section class="import-bar" aria-label="표시 데이터 선택">
+      <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="snapshot">스냅샷 · 작업 1개</option></select>
+      <label class="file-label" for="snapshot-file">JSON 가져오기 <input id="snapshot-file" type="file" accept=".json,application/json"></label>
+      <p id="import-message" role="status">데모입니다. 파일은 이 브라우저에서만 읽습니다.</p>
+    </section>
     <div class="office-layout">
       <section class="scene-card" aria-label="네 명의 가상 에이전트가 있는 작은 오피스">
         <div class="scene-caption"><span>☀ 햇살이 드는 오피스</span><span>가상 동료 4명</span></div>
@@ -51,11 +57,12 @@
         <p class="eyebrow">DESK NOTE <span>책상 이야기</span></p><div class="portrait" id="portrait" aria-hidden="true"></div>
         <p class="agent-role" id="agent-role"></p><h2 id="detail-heading"></h2><span id="detail-status" class="status-pill"></span>
         <div class="detail-copy" aria-live="polite" aria-atomic="true"><p class="field-label">맡고 있는 샘플 작업</p><h3 id="task-name"></h3><p id="task-note"></p></div>
+        <dl id="snapshot-fields" hidden></dl>
         <div class="sample-notice"><span aria-hidden="true">♧</span><p>이 동료는 데모 속 캐릭터예요.<br>실제 에이전트나 작업 기록이 아닙니다.</p></div>
       </aside>
     </div>
     <section class="legend" aria-label="샘플 상태 안내"><strong>책상 위 작은 신호들</strong><ul id="legend-items"></ul><span class="legend-note">색과 기호로 함께 구분해요</span></section>
-    <footer><span>nexus little office <span aria-hidden="true">✿</span> prototype</span><p>모든 캐릭터·작업·상태는 고정된 데모 샘플입니다. Nexus / Orca의 실시간 정보나 완료·승인 증거가 아닙니다.</p></footer>
+    <footer><span>nexus little office <span aria-hidden="true">✿</span> prototype</span><p>데모 또는 가져온 관찰 사본입니다. 실시간·생존·승인·수락 증거가 아니며, 실행 성공은 GitHub Done을 뜻하지 않습니다.</p></footer>
     <noscript><p class="noscript">책상 선택과 상세 정보를 보려면 JavaScript를 켜 주세요. 이 화면은 데모 샘플입니다.</p></noscript>
   </main>
 </body>
