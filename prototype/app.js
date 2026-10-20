@@ -49,6 +49,7 @@
     const holder = svg('g');
     frame.append(holder); portrait.replaceChildren(frame);
     const desk = scene.find(entry => entry.work?.id === sample.id);
+    if (desk.showCharacter === false) { portrait.textContent = '미연결'; return; }
     asset(holder, window.officeSkins[skin].characters[desk.characterKey]);
   }
   const movement = window.officeMovement.create(() => { if (mode === 'movement') render(); });
@@ -75,6 +76,7 @@
     const manifest = window.officeSkins[skin];
     desks.querySelectorAll('[data-art]').forEach(holder => {
       const desk = scene.find(entry => entry.id === holder.dataset.desk);
+      if (holder.dataset.art === 'character' && desk.showCharacter === false) { holder.replaceChildren(); return; }
       asset(holder, holder.dataset.art === 'desk' ? manifest.desk : manifest.characters[desk.characterKey]);
     });
     paintMovement();
@@ -103,7 +105,7 @@
     byId('movement-fields').hidden = mode !== 'movement';
     samples = scene.filter(desk => desk.work).map(desk => desk.work);
     document.querySelector('.sample-tag').textContent = isSnapshot ? '◷ 스냅샷' : '✳ 데모 샘플';
-    document.querySelector('.scene-caption span:last-child').textContent = isSnapshot ? (snapshot ? '작업 1개 · 삽화' : '관찰 미확인 · 빈 책상') : '가상 동료 4명';
+    document.querySelector('.scene-caption span:last-child').textContent = isSnapshot ? (snapshot ? snapshot.version === 2 ? '단일 관찰 기록 · 전체 현황 아님' : '작업 1개 · 삽화' : '관찰 미확인 · 빈 책상') : '가상 동료 4명';
     document.querySelector('.scene-card').setAttribute('aria-label', isSnapshot ? '한 작업의 관찰 사본과 빈 장식 책상' : '네 명의 가상 에이전트가 있는 작은 오피스');
     document.querySelector('.field-label').textContent = isSnapshot ? '관찰된 작업' : '맡고 있는 샘플 작업';
     byId('office-desc').textContent = isSnapshot ? '장식용 빈 책상과 관찰된 작업 책상입니다. 작업 책상은 클릭 또는 Enter / Space로 선택하세요.' : '네 개의 데모 책상을 Tab으로 탐색하고 Enter 또는 Space로 선택하세요.';
@@ -113,6 +115,13 @@
       document.querySelector('.scene-card').setAttribute('aria-label', '두 작업 공간의 세션 배정 이동 DEMO');
       byId('office-desc').textContent = '두 작업 책상을 Tab과 Enter 또는 Space로 선택하세요. 이동은 가상 배정 관찰의 연출입니다.';
     }
+    if (isSnapshot && snapshot?.version === 2) {
+      document.querySelector('.scene-caption span:first-child').textContent = snapshot.office?.repository?.label || '저장소 미확인';
+      const observation = window.officeSnapshot.association(snapshot);
+      const marker = observation.temporal === 'stale' ? ' · 오래된 관찰 (24시간 초과)' : observation.temporal === 'future' ? ' · 미래 시각 · 현재 아님' : observation.temporal === 'inconsistent' ? ' · 시각 충돌 · 현재 아님' : '';
+      document.querySelector('.scene-caption span:last-child').textContent += marker;
+      document.querySelector('.scene-card').setAttribute('aria-label', '가져온 단일 저장소·공간·세션 관찰 주장');
+    } else document.querySelector('.scene-caption span:first-child').textContent = '작은 오피스';
     scene.forEach(entry => {
       const sample = entry.work;
       const group = svg('g', {transform: `translate(${entry.x} ${entry.y})`});
@@ -128,13 +137,13 @@
       group.setAttribute('class', 'desk');
       group.setAttribute('role', 'button');
       group.setAttribute('tabindex', '0');
-      group.setAttribute('aria-label', mode === 'movement' ? `${sample.name}, ${sample.task}, ${sample.status}, 이동 DEMO` : isSnapshot ? `작업 책상, ${snapshot.work.title}, 스냅샷 삽화` : `${sample.name}의 책상, ${sample.status}, ${sample.task}, 데모 샘플`);
+      group.setAttribute('aria-label', mode === 'movement' ? `${sample.name}, ${sample.task}, ${sample.status}, 이동 DEMO` : isSnapshot ? `${sample.name}, ${snapshot.work.title}, ${snapshot.version === 2 ? '가져온 관찰 주장' : '스냅샷 삽화'}` : `${sample.name}의 책상, ${sample.status}, ${sample.task}, 데모 샘플`);
       group.setAttribute('aria-pressed', 'false');
       group.dataset.id = sample.id;
       const offset = window.officeScene.characterOffset;
       const characterArt = svg('g', {transform: `translate(${offset.x} ${offset.y})`,
         'data-art': 'character', 'data-desk': entry.id, 'data-visual-character': entry.characterId});
-      if (mode === 'movement') characterArt.style.display = 'none';
+      if (mode === 'movement' || entry.showCharacter === false) characterArt.style.display = 'none';
       group.append(svg('path', {class: 'selection-ring', d: 'M-63 49L35 0 172 69 73 121Z'}),
         svg('rect', {class: 'desk-hit-area', x: 12, y: -91, width: 100, height: 125, fill: 'transparent'}), characterArt, deskArt);
       if (sample.id !== 'coco') {
@@ -147,7 +156,7 @@
       [[sample.icon, 18, 23, 'desk-label'], [sample.name, 35, 17, 'desk-label'], [sample.status, 35, 30, 'desk-state']].forEach(([value, x, y, className], index) => {
         const text = svg('text', {x, y, class: className});
         if (!index) text.setAttribute('text-anchor', 'middle');
-        text.textContent = value; nameplate.append(text);
+        text.textContent = index === 1 && value.length > 18 ? value.slice(0, 18) + '…' : value; nameplate.append(text);
       });
       group.append(nameplate);
       group.addEventListener('click', () => select(sample.id));
@@ -177,7 +186,7 @@
       byId('snapshot-fields').replaceChildren();
     }
     if (focusedDesk) [...desks.querySelectorAll('.desk')].find(node => node.dataset.id === focusedDesk)?.focus();
-    document.querySelector('.sample-notice p').textContent = mode === 'movement' ? '스크립트 DEMO · 실제 Orca 세션이나 배정 관찰이 아닙니다.' : isSnapshot ? '캐릭터는 작업의 삽화입니다. 실제 에이전트 배정·생존·승인·수락을 증명하지 않습니다.' : '이 동료는 데모 속 캐릭터예요. 실제 에이전트나 작업 기록이 아닙니다.';
+    document.querySelector('.sample-notice p').textContent = mode === 'movement' ? '스크립트 DEMO · 실제 Orca 세션이나 배정 관찰이 아닙니다.' : isSnapshot && snapshot?.version === 2 ? '연결과 출처는 가져온 관찰의 주장입니다. 인증된 backend 사실이나 Nexus 정책 입력이 아닙니다.' : isSnapshot ? '캐릭터는 작업의 삽화입니다. 실제 에이전트 배정·생존·승인·수락을 증명하지 않습니다.' : '이 동료는 데모 속 캐릭터예요. 실제 에이전트나 작업 기록이 아닙니다.';
   }
 
   function select(id) {
@@ -193,7 +202,7 @@
     document.getElementById('task-name').textContent = sample.task;
     document.getElementById('task-note').textContent = sample.note;
     if (mode === 'snapshot') {
-      byId('detail-heading').textContent = '작업 책상';
+      byId('detail-heading').textContent = snapshot.version === 2 ? snapshot.office?.workspace?.label || '공간 미확인' : '작업 책상';
       byId('task-note').textContent = '실행 관찰과 GitHub Workflow는 별개입니다. 현재 생존·승인·수락 여부는 미확인입니다.';
       const fields = byId('snapshot-fields');
       fields.replaceChildren();
@@ -207,12 +216,29 @@
       link.href = snapshot.work.url; link.textContent = snapshot.work.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
       const age = Date.now() - Date.parse(snapshot.observed_at);
       field('Issue', link);
-      field('관찰 시각 · 실시간 아님', snapshot.observed_at + (age < -300000 ? ' · 미래 시각 주의' : age > 86400000 ? ' · 오래된 관찰 (24시간 초과)' : ' · 관찰 사본'));
+      field('관찰 시각 · 실시간 아님', snapshot.observed_at + (age < 0 ? ' · 미래 시각 주의' : age > 86400000 ? ' · 오래된 관찰 (24시간 초과)' : ' · 관찰 사본'));
       field('GitHub Workflow', snapshot.work.workflow_status || '미확인');
       const labels = {running: '실행 중으로 관찰', awaiting_input: '입력 대기로 관찰', succeeded: '성공 결과 관찰', failed: '실패 결과 관찰', cancelled: '취소로 관찰', unknown: '미확인'};
       field('실행 관찰', labels[snapshot.execution?.status] || '미확인');
       field('근거 · 출처', snapshot.execution?.source || '미확인');
-      field('미확인', '현재 상태·에이전트 생존·배정·승인·수락');
+      if (snapshot.version === 2) {
+        const bundle = snapshot.office;
+        const relation = window.officeSnapshot.association(snapshot);
+        const stamp = part => part ? `${part.observed_at} · ${part.source || '출처 미확인'}` : '관찰 없음';
+        field('범위', '가져온 단일 기록만 · 전체 fleet 현황 아님 · 자동 갱신 없음');
+        field('시간 유효성', relation.temporal === 'inconsistent' ? '관찰 시각 충돌 · 현재 관찰 아님' : relation.temporal === 'future' ? '미래 시각 · 현재 관찰 아님 · 연결 표시 보류' : relation.temporal === 'stale' ? '오래된 관찰 · 24시간 초과 · 현재 상태 아님' : '관찰 사본 · 현재 상태 증명 아님');
+        field('연결 · 가져온 관찰 주장', relation.state === 'conflict' ? `충돌 · 연결 없음: ${relation.conflicts.join(', ')}` : relation.state === 'missing' ? `미연결 · 근거 없음: ${relation.missing.join(', ')}` : relation.attached ? 'session → workspace → Work Item · 가져온 배정 주장' : '시간 주의 · 연결 표시 보류');
+        field('저장소 / 방', bundle?.repository ? `${bundle.repository.label} · ${bundle.repository.alias} · ${bundle.repository.url}` : '미확인');
+        field('공간 / 책상', bundle?.workspace ? `${bundle.workspace.label} · ${bundle.workspace.alias} → ${bundle.workspace.repository}` : '미확인');
+        field('세션 / 캐릭터', bundle?.session ? `${bundle.session.label} · ${bundle.session.alias} → ${bundle.session.workspace || '미연결'}` : '미확인 · 캐릭터 연결 없음');
+        field('세션 생존 · 별도 관찰 주장', bundle?.session?.source ? bundle.session.liveness || '미확인' : '미확인 · 출처 없음');
+        field('세션 근거', stamp(bundle?.session));
+        field('배정 근거', bundle?.assignment ? `${bundle.assignment.session} → ${bundle.assignment.workspace} → ${bundle.assignment.work_url} · ${stamp(bundle.assignment)}` : '없음 · 임의 연결 안 함');
+        field('bundle 관찰 · 출처', bundle ? `${bundle.observed_at} · ${bundle.source || '미확인'}` : '미확인');
+        field('체크아웃 보존 · 별도 주장', bundle?.retention?.source ? `${bundle.retention.state || '미확인'} · ${bundle.retention.source}` : '미확인');
+        field('수락 / Done / 삭제 자격', '이 사본은 부여하지 않음 · 결과·명시적 종료·release와 별개');
+        byId('task-note').textContent = 'GitHub Workflow, 실행 결과, 세션 생존, 배정, 체크아웃 보존은 별개의 가져온 주장입니다. 출처를 인증하거나 현재 상태를 추론하지 않습니다.';
+      } else field('미확인', '현재 상태·에이전트 생존·배정·승인·수락');
     }
     if (mode === 'movement') {
       const fact = movement.state();

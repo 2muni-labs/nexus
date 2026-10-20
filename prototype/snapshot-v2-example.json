@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "observed_at": "2026-01-01T00:00:00Z",
+  "work": {"url": "https://github.com/example/fiction/issues/1", "title": "Fictional shape example only", "workflow_status": "Review"},
+  "execution": {"status": "succeeded", "source": "Fictional manual result example"},
+  "office": {
+    "source": "Fictional manual shape example only",
+    "observed_at": "2026-01-01T00:00:00Z",
+    "coverage": "single-record",
+    "repository": {"alias": "display-repo", "label": "Fiction room", "url": "https://github.com/example/fiction"},
+    "workspace": {"alias": "display-desk", "label": "Fiction desk", "repository": "display-repo"},
+    "session": {"alias": "display-session", "label": "Fiction character", "workspace": "display-desk", "liveness": "unknown", "source": "Fictional session observation", "observed_at": "2026-01-01T00:00:00Z"},
+    "assignment": {"session": "display-session", "workspace": "display-desk", "work_url": "https://github.com/example/fiction/issues/1", "source": "Fictional explicit association", "observed_at": "2026-01-01T00:00:00Z"},
+    "retention": {"state": "unknown", "source": null}
+  }
+}
