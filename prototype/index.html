@@ -10,6 +10,7 @@
   <script defer src="snapshot.js"></script>
   <script defer src="scene.js"></script>
   <script defer src="skins.js"></script>
+  <script defer src="movement.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
@@ -17,10 +18,19 @@
   <main>
     <section class="intro" aria-labelledby="page-title"><div><p class="eyebrow">A LITTLE SPACE FOR BIG IDEAS</p><h1 id="page-title">오늘도, 각자의 책상에서<span aria-hidden="true"> ✿</span></h1><p class="subtitle">작은 동료들의 하루를 둘러보세요. 책상을 누르면 이야기가 보여요.</p></div><span class="intro-note">상상 속 팀의<br><strong>아늑한 작업 공간</strong></span></section>
     <section class="import-bar" aria-label="표시 데이터 선택">
-      <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="snapshot">스냅샷 · 작업 1개</option></select>
+      <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="movement">이동 DEMO · 세션 배정</option><option value="snapshot">스냅샷 · 작업 1개</option></select>
       <label for="skin-select">캐릭터·책상 스킨</label><select id="skin-select"><option value="illustration">일러스트 · 기본</option><option value="pixel">픽셀 시험 · 캐릭터·책상만</option></select>
       <label class="file-label" for="snapshot-file">JSON 가져오기 <input id="snapshot-file" type="file" accept=".json,application/json"></label>
       <p id="import-message" role="status">데모입니다. 파일은 이 브라우저에서만 읽습니다.</p>
+    </section>
+    <section id="movement-controls" class="movement-controls" hidden aria-label="이동 DEMO 제어">
+      <strong>이동 DEMO · 가상 관찰</strong>
+      <p>실제 Orca 세션·배정이 아닌 스크립트입니다. 책상 하나 = Task 하나 / worktree 하나. 결과 ≠ 종료 ≠ Done.</p>
+      <button id="movement-play" type="button">재생</button>
+      <button id="movement-next" type="button">다음 단계</button>
+      <button id="movement-reset" type="button">처음으로</button>
+      <p id="movement-stage" role="status" aria-live="polite"></p>
+      <small>일시정지: 현재 단계 유지 · 다음 단계: 정지 후 한 단계 · 초기화: 정지 후 첫 등장. 스킨/모드 변경 시 정지.</small>
     </section>
     <div class="office-layout">
       <section class="scene-card" aria-label="네 명의 가상 에이전트가 있는 작은 오피스">
@@ -50,6 +60,7 @@
           <use href="#plant" x="95" y="440"/><use href="#plant" x="771" y="505"/>
           <g transform="translate(188 579)"><ellipse rx="46" ry="23" fill="#d7baa1"/><path d="M-46 0V10Q0 48 46 10V0Q0 32-46 0" fill="#c6a58c"/><path d="M-22 21V51M23 22V52" stroke="#ae8c78" stroke-width="7"/><ellipse cx="0" cy="-8" rx="14" ry="7" fill="#fcf6e6"/><path d="M-14-8V0Q0 12 14 0V-8" fill="#f5ead7"/><path d="M0-8V-29M0-16Q-19-41-17-20Q-12-12 0-16M0-22Q16-46 18-28Q19-18 0-17" fill="#8eae8c" stroke="#6d9479" stroke-width="2"/></g>
           <g id="desks"></g>
+          <g id="movement-actor" aria-hidden="true"></g>
           <g transform="translate(653 624)"><path d="M-37-10Q-37-38-5-30Q15-51 34-25Q58-13 39 11Q32 31 1 20Q-25 31-37-10" fill="#ead9c5" stroke="#bb9b81" stroke-width="2"/><path d="M-20-13Q-28-49-8-37L1-24M15-26Q34-52 35-20" fill="#ead9c5" stroke="#bb9b81" stroke-width="2"/><path d="M-11-7l5 2M14-5l5-2M0 3l4 2 4-2M-28 8Q-65 15-51-9" fill="none" stroke="#967e70" stroke-width="2" stroke-linecap="round"/></g>
           <text x="440" y="776" text-anchor="middle" class="scene-bottom">작은 책상, 서로 다른 이야기.</text>
         </svg>
@@ -59,6 +70,7 @@
         <p class="eyebrow">DESK NOTE <span>책상 이야기</span></p><div class="portrait" id="portrait" aria-hidden="true"></div>
         <p class="agent-role" id="agent-role"></p><h2 id="detail-heading"></h2><span id="detail-status" class="status-pill"></span>
         <div class="detail-copy" aria-live="polite" aria-atomic="true"><p class="field-label">맡고 있는 샘플 작업</p><h3 id="task-name"></h3><p id="task-note"></p></div>
+        <dl id="movement-fields" hidden></dl>
         <dl id="snapshot-fields" hidden></dl>
         <div class="sample-notice"><span aria-hidden="true">♧</span><p>이 동료는 데모 속 캐릭터예요.<br>실제 에이전트나 작업 기록이 아닙니다.</p></div>
       </aside>
