@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="styles.css">
   <script defer src="sample-data.js"></script>
   <script defer src="snapshot.js"></script>
+  <script defer src="scene.js"></script>
+  <script defer src="skins.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
@@ -16,6 +18,7 @@
     <section class="intro" aria-labelledby="page-title"><div><p class="eyebrow">A LITTLE SPACE FOR BIG IDEAS</p><h1 id="page-title">오늘도, 각자의 책상에서<span aria-hidden="true"> ✿</span></h1><p class="subtitle">작은 동료들의 하루를 둘러보세요. 책상을 누르면 이야기가 보여요.</p></div><span class="intro-note">상상 속 팀의<br><strong>아늑한 작업 공간</strong></span></section>
     <section class="import-bar" aria-label="표시 데이터 선택">
       <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="snapshot">스냅샷 · 작업 1개</option></select>
+      <label for="skin-select">캐릭터·책상 스킨</label><select id="skin-select"><option value="illustration">일러스트 · 기본</option><option value="pixel">픽셀 시험 · 캐릭터·책상만</option></select>
       <label class="file-label" for="snapshot-file">JSON 가져오기 <input id="snapshot-file" type="file" accept=".json,application/json"></label>
       <p id="import-message" role="status">데모입니다. 파일은 이 브라우저에서만 읽습니다.</p>
     </section>
@@ -28,7 +31,6 @@
             <pattern id="floorboards" width="90" height="44" patternUnits="userSpaceOnUse" patternTransform="matrix(1 .5 -1 .5 440 330)"><rect width="90" height="44" fill="#f5e6cd"/><path d="M0 0H90V44" fill="none" stroke="#e8d5b8" stroke-width="2"/></pattern>
             <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#665464" flood-opacity=".12"/></filter>
             <g id="plant"><ellipse cx="0" cy="8" rx="29" ry="13" fill="#c4bcae" opacity=".25"/><path d="M-20-25L-15 5Q0 17 15 5L20-25" fill="#d9b39d" stroke="#aa8777" stroke-width="2"/><ellipse cy="-25" rx="20" ry="8" fill="#efd2bc"/><path d="M0-24V-75M0-48Q-43-45-30-71Q-5-76 0-48M0-62Q27-98 32-73Q34-52 0-48M0-36Q-24-34-24-53Q-8-60 0-36" fill="#91b89b" stroke="#618b72" stroke-width="3" stroke-linejoin="round"/></g>
-            <g id="desk"><ellipse cx="54" cy="112" rx="101" ry="36" fill="#d2c4b9" opacity=".25"/><path d="M-27 46V100L-16 106V51M127 42V96L138 90V37M53 82V132L64 126V77" fill="#b69a80" stroke="#927b6a" stroke-width="2"/><path d="M-43 22L36-20 154 39 73 83-43 25Z" fill="#d7b48f" stroke="#a78e79" stroke-width="2"/><path d="M-43 16L36-26 154 33 73 76Z" fill="#ffedce" stroke="#b99d80" stroke-width="2"/><path d="M73 76V83L154 39V33" fill="#ddbd97"/><path d="M-6 14L34-8 34-62-6-41Z" fill="#817d99" stroke="#615d77" stroke-width="2"/><path d="M0 7L28-9V-51L0-36Z" fill="#cbe5dc"/><path d="M13-2V16L29 23 41 17 22 8" fill="#8c879e"/><path d="M9 31L40 15 68 29 36 47Z" fill="#e0dce8" stroke="#b1a7ba"/><path d="M16 30L39 19M25 35L48 24M33 39L56 29" stroke="#b3a9bd" stroke-width="2"/><path d="M106 27V40Q116 47 123 39V27" fill="#fffaf0" stroke="#b8a18c" stroke-width="2"/><ellipse cx="114" cy="27" rx="9" ry="4" fill="#a88676"/><path d="M123 29Q138 29 126 39" fill="none" stroke="#b8a18c" stroke-width="3"/><path d="M-15 20L-2 14 10 20-3 27Z" fill="#e7baa9"/></g>
           </defs>
           <ellipse cx="439" cy="589" rx="341" ry="108" fill="#e6ddd9" opacity=".55"/>
           <g stroke-linejoin="round">

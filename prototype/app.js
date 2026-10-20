@@ -8,78 +8,139 @@
   const byId = id => document.getElementById(id);
   const svgNS = 'http://www.w3.org/2000/svg';
   const colors = { mint: '#b6d6bc', peach: '#edc3ab', lavender: '#cab9e2', gray: '#c8c6d0' };
-  function character(sample) {
-    const ears = sample.accessory === 'ears'
-      ? '<path d="M-22-36Q-36-71-18-61L-8-43M10-43Q23-75 31-58L25-32" fill="' + colors[sample.tone] + '" stroke="#8c7f92" stroke-width="2"/>'
-      : '<path d="M0-40Q-17-68-21-53Q-19-39 0-40Q5-67 18-58Q25-44 0-40" fill="#94b397" stroke="#71947b" stroke-width="2"/>';
-    const face = sample.tone === 'gray'
-      ? '<path d="M-13-14h5M9-14h5M-3-1h7" stroke="#63596f" stroke-width="2.5" stroke-linecap="round"/>'
-      : '<circle cx="-10" cy="-14" r="2.5" fill="#63596f"/><circle cx="12" cy="-14" r="2.5" fill="#63596f"/><path d="M-2-4Q2 1 6-4" fill="none" stroke="#63596f" stroke-width="2" stroke-linecap="round"/>';
-    return '<ellipse cy="39" rx="32" ry="10" fill="#9b899d" opacity=".17"/><path d="M-24 39V21Q-22-1 0-1Q24 0 26 21V39" fill="' + colors[sample.tone] + '" stroke="#8c7f92" stroke-width="2"/>' + ears + '<path d="M-30-19Q-31-46 0-45Q33-45 33-18Q33 6 1 8Q-30 7-30-19" fill="#fff5de" stroke="#8c7f92" stroke-width="2"/>' + face + '<ellipse cx="-19" cy="-7" rx="5" ry="3" fill="#eec1b9"/><ellipse cx="22" cy="-7" rx="5" ry="3" fill="#eec1b9"/><path d="M-16 38v7M16 38v7" stroke="#8c7f92" stroke-width="5" stroke-linecap="round"/>';
+  let skin = 'illustration';
+  let selectedId = null;
+  let scene = [];
+  function svg(tag, attributes = {}) {
+    const node = document.createElementNS(svgNS, tag);
+    Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+    return node;
+  }
+  function asset(holder, registration) {
+    const {width, height, anchor, display} = registration;
+    const image = svg('image', {
+      x: -anchor.x * display.width / width, y: -anchor.y * display.height / height,
+      width: display.width, height: display.height, 'aria-hidden': 'true',
+      class: registration.pixelated ? 'skin-art pixel-art' : 'skin-art'
+    });
+    const error = svg('g', {class: 'asset-error', role: 'img', 'aria-label': '이미지 파일 오류', 'aria-hidden': 'true'});
+    error.append(svg('rect', {x: -38, y: -12, width: 92, height: 26, rx: 4}));
+    const label = svg('text', {x: 8, y: 5, 'text-anchor': 'middle'});
+    label.textContent = '! 이미지 오류';
+    error.append(label);
+    error.style.display = 'none';
+    holder.replaceChildren(image, error);
+    // Each replacement owns its own nodes; old requests cannot alter the new slot.
+    const current = () => holder.isConnected && holder.firstChild === image;
+    image.addEventListener('error', () => {
+      if (!current()) return;
+      image.style.display = 'none'; error.style.display = ''; error.setAttribute('aria-hidden', 'false');
+    });
+    image.addEventListener('load', () => {
+      if (!current()) return;
+      image.style.display = ''; error.style.display = 'none'; error.setAttribute('aria-hidden', 'true');
+    });
+    image.setAttribute('href', registration.src);
+  }
+  function paintPortrait(sample) {
+    const portrait = byId('portrait');
+    portrait.style.background = 'var(--paper)';
+    const frame = svg('svg', {viewBox: '-50 -70 100 125'});
+    const holder = svg('g');
+    frame.append(holder); portrait.replaceChildren(frame);
+    const desk = scene.find(entry => entry.work?.id === sample.id);
+    asset(holder, window.officeSkins[skin].characters[desk.characterKey]);
+  }
+  function paintSkin() {
+    const manifest = window.officeSkins[skin];
+    desks.querySelectorAll('[data-art]').forEach(holder => {
+      const desk = scene.find(entry => entry.id === holder.dataset.desk);
+      asset(holder, holder.dataset.art === 'desk' ? manifest.desk : manifest.characters[desk.characterKey]);
+    });
+    const selected = samples.find(sample => sample.id === selectedId);
+    if (selected) paintPortrait(selected);
   }
   const desks = document.getElementById('desks');
   function render() {
-  desks.replaceChildren();
-  byId('legend-items').replaceChildren();
-  const isSnapshot = mode === 'snapshot';
-  const observedStyle = {running: ['mint', '✦', '실행 중 관찰'], awaiting_input: ['peach', 'Ⅱ', '입력 대기 관찰'], succeeded: ['lavender', '◇', '성공 결과 관찰'], failed: ['peach', '!', '실패 결과 관찰'], cancelled: ['gray', 'Ⅱ', '취소 관찰']}[snapshot?.execution?.status] || ['gray', '?', '실행 미확인'];
-  samples = isSnapshot ? (snapshot ? [{...demo[0], id: 'work', name: '작업 1', tone: observedStyle[0], icon: observedStyle[1], status: observedStyle[2], task: snapshot.work.title, bubble: '관찰 사본'}] : []) : demo;
-  document.querySelector('.sample-tag').textContent = isSnapshot ? '◷ 스냅샷' : '✳ 데모 샘플';
-  document.querySelector('.scene-caption span:last-child').textContent = isSnapshot ? (snapshot ? '작업 1개 · 삽화' : '관찰 미확인 · 빈 책상') : '가상 동료 4명';
-  document.querySelector('.scene-card').setAttribute('aria-label', isSnapshot ? '한 작업의 관찰 사본과 빈 장식 책상' : '네 명의 가상 에이전트가 있는 작은 오피스');
-  document.querySelector('.field-label').textContent = isSnapshot ? '관찰된 작업' : '맡고 있는 샘플 작업';
-  byId('office-desc').textContent = isSnapshot ? '장식용 빈 책상과 관찰된 작업 책상입니다. 작업 책상은 클릭 또는 Enter / Space로 선택하세요.' : '네 개의 데모 책상을 Tab으로 탐색하고 Enter 또는 Space로 선택하세요.';
-  if (isSnapshot) demo.slice(snapshot ? 1 : 0).forEach(sample => {
-    const empty = document.createElementNS(svgNS, 'g');
-    empty.setAttribute('transform', `translate(${sample.x} ${sample.y})`);
-    empty.setAttribute('aria-hidden', 'true');
-    empty.innerHTML = '<use href="#desk" opacity=".45"/>';
-    desks.append(empty);
-  });
-  samples.forEach((sample) => {
-    const group = document.createElementNS(svgNS, 'g');
-    group.setAttribute('class', 'desk');
-    group.setAttribute('transform', `translate(${sample.x} ${sample.y})`);
-    group.setAttribute('role', 'button');
-    group.setAttribute('tabindex', '0');
-    group.setAttribute('aria-label', isSnapshot ? `작업 책상, ${snapshot.work.title}, 스냅샷 삽화` : `${sample.name}의 책상, ${sample.status}, ${sample.task}, 데모 샘플`);
-    group.setAttribute('aria-pressed', 'false');
-    group.dataset.id = sample.id;
-    group.innerHTML = `<path class="selection-ring" d="M-63 49L35 0 172 69 73 121Z"/><g transform="translate(62 -21)">${character(sample)}</g><use href="#desk"/><path class="speech" d="M23-120H110Q119-120 119-111V-96Q119-87 110-87H76L69-78 65-87H23Q14-87 14-96V-111Q14-120 23-120Z"/><text class="speech-text" x="66" y="-100" text-anchor="middle">${sample.bubble}</text><g transform="translate(-15 123)"><rect class="nameplate" width="158" height="38" rx="12"/><circle cx="18" cy="19" r="10" fill="${colors[sample.tone]}"/><text x="18" y="23" text-anchor="middle" class="desk-label">${sample.icon}</text><text x="35" y="17" class="desk-label">${sample.name}</text><text x="35" y="30" class="desk-state">${sample.status}</text></g>`;
-    group.addEventListener('click', () => select(sample.id));
-    group.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        select(sample.id);
+    desks.replaceChildren();
+    byId('legend-items').replaceChildren();
+    const isSnapshot = mode === 'snapshot';
+    scene = window.officeScene.view(mode, snapshot, demo);
+    samples = scene.filter(desk => desk.work).map(desk => desk.work);
+    document.querySelector('.sample-tag').textContent = isSnapshot ? '◷ 스냅샷' : '✳ 데모 샘플';
+    document.querySelector('.scene-caption span:last-child').textContent = isSnapshot ? (snapshot ? '작업 1개 · 삽화' : '관찰 미확인 · 빈 책상') : '가상 동료 4명';
+    document.querySelector('.scene-card').setAttribute('aria-label', isSnapshot ? '한 작업의 관찰 사본과 빈 장식 책상' : '네 명의 가상 에이전트가 있는 작은 오피스');
+    document.querySelector('.field-label').textContent = isSnapshot ? '관찰된 작업' : '맡고 있는 샘플 작업';
+    byId('office-desc').textContent = isSnapshot ? '장식용 빈 책상과 관찰된 작업 책상입니다. 작업 책상은 클릭 또는 Enter / Space로 선택하세요.' : '네 개의 데모 책상을 Tab으로 탐색하고 Enter 또는 Space로 선택하세요.';
+    scene.forEach(entry => {
+      const sample = entry.work;
+      const group = svg('g', {transform: `translate(${entry.x} ${entry.y})`});
+      group.dataset.visualDesk = entry.id;
+      group.dataset.work = entry.workId || '';
+      const deskArt = svg('g', {'data-art': 'desk', 'data-desk': entry.id});
+      if (!sample) {
+        group.setAttribute('aria-hidden', 'true');
+        group.setAttribute('opacity', '.45');
+        group.append(deskArt); desks.append(group);
+        return;
       }
+      group.setAttribute('class', 'desk');
+      group.setAttribute('role', 'button');
+      group.setAttribute('tabindex', '0');
+      group.setAttribute('aria-label', isSnapshot ? `작업 책상, ${snapshot.work.title}, 스냅샷 삽화` : `${sample.name}의 책상, ${sample.status}, ${sample.task}, 데모 샘플`);
+      group.setAttribute('aria-pressed', 'false');
+      group.dataset.id = sample.id;
+      const offset = window.officeScene.characterOffset;
+      const characterArt = svg('g', {transform: `translate(${offset.x} ${offset.y})`,
+        'data-art': 'character', 'data-desk': entry.id, 'data-visual-character': entry.characterId});
+      group.append(svg('path', {class: 'selection-ring', d: 'M-63 49L35 0 172 69 73 121Z'}),
+        svg('rect', {class: 'desk-hit-area', x: 12, y: -91, width: 100, height: 125, fill: 'transparent'}), characterArt, deskArt);
+      if (sample.id !== 'coco') {
+        group.append(svg('path', {class: 'speech', d: 'M23-120H110Q119-120 119-111V-96Q119-87 110-87H76L69-78 65-87H23Q14-87 14-96V-111Q14-120 23-120Z'}));
+        const bubble = svg('text', {class: 'speech-text', x: 66, y: -100, 'text-anchor': 'middle'});
+        bubble.textContent = sample.bubble; group.append(bubble);
+      }
+      const nameplate = svg('g', {transform: 'translate(-15 123)'});
+      nameplate.append(svg('rect', {class: 'nameplate', width: 158, height: 38, rx: 12}), svg('circle', {cx: 18, cy: 19, r: 10, fill: colors[sample.tone]}));
+      [[sample.icon, 18, 23, 'desk-label'], [sample.name, 35, 17, 'desk-label'], [sample.status, 35, 30, 'desk-state']].forEach(([value, x, y, className], index) => {
+        const text = svg('text', {x, y, class: className});
+        if (!index) text.setAttribute('text-anchor', 'middle');
+        text.textContent = value; nameplate.append(text);
+      });
+      group.append(nameplate);
+      group.addEventListener('click', () => select(sample.id));
+      group.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault(); select(sample.id);
+        }
+      });
+      desks.append(group);
+      const item = document.createElement('li');
+      const icon = document.createElement('span');
+      icon.className = `legend-symbol ${sample.tone}`;
+      icon.textContent = sample.icon;
+      icon.setAttribute('aria-hidden', 'true');
+      item.append(icon, document.createTextNode(sample.status));
+      document.getElementById('legend-items').append(item);
     });
-    if (sample.id === 'coco') {
-      group.querySelector('.speech').remove();
-      group.querySelector('.speech-text').remove();
+    byId('snapshot-fields').hidden = !isSnapshot;
+    paintSkin();
+    if (samples.length) select(samples.some(sample => sample.id === selectedId) ? selectedId : samples[0].id);
+    else {
+      selectedId = null;
+      byId('portrait').replaceChildren();
+      ['agent-role', 'task-name', 'task-note'].forEach(id => byId(id).textContent = '');
+      byId('detail-heading').textContent = '관찰 미확인';
+      byId('detail-status').textContent = '정보 없음';
+      byId('snapshot-fields').replaceChildren();
     }
-    desks.append(group);
-    const item = document.createElement('li');
-    const icon = document.createElement('span');
-    icon.className = `legend-symbol ${sample.tone}`;
-    icon.textContent = sample.icon;
-    icon.setAttribute('aria-hidden', 'true');
-    item.append(icon, document.createTextNode(sample.status));
-    document.getElementById('legend-items').append(item);
-  });
-  byId('snapshot-fields').hidden = !isSnapshot;
-  if (samples.length) select(samples[0].id);
-  else {
-    byId('portrait').replaceChildren();
-    ['agent-role', 'task-name', 'task-note'].forEach(id => byId(id).textContent = '');
-    byId('detail-heading').textContent = '관찰 미확인';
-    byId('detail-status').textContent = '정보 없음';
-    byId('snapshot-fields').replaceChildren();
-  }
-  document.querySelector('.sample-notice p').textContent = isSnapshot ? '캐릭터는 작업의 삽화입니다. 실제 에이전트 배정·생존·승인·수락을 증명하지 않습니다.' : '이 동료는 데모 속 캐릭터예요. 실제 에이전트나 작업 기록이 아닙니다.';
+    document.querySelector('.sample-notice p').textContent = isSnapshot ? '캐릭터는 작업의 삽화입니다. 실제 에이전트 배정·생존·승인·수락을 증명하지 않습니다.' : '이 동료는 데모 속 캐릭터예요. 실제 에이전트나 작업 기록이 아닙니다.';
   }
 
   function select(id) {
     const sample = samples.find((entry) => entry.id === id);
+    if (!sample) return;
+    selectedId = id;
     desks.querySelectorAll('.desk').forEach((desk) => desk.setAttribute('aria-pressed', String(desk.dataset.id === id)));
     document.getElementById('agent-role').textContent = mode === 'snapshot' ? 'Work Item · 관찰 사본' : sample.role + ' · 샘플';
     document.getElementById('detail-heading').textContent = sample.name;
@@ -110,10 +171,13 @@
       field('근거 · 출처', snapshot.execution?.source || '미확인');
       field('미확인', '현재 상태·에이전트 생존·배정·승인·수락');
     }
-    const portrait = document.getElementById('portrait');
-    portrait.style.background = `var(--${sample.tone})`;
-    portrait.innerHTML = `<svg viewBox="-50 -70 100 125" xmlns="${svgNS}">${character(sample)}</svg>`;
+    paintPortrait(sample);
   }
+  byId('skin-select').addEventListener('change', event => {
+    skin = event.target.value;
+    // Keep desk nodes, selection, keyboard focus, imported object and mode intact.
+    paintSkin();
+  });
   byId('display-mode').addEventListener('change', event => {
     mode = event.target.value;
     byId('import-message').textContent = mode === 'demo' ? '데모입니다. 파일은 이 브라우저에서만 읽습니다.' : snapshot ? '관찰 사본 · 자동 갱신 없음' : '관찰 미확인 · JSON 파일을 가져오세요.';

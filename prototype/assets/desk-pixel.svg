@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" shape-rendering="crispEdges">
+  <g transform="translate(64 80)">
+    <path d="M-40 110l100-45 100 45-100 40z" fill="#d2c4b9" opacity=".4"/>
+    <path d="M-25 40h10v65h-10zM130 35h10v60h-10zM55 75h10v60H55z" fill="#927b6a"/>
+    <path d="M-45 15L35-25 155 35 75 75z" fill="#ffedce"/>
+    <path d="M-45 15v10L75 85V75z" fill="#c69f78"/>
+    <path d="M75 75l80-40v10L75 85z" fill="#a78e79"/>
+    <path d="M-5-40L35-60v55L-5 15z" fill="#615d77"/>
+    <path d="M0-35L30-50v40L0 5z" fill="#b6d6bc"/>
+    <path d="M15 5h10v15H15zM10 20l20-10 20 10-20 10z" fill="#817d99"/>
+    <path d="M10 35l30-15 30 15-30 15z" fill="#cab9e2"/>
+    <path d="M105 25h20v20h-20zM125 30h5v10h-5z" fill="#fff5de"/>
+    <path d="M110 25h10v5h-10z" fill="#a88676"/>
+  </g>
+</svg>
