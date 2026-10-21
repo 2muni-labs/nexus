@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="790" viewBox="0 0 880 790" shape-rendering="crispEdges">
+  <defs>
+    <pattern id="tiles" width="80" height="40" patternUnits="userSpaceOnUse"><path d="M0 0H80V40H0Z" fill="#f3dfbe"/><path d="M0 20L40 0 80 20 40 40Z" fill="#f8e9cf"/><path d="M0 20L40 0 80 20 40 40Z" fill="none" stroke="#e3c6a7" stroke-width="2"/></pattern>
+    <g id="pixel-plant">
+      <path d="M-28 6L0-8 28 6 0 20Z" fill="#cfc4b5"/>
+      <path d="M-20-28H20V0L12 8H-12L-20 0Z" fill="#bc8f85"/><path d="M-16-24H16V0H-16Z" fill="#e5b4a0"/><path d="M-24-32H24V-24H-24Z" fill="#f3cfad"/>
+      <path d="M-4-72H4V-32H-4Z" fill="#638776"/>
+      <path d="M-4-48H-24V-56H-32V-72H-16V-64H-4Z" fill="#8cb59c"/><path d="M4-60H20V-68H28V-88H12V-80H4Z" fill="#a9cbb0"/><path d="M4-36H20V-44H28V-60H12V-52H4Z" fill="#719b86"/>
+    </g>
+  </defs>
+  <!-- Static background and all room props; no workflow or interaction content. -->
+  <path d="M0 0H880V790H0Z" fill="#f5f0e5"/>
+  <path d="M112 600L440 436 792 612 792 636 440 720 112 636Z" fill="#e1d8d1"/>
+  <path d="M52 450L440 256 828 450V466L440 660 52 466Z" fill="#bd9e8b"/>
+  <path d="M52 450L440 256 828 450 440 644Z" fill="url(#tiles)" stroke="#c4a58f" stroke-width="4"/>
+  <path d="M52 450V256L440 62V256Z" fill="#d9d1e9" stroke="#b8aacd" stroke-width="4"/>
+  <path d="M440 62L828 256V450L440 256Z" fill="#f1decb" stroke="#ccb49e" stroke-width="4"/>
+  <path d="M56 438L440 246 824 438V450L440 258 56 450Z" fill="#bfaecf"/>
+  <!-- Window: integer isometric frame, sky, block clouds, sill. -->
+  <path d="M148 228L280 162V266L148 332Z" fill="#a792b4"/>
+  <path d="M156 232L272 174V258L156 316Z" fill="#b7d9d8"/>
+  <path d="M168 240L184 232V224L200 216V232L168 248Z M232 206L256 194V210L232 222Z" fill="#eff5df"/>
+  <path d="M208 206L216 202V290L208 294Z M156 270L272 212V220L156 278Z" fill="#fdf0d9"/>
+  <path d="M140 332L280 262 296 270 156 340Z" fill="#f7e4d4"/><path d="M156 340L296 270V278L156 348Z" fill="#baa7bd"/>
+  <!-- Clock and pinboard are decorative, with no status semantics. -->
+  <path d="M460 182H484V190H492V230H484V238H460V230H452V190H460Z" fill="#bba8b8"/>
+  <path d="M460 190H484V230H460Z" fill="#fff1d7"/><path d="M468 198H474V214H482V220H468Z" fill="#88768e"/>
+  <path d="M584 176L668 218V280L584 238Z" fill="#ad8e7e"/><path d="M592 188L660 222V268L592 234Z" fill="#edcda4"/>
+  <path d="M600 208L620 218V234L600 224Z" fill="#a7c4ae"/><path d="M632 224L652 234V250L632 240Z" fill="#c2afd4"/>
+  <!-- Soft lilac rug, mint sofa and side table. -->
+  <path d="M272 478L448 390 664 498 488 586Z" fill="#c7b9d8"/><path d="M296 478L448 402 640 498 488 574Z" fill="#ddd1e9"/><path d="M320 478L448 414 616 498 488 562Z" fill="#cfc3df"/>
+  <path d="M688 344L768 384V436L688 396Z" fill="#88aa96"/>
+  <path d="M664 388L688 376 772 418 748 430Z" fill="#c4dcc0"/><path d="M664 388V414L748 456V430Z" fill="#98ba9f"/><path d="M748 430L772 418V444L748 456Z" fill="#749a85"/>
+  <path d="M672 380V364L688 372V400L680 396V384Z M744 416V400L760 408V428L752 432V420Z" fill="#b1cdb0"/>
+  <path d="M704 366L728 378V402L704 390Z" fill="#ffe1b1"/><path d="M676 420H684V434H676Z M752 452H760V466H752Z" fill="#9e8171"/>
+  <use href="#pixel-plant" x="96" y="440"/><use href="#pixel-plant" x="772" y="506"/>
+  <path d="M144 578L188 556 232 578 188 600Z" fill="#e0ba91"/><path d="M144 578V590L188 612 232 590V578L188 600Z" fill="#bd947c"/>
+  <path d="M164 602H172V630H164Z M208 602H216V630H208Z" fill="#a98372"/>
+  <path d="M176 566H200V582H176Z" fill="#f6e8cf"/><path d="M184 542H192V568H184Z M184 550H172V538H184Z M192 540H204V528H192Z" fill="#89a98a"/>
+</svg>
