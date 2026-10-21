@@ -3,6 +3,10 @@
   const demo = window.officeSamples;
   let samples = demo;
   let snapshot = null;
+  let importedView = null;
+  let roomURL = '';
+  let projectURL = '';
+  const roomSample = window.officeSnapshot.parseView(JSON.stringify(window.officeRoomSample));
   let mode = 'demo';
   let importGeneration = 0;
   const byId = id => document.getElementById(id);
@@ -88,7 +92,10 @@
     const focusedDesk = document.activeElement?.dataset.id;
     desks.replaceChildren();
     byId('legend-items').replaceChildren();
-    const isSnapshot = mode === 'snapshot';
+    const isView = mode === 'rooms' || mode === 'view-import';
+    const isSnapshot = mode === 'snapshot' || isView;
+    const viewData = mode === 'rooms' ? roomSample : importedView;
+    let viewSelection = null;
     scene = window.officeScene.view(mode, snapshot, demo);
     if (mode === 'movement') {
       const fact = movement.state();
@@ -100,6 +107,36 @@
           tone: index === 0 && fact.delivered ? 'lavender' : 'mint', icon: index === 0 && fact.delivered ? '◇' : '·',
           note: `${workspace.task} / ${workspace.worktree}`, bubble: index === 0 && fact.delivered ? '검토 대기' : '가상 작업'}
       }));
+    }
+    byId('view-controls').hidden = !isView;
+    if (isView) {
+      scene = [];
+      if (viewData) {
+        viewSelection = window.officeViews.select(viewData, roomURL, projectURL, selectedId);
+        roomURL = viewSelection.roomURL; projectURL = viewSelection.projectURL; selectedId = viewSelection.selectedId;
+        function options(id, entries, value) {
+          const select = byId(id);
+          select.replaceChildren(...entries.map(entry => {
+            const option = document.createElement('option'); option.value = entry.url; option.textContent = entry.label; return option;
+          }));
+          select.value = value; select.disabled = false;
+        }
+        options('room-select', viewSelection.rooms, roomURL);
+        options('project-select', [{url: '', label: '모든 작업 · Project 필터 없음'}, ...viewData.projects], projectURL);
+        const positions = window.officeScene.view('demo', null, demo);
+        scene = viewSelection.records.map(record => {
+          const index = viewSelection.owned.indexOf(record);
+          const entry = window.officeScene.view('snapshot', record.observation, demo)[0];
+          return {...entry, id: record.id, x: positions[index].x, y: positions[index].y,
+            characterKey: positions[index].characterKey,
+            work: {...entry.work, id: record.id, observation: record.observation, memberships: record.projects}};
+        });
+        const unknown = viewSelection.owned.filter(record => record.projects === null).length;
+        byId('view-summary').textContent = `${mode === 'rooms' ? '가상 샘플 · 실제 데이터 아님' : '미검증 수동 주장 · 실시간 아님'} · 이 방 ${viewSelection.records.length}/${viewSelection.owned.length}개 기록 · Project 회원 관계 미확인 ${unknown}개${!scene.length ? ' · 일치하는 작업 없음' : ''} · ${viewData.observed_at} · ${viewData.source}`;
+      } else {
+        for (const id of ['room-select', 'project-select']) { byId(id).replaceChildren(); byId(id).disabled = true; }
+        byId('view-summary').textContent = '수동 보기 미확인 · 보기 JSON을 가져오세요.';
+      }
     }
     byId('movement-controls').hidden = mode !== 'movement';
     byId('movement-fields').hidden = mode !== 'movement';
@@ -122,6 +159,13 @@
       document.querySelector('.scene-caption span:last-child').textContent += marker;
       document.querySelector('.scene-card').setAttribute('aria-label', '가져온 단일 저장소·공간·세션 관찰 주장');
     } else document.querySelector('.scene-caption span:first-child').textContent = '작은 오피스';
+    if (isView) {
+      document.querySelector('.sample-tag').textContent = mode === 'rooms' ? '가상 2개 방 · 샘플' : '수동 보기 · 미검증';
+      document.querySelector('.scene-caption span:first-child').textContent = viewSelection?.rooms.find(room => room.url === roomURL)?.label || '저장소 방 미확인';
+      document.querySelector('.scene-caption span:last-child').textContent = `${scene.length}개 기록 · ${mode === 'rooms' ? '가상 샘플' : '가져온 주장'} · 전체 현황 아님`;
+      document.querySelector('.scene-card').setAttribute('aria-label', '선택한 저장소 소유 책상과 명시한 Project 보기');
+      byId('office-desc').textContent = '선택한 방에 속하는 작업만 표시합니다. Tab과 Enter 또는 Space로 책상을 선택하세요. Project는 배정을 바꾸지 않습니다.';
+    }
     scene.forEach(entry => {
       const sample = entry.work;
       const group = svg('g', {transform: `translate(${entry.x} ${entry.y})`});
@@ -137,7 +181,7 @@
       group.setAttribute('class', 'desk');
       group.setAttribute('role', 'button');
       group.setAttribute('tabindex', '0');
-      group.setAttribute('aria-label', mode === 'movement' ? `${sample.name}, ${sample.task}, ${sample.status}, 이동 DEMO` : isSnapshot ? `${sample.name}, ${snapshot.work.title}, ${snapshot.version === 2 ? '가져온 관찰 주장' : '스냅샷 삽화'}` : `${sample.name}의 책상, ${sample.status}, ${sample.task}, 데모 샘플`);
+      group.setAttribute('aria-label', mode === 'movement' ? `${sample.name}, ${sample.task}, ${sample.status}, 이동 DEMO` : isSnapshot ? `${sample.name}, ${sample.observation?.work.title || snapshot?.work.title}, ${(sample.observation || snapshot)?.version === 2 ? '가져온 관찰 주장' : '스냅샷 삽화'}` : `${sample.name}의 책상, ${sample.status}, ${sample.task}, 데모 샘플`);
       group.setAttribute('aria-pressed', 'false');
       group.dataset.id = sample.id;
       const offset = window.officeScene.characterOffset;
@@ -181,28 +225,31 @@
       selectedId = null;
       byId('portrait').replaceChildren();
       ['agent-role', 'task-name', 'task-note'].forEach(id => byId(id).textContent = '');
-      byId('detail-heading').textContent = '관찰 미확인';
+      byId('detail-heading').textContent = isView && viewData ? '일치하는 작업 없음' : '관찰 미확인';
       byId('detail-status').textContent = '정보 없음';
+      byId('detail-status').className = 'status-pill gray';
       byId('snapshot-fields').replaceChildren();
     }
     if (focusedDesk) [...desks.querySelectorAll('.desk')].find(node => node.dataset.id === focusedDesk)?.focus();
-    document.querySelector('.sample-notice p').textContent = mode === 'movement' ? '스크립트 DEMO · 실제 Orca 세션이나 배정 관찰이 아닙니다.' : isSnapshot && snapshot?.version === 2 ? '연결과 출처는 가져온 관찰의 주장입니다. 인증된 backend 사실이나 Nexus 정책 입력이 아닙니다.' : isSnapshot ? '캐릭터는 작업의 삽화입니다. 실제 에이전트 배정·생존·승인·수락을 증명하지 않습니다.' : '이 동료는 데모 속 캐릭터예요. 실제 에이전트나 작업 기록이 아닙니다.';
+    document.querySelector('.sample-notice p').textContent = isView ? (mode === 'rooms' ? '가상 2개 방 샘플 · 실제 저장소나 배정 데이터가 아닙니다.' : '수동 관찰과 Project 회원 관계는 미검증 주장입니다. 출처를 인증하지 않습니다.') : mode === 'movement' ? '스크립트 DEMO · 실제 Orca 세션이나 배정 관찰이 아닙니다.' : isSnapshot && snapshot?.version === 2 ? '연결과 출처는 가져온 관찰의 주장입니다. 인증된 backend 사실이나 Nexus 정책 입력이 아닙니다.' : isSnapshot ? '캐릭터는 작업의 삽화입니다. 실제 에이전트 배정·생존·승인·수락을 증명하지 않습니다.' : '이 동료는 데모 속 캐릭터예요. 실제 에이전트나 작업 기록이 아닙니다.';
   }
 
   function select(id) {
     const sample = samples.find((entry) => entry.id === id);
     if (!sample) return;
+    const currentSnapshot = sample.observation || snapshot;
+    const isView = mode === 'rooms' || mode === 'view-import';
     selectedId = id;
     desks.querySelectorAll('.desk').forEach((desk) => desk.setAttribute('aria-pressed', String(desk.dataset.id === id)));
-    document.getElementById('agent-role').textContent = mode === 'snapshot' ? 'Work Item · 관찰 사본' : sample.role + ' · 샘플';
+    document.getElementById('agent-role').textContent = (mode === 'snapshot' || isView) ? 'Work Item · 관찰 사본' : sample.role + ' · 샘플';
     document.getElementById('detail-heading').textContent = sample.name;
     const status = document.getElementById('detail-status');
     status.className = `status-pill ${sample.tone}`;
     status.textContent = `${sample.icon} ${sample.status}`;
     document.getElementById('task-name').textContent = sample.task;
     document.getElementById('task-note').textContent = sample.note;
-    if (mode === 'snapshot') {
-      byId('detail-heading').textContent = snapshot.version === 2 ? snapshot.office?.workspace?.label || '공간 미확인' : '작업 책상';
+    if (mode === 'snapshot' || isView) {
+      byId('detail-heading').textContent = currentSnapshot.version === 2 ? currentSnapshot.office?.workspace?.label || '공간 미확인' : '작업 책상';
       byId('task-note').textContent = '실행 관찰과 GitHub Workflow는 별개입니다. 현재 생존·승인·수락 여부는 미확인입니다.';
       const fields = byId('snapshot-fields');
       fields.replaceChildren();
@@ -213,19 +260,24 @@
         fields.append(term, detail);
       }
       const link = document.createElement('a');
-      link.href = snapshot.work.url; link.textContent = snapshot.work.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
-      const age = Date.now() - Date.parse(snapshot.observed_at);
+      link.href = currentSnapshot.work.url; link.textContent = currentSnapshot.work.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+      const age = Date.now() - Date.parse(currentSnapshot.observed_at);
       field('Issue', link);
-      field('관찰 시각 · 실시간 아님', snapshot.observed_at + (age < 0 ? ' · 미래 시각 주의' : age > 86400000 ? ' · 오래된 관찰 (24시간 초과)' : ' · 관찰 사본'));
-      field('GitHub Workflow', snapshot.work.workflow_status || '미확인');
+      field('관찰 시각 · 실시간 아님', currentSnapshot.observed_at + (age < 0 ? ' · 미래 시각 주의' : age > 86400000 ? ' · 오래된 관찰 (24시간 초과)' : ' · 관찰 사본'));
+      field('GitHub Workflow', currentSnapshot.work.workflow_status || '미확인');
       const labels = {running: '실행 중으로 관찰', awaiting_input: '입력 대기로 관찰', succeeded: '성공 결과 관찰', failed: '실패 결과 관찰', cancelled: '취소로 관찰', unknown: '미확인'};
-      field('실행 관찰', labels[snapshot.execution?.status] || '미확인');
-      field('근거 · 출처', snapshot.execution?.source || '미확인');
-      if (snapshot.version === 2) {
-        const bundle = snapshot.office;
-        const relation = window.officeSnapshot.association(snapshot);
+      field('실행 관찰', labels[currentSnapshot.execution?.status] || '미확인');
+      field('근거 · 출처', currentSnapshot.execution?.source || '미확인');
+      if (currentSnapshot.version === 2) {
+        const bundle = currentSnapshot.office;
+        const relation = window.officeSnapshot.association(currentSnapshot);
         const stamp = part => part ? `${part.observed_at} · ${part.source || '출처 미확인'}` : '관찰 없음';
-        field('범위', '가져온 단일 기록만 · 전체 fleet 현황 아님 · 자동 갱신 없음');
+        field('범위', isView ? '선택한 방의 수동 기록 · 전체 현황 아님 · 자동 갱신 없음' : '가져온 단일 기록만 · 전체 fleet 현황 아님 · 자동 갱신 없음');
+        if (isView) {
+          const data = mode === 'rooms' ? roomSample : importedView;
+          field('Project · 명시한 회원 관계', sample.memberships === null ? '미확인 · 추론 안 함' : sample.memberships.length ? sample.memberships.map(url => `${data.projects.find(project => project.url === url).label} · ${url}`).join(' / ') : '명시한 회원 관계 없음');
+          field('보기 관찰 · 출처 · 미검증 주장', `${data.observed_at} · ${data.source}`);
+        }
         field('시간 유효성', relation.temporal === 'inconsistent' ? '관찰 시각 충돌 · 현재 관찰 아님' : relation.temporal === 'future' ? '미래 시각 · 현재 관찰 아님 · 연결 표시 보류' : relation.temporal === 'stale' ? '오래된 관찰 · 24시간 초과 · 현재 상태 아님' : '관찰 사본 · 현재 상태 증명 아님');
         field('연결 · 가져온 관찰 주장', relation.state === 'conflict' ? `충돌 · 연결 없음: ${relation.conflicts.join(', ')}` : relation.state === 'missing' ? `미연결 · 근거 없음: ${relation.missing.join(', ')}` : relation.attached ? 'session → workspace → Work Item · 가져온 배정 주장' : '시간 주의 · 연결 표시 보류');
         field('저장소 / 방', bundle?.repository ? `${bundle.repository.label} · ${bundle.repository.alias} · ${bundle.repository.url}` : '미확인');
@@ -270,27 +322,35 @@
     // Keep desk nodes, selection, keyboard focus, imported object and mode intact.
     paintSkin();
   });
+  byId('room-select').addEventListener('change', event => { roomURL = event.target.value; render(); });
+  byId('project-select').addEventListener('change', event => { projectURL = event.target.value; render(); });
   byId('display-mode').addEventListener('change', event => {
     movement.pause();
     mode = event.target.value;
-    byId('import-message').textContent = mode === 'movement' ? '이동 DEMO · 가상 관찰 · 자동 실행 권한 없음' : mode === 'demo' ? '데모입니다. 파일은 이 브라우저에서만 읽습니다.' : snapshot ? '관찰 사본 · 자동 갱신 없음' : '관찰 미확인 · JSON 파일을 가져오세요.';
+    byId('import-message').textContent = mode === 'movement' ? '이동 DEMO · 가상 관찰 · 자동 실행 권한 없음' : mode === 'demo' ? '데모입니다. 파일은 이 브라우저에서만 읽습니다.' : mode === 'rooms' ? '가상 2개 방 샘플 · 실제 관찰 데이터가 아닙니다.' : mode === 'view-import' ? (importedView ? '미검증 수동 보기 · 자동 갱신 없음' : '수동 보기 JSON을 가져오세요.') : snapshot ? '관찰 사본 · 자동 갱신 없음' : '관찰 미확인 · JSON 파일을 가져오세요.';
     render();
   });
   byId('snapshot-file').addEventListener('change', event => {
     movement.pause();
     const generation = ++importGeneration;
     const file = event.target.files[0];
-    snapshot = null;
+    snapshot = null; importedView = null; roomURL = ''; projectURL = ''; selectedId = null;
     mode = 'snapshot'; byId('display-mode').value = mode;
     render();
     function fail(message) { byId('import-message').textContent = '가져오기 실패 · 관찰 미확인: ' + message; }
     if (!file) { fail('파일을 선택하세요.'); return; }
-    if (file.size > window.officeSnapshot.MAX_BYTES) { fail('파일은 16 KiB 이하여야 합니다.'); event.target.value = ''; return; }
+    if (file.size > window.officeSnapshot.VIEW_MAX_BYTES) { fail('보기 최대 64 KiB, 단일 기록 최대 16 KiB입니다.'); event.target.value = ''; return; }
     byId('import-message').textContent = '읽는 중 · 관찰 미확인';
     const reader = new FileReader();
     reader.onload = () => {
       if (generation !== importGeneration) return;
-      try { snapshot = window.officeSnapshot.parse(reader.result); byId('import-message').textContent = '관찰 사본을 읽었습니다 · 자동 갱신 없음'; }
+      try {
+        const input = window.officeSnapshot.parseView(reader.result);
+        if (input.kind === 'view') { importedView = input; mode = 'view-import'; }
+        else { snapshot = input.snapshot; mode = 'snapshot'; }
+        byId('display-mode').value = mode;
+        byId('import-message').textContent = '미검증 수동 사본을 읽었습니다 · 자동 갱신 없음';
+      }
       catch (error) { fail(error.message); }
       render();
     };

@@ -57,7 +57,7 @@
   function privateBoundary(value) {
     const visit = item => {
       if (typeof item === 'string') {
-        if (/[<>`\\]|[\u0000-\u001f\u007f]|(?:^|[\s"'(=])(?:\/|~\/)|\b(?:file:|https?:)(?!\/\/github\.com\/)|\b(?:term|ctx|task|run|wtr|repo|session|dispatch)_[a-z0-9-]+|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}|\b(?:gh[pousr]_|github_pat_|sk-|AKIA|ASIA)|(?:password|secret|token|api[_ -]?key|private[_ -]?key)\s*[:=]|\bbearer\s+\S+|BEGIN .*PRIVATE KEY|(?:transcript|rollout)\s*[:=]/i.test(item)) throw Error('비공개 경로·영수증·비밀·마크업을 제거하세요.');
+        if (/[<>`\\]|[\u0000-\u001f\u007f]|(?:^|[\s"'(=])(?:\/|~\/|\.{1,2}\/)|\b(?:file:|https?:)(?!\/\/github\.com\/)|\b(?:term|ctx|task|run|wtr|repo|session|dispatch)_[a-z0-9-]+|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}|\b(?:gh[pousr]_|github_pat_|sk-|AKIA|ASIA)|(?:password|secret|token|api[_ -]?key|private[_ -]?key)\s*[:=]|\bbearer\s+\S+|BEGIN .*PRIVATE KEY|(?:transcript|rollout)\s*[:=]/i.test(item)) throw Error('비공개 경로·영수증·비밀·마크업을 제거하세요.');
         if (item.length > 300) throw Error('문자열 한도를 초과했습니다.');
       } else if (item && typeof item === 'object') Object.values(item).forEach(visit);
     };
@@ -149,7 +149,56 @@
     if (dates.some(date => Date.parse(date) > now)) return 'future';
     return dates.some(date => now - Date.parse(date) > 86400000) ? 'stale' : 'observation-copy';
   }
-  const api = {parse, association, temporal, MAX_BYTES};
+  // A bounded presentation envelope; contained observations retain the v2 contract.
+  const VIEW_MAX_BYTES = 65536;
+  function parseView(raw) {
+    if (new TextEncoder().encode(raw).length > VIEW_MAX_BYTES) throw Error('보기 파일은 64 KiB 이하여야 합니다.');
+    let value;
+    try { value = JSON.parse(raw); } catch (_) { throw Error('JSON을 읽을 수 없습니다.'); }
+    if (!value || !Object.hasOwn(value, 'view_version')) return {kind: 'single', snapshot: parse(raw)};
+    uniqueKeys(raw); privateBoundary(value);
+    exact(value, ['view_version', 'source', 'observed_at', 'projects', 'records']);
+    if (value.view_version !== 1) throw Error('view_version: 1만 지원합니다.');
+    const source = text(value.source, 240, false), observed_at = time(value.observed_at);
+    if (!Array.isArray(value.projects) || value.projects.length > 8 || !Array.isArray(value.records) || !value.records.length || value.records.length > 8) throw Error('Project 최대 8개, 기록 1–8개만 지원합니다.');
+    const projects = value.projects.map(project => {
+      exact(project, ['url', 'label']);
+      const url = project.url;
+      if (typeof url !== 'string' || url.length > 300 || !/^https:\/\/github\.com\/(?:orgs|users)\/[A-Za-z0-9][A-Za-z0-9-]{0,38}\/projects\/[1-9]\d*$/.test(url) || new URL(url).href !== url) throw Error('정규 GitHub Project 주소가 필요합니다.');
+      return {url, label: text(project.label, 80, false)};
+    });
+    const projectURLs = new Set(projects.map(project => project.url));
+    if (projectURLs.size !== projects.length) throw Error('중복 Project 주소입니다.');
+    const ids = new Set(), issues = new Set(), aliases = new Map(), rooms = new Map();
+    function bind(alias, relation) {
+      if (aliases.has(alias) && aliases.get(alias) !== relation) throw Error('기록 간 별칭·관계 충돌입니다.');
+      aliases.set(alias, relation);
+    }
+    const records = value.records.map(record => {
+      exact(record, ['id', 'observation', 'projects']);
+      const id = alias(record.id);
+      const observation = parse(JSON.stringify(record.observation));
+      if (observation.version !== 2) throw Error('보기에는 기존 v2 관찰만 허용됩니다.');
+      if (ids.has(id) || issues.has(observation.work.url)) throw Error('중복 기록 또는 Issue입니다.');
+      ids.add(id); issues.add(observation.work.url);
+      if (Date.parse(observation.observed_at) > Date.parse(observed_at)) throw Error('보기보다 늦은 관찰입니다.');
+      const {repository: repo, workspace, session} = observation.office || {};
+      if (!repo || !workspace || workspace.repository !== repo.alias || observation.work.url.split('/issues/')[0] !== repo.url) throw Error('방 소유 저장소와 Issue·책상 관계를 확인하세요.');
+      bind(repo.alias, JSON.stringify(['repository', repo.url, repo.label]));
+      bind(workspace.alias, JSON.stringify(['workspace', repo.url, workspace.label, observation.work.url]));
+      if (session) bind(session.alias, JSON.stringify(['session', workspace.alias, session.workspace, session.label, observation.work.url]));
+      const room = rooms.get(repo.url);
+      if (room && (room.alias !== repo.alias || room.label !== repo.label)) throw Error('저장소 방 정의 충돌입니다.');
+      rooms.set(repo.url, {...repo, count: (room?.count || 0) + 1});
+      if (rooms.size > 4 || rooms.get(repo.url).count > 4) throw Error('방 최대 4개, 방마다 책상 최대 4개입니다.');
+      if (record.projects !== null && (!Array.isArray(record.projects) || record.projects.length > 8 || record.projects.some(url => !projectURLs.has(url)) || new Set(record.projects).size !== record.projects.length)) throw Error('명시한 Project 회원 관계를 확인하세요.');
+      return {id, observation, projects: record.projects === null ? null : [...record.projects]};
+    });
+    // Display record IDs and component aliases must never collide.
+    if ([...ids].some(id => aliases.has(id))) throw Error('표시 ID와 구성 별칭이 겹칩니다.');
+    return {kind: 'view', source, observed_at, projects, records};
+  }
+  const api = {parse, parseView, association, temporal, MAX_BYTES, VIEW_MAX_BYTES};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.officeSnapshot = api;
 })(typeof window === 'undefined' ? globalThis : window);

@@ -1,0 +1,213 @@
+{
+  "view_version": 1,
+  "source": "Fictional manual sample only; no live repository observations",
+  "observed_at": "2026-01-01T00:00:00Z",
+  "projects": [
+    {
+      "url": "https://github.com/orgs/example/projects/1",
+      "label": "Fiction \u00b7 Shared garden"
+    },
+    {
+      "url": "https://github.com/users/example/projects/2",
+      "label": "Fiction \u00b7 Paper only"
+    }
+  ],
+  "records": [
+    {
+      "id": "display-record-1",
+      "observation": {
+        "version": 2,
+        "observed_at": "2026-01-01T00:00:00Z",
+        "work": {
+          "url": "https://github.com/example/fiction-paper/issues/1",
+          "title": "Fiction \u00b7 Shared paper task",
+          "workflow_status": "Review"
+        },
+        "execution": {
+          "status": "succeeded",
+          "source": "Fictional manual result example"
+        },
+        "office": {
+          "source": "Fictional manual shape example only",
+          "observed_at": "2026-01-01T00:00:00Z",
+          "coverage": "single-record",
+          "repository": {
+            "alias": "display-paper",
+            "label": "Fiction \u00b7 Paper room",
+            "url": "https://github.com/example/fiction-paper"
+          },
+          "workspace": {
+            "alias": "display-desk-1",
+            "label": "Fiction desk 1",
+            "repository": "display-paper"
+          },
+          "session": {
+            "alias": "display-actor-1",
+            "label": "Fiction character",
+            "workspace": "display-desk-1",
+            "liveness": "unknown",
+            "source": "Fictional session observation",
+            "observed_at": "2026-01-01T00:00:00Z"
+          },
+          "assignment": {
+            "session": "display-actor-1",
+            "workspace": "display-desk-1",
+            "work_url": "https://github.com/example/fiction-paper/issues/1",
+            "source": "Fictional explicit association",
+            "observed_at": "2026-01-01T00:00:00Z"
+          },
+          "retention": {
+            "state": "unknown",
+            "source": null
+          }
+        }
+      },
+      "projects": [
+        "https://github.com/orgs/example/projects/1",
+        "https://github.com/users/example/projects/2"
+      ]
+    },
+    {
+      "id": "display-record-2",
+      "observation": {
+        "version": 2,
+        "observed_at": "2026-01-01T00:00:00Z",
+        "work": {
+          "url": "https://github.com/example/fiction-paper/issues/2",
+          "title": "Fiction \u00b7 No Project membership",
+          "workflow_status": "Ready"
+        },
+        "execution": {
+          "status": "unknown",
+          "source": "Fictional manual result example"
+        },
+        "office": {
+          "source": "Fictional manual shape example only",
+          "observed_at": "2026-01-01T00:00:00Z",
+          "coverage": "single-record",
+          "repository": {
+            "alias": "display-paper",
+            "label": "Fiction \u00b7 Paper room",
+            "url": "https://github.com/example/fiction-paper"
+          },
+          "workspace": {
+            "alias": "display-desk-2",
+            "label": "Fiction desk 2",
+            "repository": "display-paper"
+          },
+          "session": {
+            "alias": "display-actor-2",
+            "label": "Fiction character",
+            "workspace": "display-desk-2",
+            "liveness": "unknown",
+            "source": "Fictional session observation",
+            "observed_at": "2026-01-01T00:00:00Z"
+          },
+          "assignment": {
+            "session": "display-actor-2",
+            "workspace": "display-desk-2",
+            "work_url": "https://github.com/example/fiction-paper/issues/2",
+            "source": "Fictional explicit association",
+            "observed_at": "2026-01-01T00:00:00Z"
+          },
+          "retention": {
+            "state": "unknown",
+            "source": null
+          }
+        }
+      },
+      "projects": []
+    },
+    {
+      "id": "display-record-3",
+      "observation": {
+        "version": 2,
+        "observed_at": "2026-01-01T00:00:00Z",
+        "work": {
+          "url": "https://github.com/example/fiction-garden/issues/3",
+          "title": "Fiction \u00b7 Shared garden task",
+          "workflow_status": "In Progress"
+        },
+        "execution": {
+          "status": "running",
+          "source": "Fictional manual result example"
+        },
+        "office": {
+          "source": "Fictional manual shape example only",
+          "observed_at": "2026-01-01T00:00:00Z",
+          "coverage": "single-record",
+          "repository": {
+            "alias": "display-garden",
+            "label": "Fiction \u00b7 Garden room",
+            "url": "https://github.com/example/fiction-garden"
+          },
+          "workspace": {
+            "alias": "display-desk-3",
+            "label": "Fiction desk 3",
+            "repository": "display-garden"
+          },
+          "session": {
+            "alias": "display-actor-3",
+            "label": "Fiction character",
+            "workspace": "display-desk-3",
+            "liveness": "unknown",
+            "source": "Fictional session observation",
+            "observed_at": "2026-01-01T00:00:00Z"
+          },
+          "assignment": {
+            "session": "display-actor-3",
+            "workspace": "display-desk-3",
+            "work_url": "https://github.com/example/fiction-garden/issues/3",
+            "source": "Fictional explicit association",
+            "observed_at": "2026-01-01T00:00:00Z"
+          },
+          "retention": {
+            "state": "unknown",
+            "source": null
+          }
+        }
+      },
+      "projects": [
+        "https://github.com/orgs/example/projects/1"
+      ]
+    },
+    {
+      "id": "display-record-4",
+      "observation": {
+        "version": 2,
+        "observed_at": "2026-01-01T00:00:00Z",
+        "work": {
+          "url": "https://github.com/example/fiction-garden/issues/4",
+          "title": "Fiction \u00b7 Membership unknown",
+          "workflow_status": "Blocked"
+        },
+        "execution": {
+          "status": "awaiting_input",
+          "source": "Fictional manual result example"
+        },
+        "office": {
+          "source": "Fictional manual shape example only",
+          "observed_at": "2026-01-01T00:00:00Z",
+          "coverage": "single-record",
+          "repository": {
+            "alias": "display-garden",
+            "label": "Fiction \u00b7 Garden room",
+            "url": "https://github.com/example/fiction-garden"
+          },
+          "workspace": {
+            "alias": "display-desk-4",
+            "label": "Fiction desk 4",
+            "repository": "display-garden"
+          },
+          "session": null,
+          "assignment": null,
+          "retention": {
+            "state": "unknown",
+            "source": null
+          }
+        }
+      },
+      "projects": null
+    }
+  ]
+}

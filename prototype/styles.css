@@ -7,3 +7,5 @@
 
 /* Imported labels remain bounded in the room caption and details. */
 .scene-caption{gap:12px}.scene-caption span{min-width:0;overflow-wrap:anywhere}.detail-card h2{max-width:100%;overflow-wrap:anywhere}
+/* Room controls remain a small display-only toolbar in either skin. */
+.import-bar[hidden]{display:none}.import-bar select{min-width:0}#view-summary{overflow-wrap:anywhere}#view-controls select{max-width:100%}

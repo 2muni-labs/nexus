@@ -93,3 +93,65 @@ Session and assignment observation timestamps must be ≤ office observation tim
 Files remain ≤16 KiB UTF-8. V2 additionally rejects markup delimiters, control characters, backslashes, personal/absolute paths, common native receipt prefixes/UUIDs, secret-like token/key/password/bearer patterns, raw transcript markers and non-GitHub HTTP/file URL schemes. These bounded checks are defense in depth, not a complete secret detector: the Coordinator must manually remove private paths, transcripts, credentials and native IDs before import. All accepted text uses `textContent`; only validated Issue URLs become links, and artwork remains the fixed local skin manifest. No imported HTML/JS or remote resource URL is executed. No fetch, storage, backend access, publication or scheduling is added.
 
 Focused validation: `node prototype/snapshot-v2.test.cjs`, existing `snapshot.test.cjs` and `movement.test.cjs`, and `node --check` for affected JS. Browser acceptance also requires a separately collected real sanitized input, file/HTTP, both skins, conflict/missing non-pairing, mode/import/selection/focus regression and 390px/desktop layouts. Synthetic fixtures alone do not satisfy actual-observation acceptance. DOM keyboard handler/focus checks do not prove native Orca key delivery.
+
+## Issue 28: repository rooms and explicit Project views
+
+Choose **방·Project 보기 · 가상 2개 방** for the fictional Paper/Garden sample.
+It contains four fictional records, two repository-owned rooms, a shared cross-repository
+Project, and a Paper-only Project. Select Garden + Paper-only for an explicit empty
+result. Clearing the Project filter includes both known nonmembers (`[]`) and records
+whose memberships are unknown (`null`); unknown memberships never match a Project.
+The sample is not live repository data. Existing four-desk, movement, v1 and single-v2
+modes retain their original scope; importing one v2 observation still displays one record.
+
+The room selector chooses a repository; its desks never belong to a Project. The
+single-select GitHub Project filter uses only explicit canonical URL memberships,
+regardless of Project owner, repository name, or branch. It never changes workflow,
+assignment, policy, or backend state, and adds no actor travel between rooms. Selection
+survives while visible; a filtered-out selection falls back to the first visible record
+in input order, or clears all detail/Issue links when empty. Room/filter choices persist
+across skin changes and mode visits when valid. A newly imported file resets selection
+and filters. Filtering preserves each desk's room position and artwork slot.
+
+For manual multi-record input, copy **views-example.json** and use JSON 가져오기;
+the UI switches to **방·Project 보기 · 수동 가져오기**. `views-sample.js` defines the
+same fictional sample for offline `file://` use. The strict presentation envelope is:
+
+```json
+{
+  "view_version": 1,
+  "source": "Sanitized manual observation provenance",
+  "observed_at": "2026-01-01T00:00:00Z",
+  "projects": [{"url": "https://github.com/orgs/example/projects/1", "label": "Example"}],
+  "records": [{"id": "display-record-1", "observation": "REPLACE with a complete existing v2 object", "projects": null}]
+}
+```
+
+The string placeholder above is deliberately invalid: use a complete validated v2
+observation from the existing format, as in the full example. `projects` on each record
+is either `null` (not observed), `[]` (explicitly no memberships), or unique URLs declared
+in the envelope's Project catalog. Valid Project URLs are exactly
+`https://github.com/orgs/OWNER/projects/NUMBER` or `https://github.com/users/OWNER/projects/NUMBER`.
+Membership provenance and observation time are the envelope's source/time; the selected
+record retains its own Issue, source/time, workflow, execution, and relation evidence.
+Every imported assertion, including source and Project membership, remains an **unverified
+manual claim**. Import does not authenticate origin or provide a real multi-repository
+observation. Historical input remains historical; there is no automatic refresh.
+
+Bounds: 64 KiB UTF-8 per envelope, 1–8 v2 records (each ≤16 KiB), ≤4 rooms, ≤4 desks per
+room, and ≤8 Projects/memberships per record. A room requires explicit v2 repository
+and workspace ownership matching the canonical Issue repository. Duplicate record IDs,
+Issue URLs, Project URLs, conflicting cross-record repository/workspace/session aliases,
+unknown fields/references, and inconsistent envelope time are rejected. Internal v2
+session/assignment/time conflicts still use the existing visible non-pairing checks.
+The v2 privacy restrictions also cover envelope metadata, labels, and memberships;
+relative paths are rejected too. Native receipts/IDs, private paths, credentials,
+transcripts and actual observations must never be committed into examples. These
+bounded checks remain defense in depth, not source authentication or a complete secret
+detector. No packages, fetch, persistence, collection, or control API is added.
+
+Run `node prototype/views.test.cjs` plus the existing snapshot, snapshot-v2, and movement
+tests. Browser acceptance covers both skins and file/HTTP, room ownership, shared
+Projects, no matches, unknown membership, selection/focus, and 390px/desktop geometry.
+DOM keyboard checks verify handlers/focus separately from the known native Orca key
+delivery limitation; a native key acknowledgement alone proves no DOM event.
