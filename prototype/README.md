@@ -2,7 +2,7 @@
 
 `index.html`을 브라우저에서 직접 열면 됩니다. 서버, 설치, 빌드는 필요하지 않습니다.
 
-네 개의 책상을 클릭하거나 Tab으로 이동한 뒤 Enter / Space를 눌러 상세 정보를 확인하세요. 작은 화면에서는 상세 패널이 장면 아래에 배치됩니다. 애니메이션은 사용하지 않습니다.
+네 개의 책상을 클릭하거나 Tab으로 이동한 뒤 Enter / Space를 눌러 상세 정보를 확인하세요. 작은 화면에서는 상세 패널이 장면 아래에 배치됩니다. 기본 시뮬레이션 스킨은 작은 직원의 로컬 표정만 재현합니다. 표정 재생과 이동 DEMO 시나리오 재생은 별개입니다.
 
 캐릭터, 작업, 상태는 `sample-data.js`의 고정된 가상 샘플입니다. Nexus / Orca 연동, 실시간 관찰, 실제 Issue, 완료 또는 승인 증거를 제공하지 않습니다. 시스템에 설치된 한국어 글꼴을 사용하며 외부 리소스를 요청하지 않습니다.
 
@@ -35,7 +35,7 @@ Workflow 인식 값은 `Backlog`, `Ready`, `In Progress`, `Blocked`, `Review`, `
 
 ## 오피스 전체 스킨 (Issue29)
 
-`index.html`은 `file://`로 직접 열 수 있습니다. 스킨 선택은 **방 전체·책상·캐릭터·상세 초상화·이동 DEMO 배우**를 함께 바꿉니다. 바닥·벽·창문·식물·소파·탁자·고양이·장면 배경도 같은 스킨입니다. 기본 일러스트는 네 캐릭터의 기존 모습을 유지하고, 픽셀 시험은 한 가지 귀여운 기본 캐릭터와 한 가지 아이소메트릭 책상을 공유합니다. 이름·작업·상태의 색과 기호는 공통 화면이 표시하므로 캐릭터의 칠 색은 상태를 뜻하지 않습니다.
+`index.html`은 `file://`로 직접 열 수 있습니다. 스킨 선택은 **방 전체·책상·캐릭터·상세 초상화·이동 DEMO 배우**를 함께 바꿉니다. 바닥·벽·창문·식물·소파·탁자·고양이·장면 배경도 같은 스킨입니다. 선택 가능한 일러스트는 네 캐릭터의 기존 모습을 유지하고, 픽셀 시험은 한 가지 귀여운 기본 캐릭터와 한 가지 아이소메트릭 책상을 공유합니다. 이름·작업·상태의 색과 기호는 공통 화면이 표시하므로 캐릭터의 칠 색은 상태를 뜻하지 않습니다.
 
 `scene.js`는 네 책상의 위치, 시각적 책상/캐릭터/작업 연결과 캐릭터 부착 위치를 관리합니다. `visual-desk-*`, `visual-character-*`, `demo-work-*`는 표시용 임시 식별자이며 실제 worktree·session·agent assignment ID가 아닙니다. 실제 Work Item은 가져온 Issue URL로 구분하지만, 환경/세션 관계가 없으므로 첫 책상에 **잠정적인 삽화 위치**로 놓습니다. 향후 실제 엔티티 관계가 제공되기 전에는 이 위치에서 배정·실행 관계를 추론하지 않습니다. 스냅샷 v1 필드는 추가하지 않았습니다.
 
@@ -55,7 +55,7 @@ Workflow 인식 값은 `Backlog`, `Ready`, `In Progress`, `Blocked`, `Review`, `
 
 등록 항목 누락·잘못된 크기/기준점 또는 파일 로드 실패는 `! 이미지 오류`로 표시하며 다른 스킨으로 몰래 대체하지 않습니다. 명패·선택·상세 정보·스킨 선택은 유지됩니다. 장면 아래 오류 안내와 **이미지 다시 불러오기** 버튼으로 복구하거나 스킨을 바꿀 수 있습니다. 성공한 교체는 이전 오류를 지우고, 이전 요청의 늦은 이벤트는 새 그림에 영향을 주지 않습니다. 이 오류는 작업/실행 상태 미확인과 별개입니다.
 
-스킨 변경은 import/reset을 호출하지 않고 기존 책상 DOM을 유지합니다. 따라서 가져온 사본·표시 모드·선택·책상 키보드 포커스를 보존하며, 선택 컨트롤을 조작할 때 포커스를 빼앗지 않습니다. 스킨·사본·선택은 메모리에만 있고 새로고침하면 기본 일러스트/데모로 돌아옵니다. 이동·수집·편집 기능은 이 시험 범위에 없습니다.
+스킨 변경은 import/reset을 호출하지 않고 기존 책상 DOM을 유지합니다. 따라서 가져온 사본·표시 모드·선택·책상 키보드 포커스를 보존하며, 선택 컨트롤을 조작할 때 포커스를 빼앗지 않습니다. 스킨·사본·선택은 메모리에만 있고 새로고침하면 기본 시뮬레이션/데모로 돌아옵니다. 이동·수집·편집 기능은 이 시험 범위에 없습니다.
 
 ## 이동 DEMO · 세션 배정 (Issue26)
 
@@ -159,3 +159,27 @@ DOM keyboard checks verify handlers/focus separately from the known native Orca 
 delivery limitation; a native key acknowledgement alone proves no DOM event.
 
 전체 스킨 검증: `node prototype/skins.test.cjs`와 기존 snapshot/v2/views/movement 테스트. 브라우저에서는 누락된 등록과 실제 404, 재시도/복구/이전 이벤트, 모든 모드와 두 방/Project 필터, 상세·선택·포커스 보존을 file/HTTP 및 390px/데스크톱에서 확인합니다.
+
+## Living office (Issue35)
+
+The default **시뮬레이션** skin uses original small human employees, a fixed 10×10 isometric room, four desks in two rows, and a compact scene-first HUD. Illustration and pixel remain selectable. This is a static layout preset, not a tile/pathfinding engine; there is no walking, economy, growth, furniture editor, storage, collector, or live refresh. All sample employees and observations are fictional.
+
+The HUD counts only the displayed work in the chosen mode/room/Project. It labels the source and observation timestamp from that displayed snapshot or view envelope; DEMO has no invented observation clock. Selected work retains its own Issue, timestamp, execution, Workflow, association and liveness in the detail panel. On mobile the details sit below the room. Artwork owns no hit targets, keyboard focus, logical identity or status. Small status symbols remain visible; nameplates expand for selection/hover/focus.
+
+The registry still accepts scalar `src/width/height/anchor/display/pixelated` descriptors. A skin can optionally provide a bounded `layout` object with four stable slot positions, character offset, portrait frame, hit/ring/nameplate/bubble geometry and movement-DEMO slot/entrance/beside positions. Filtering retains each record's room-owned slot. Layout changes never change entity IDs, room ownership, work or session associations. The old movement script still requires a new session/worktree for a new Task and retains the last position when liveness is unknown.
+
+Simulation descriptors use one uniform **2×** display scale:
+
+| Art | Logical frame | Anchor | Display |
+| --- | --- | --- | --- |
+| Employee | 24×32 | feet/seating (12,30) | 48×64 |
+| Desk | 64×48 | desktop center (32,16) | 128×96 |
+| Room / front | 440×395 | (0,0) | 880×790 |
+
+An employee descriptor may additionally declare `expressions: {typing: [frame0, frame1], waiting: [...], review: [...]}`. Each local frame is another ordinary scalar descriptor; two or three frames are supported. Missing optional expressions use the existing static art. A declared invalid frame, missing registration or real file-load error shows the normal explicit error/retry UI, without substituting another asset. Late events from replaced slots cannot alter their replacements. SVGs use integer geometry and no external resources or embedded animation.
+
+**표정 재생 / 일시정지** only controls local expressions. Typing requires explicit running/work, a small question cue requires awaiting_input, and paper cues require explicit Review. Failure `!`, cancellation `×`, unknown `?`, and nonactive result `·` stay static; success supplies neither Done nor current activity. V1 actors are illustrations and always static. V2/view replay requires a consistent complete association, explicit live session with source, execution source, and nonfuture observations no older than 24 hours. These are unverified imported claims, never authenticated live activity. Every import and mode entry starts paused. Skin switches preserve the existing play intent and logical focus; absent optional frames remain static. Replay does not alter any snapshot, timestamp, status or assignment.
+
+Reduced motion and hidden documents stop active frame animations and cancel the presentation expiry callback. They resume only if user play intent remains enabled and evidence permits. A single bounded callback exists only while an eligible imported replay is active, to stop it when observation age crosses 24 hours; it observes no backend and changes no data. There is no global animation scheduler. The separate movement DEMO play/next/reset controls still advance only their explicit fictional scenario.
+
+Focused validation: `node prototype/expressions.test.cjs` exercises all expression mappings, conservative missing/conflicting/unknown/future/stale evidence, v1/v2/view/demo/movement, immutable observations, optional frame safety/anchors, and the actual DOM-local controller's pause/hidden/reduced/expiry/timer lifecycle. Existing snapshot, snapshot-v2, views, movement and skins checks still apply. Browser DOM handler/focus tests do not certify native keyboard event delivery.

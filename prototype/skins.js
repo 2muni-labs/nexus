@@ -14,7 +14,30 @@
     anchor: {x: 0, y: 0}, display: {width: 880, height: 790}, pixelated
   });
   const pixelCharacter = character('character-pixel.svg', true);
+  const small = (file, width, height, x, y) => ({src: `assets/${file}.svg`, width, height,
+    anchor: {x, y}, display: {width: width * 2, height: height * 2}, pixelated: true});
+  const employee = name => {
+    const base = small(`staff-${name}`, 24, 32, 12, 30);
+    return {...base, expressions: Object.fromEntries(['typing', 'waiting', 'review'].map(kind =>
+      [kind, [base, small(`staff-${name}-${kind}`, 24, 32, 12, 30)]]))};
+  };
   window.officeSkins = {
+    simulation: {
+      room: small('room-simulation', 440, 395, 0, 0),
+      roomFront: small('room-front-simulation', 440, 395, 0, 0),
+      desk: small('desk-simulation', 64, 48, 32, 16),
+      characters: {'leaf-mint': employee('mint'),
+        'ears-peach': employee('rose'),
+        'ears-lavender': employee('amber'),
+        'leaf-gray': employee('blue')},
+      // Presentation coordinates only: indices follow stable room-owned desk slots.
+      layout: {positions: [{x: 440, y: 338}, {x: 600, y: 418}, {x: 280, y: 418}, {x: 440, y: 498}],
+        characterOffset: {x: 0, y: -8}, portraitViewBox: '-24 -62 48 64',
+        hit: {x: -68, y: -76, width: 136, height: 146},
+        ring: 'M-70 0L0-35 70 0 0 36Z', nameplate: 'translate(-56 -105)',
+        bubble: 'translate(-65 -11)', movementSlots: [2, 1],
+        entrance: {x: 186, y: 518}, beside: {x: 208, y: 460}}
+    },
     illustration: {
       room: room('room-illustration.svg'), roomFront: room('room-front-illustration.svg'),
       desk: desk('desk-illustration.svg'),

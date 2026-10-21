@@ -13,16 +13,18 @@
   <script defer src="scene.js"></script>
   <script defer src="skins.js"></script>
   <script defer src="movement.js"></script>
+  <script defer src="expressions.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
   <header class="topbar"><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">n.</span> nexus <span class="brand-divider">/</span> 작은 오피스</a><span class="sample-tag">✳ 데모 샘플</span></header>
   <main>
-    <section class="intro" aria-labelledby="page-title"><div><p class="eyebrow">A LITTLE SPACE FOR BIG IDEAS</p><h1 id="page-title">오늘도, 각자의 책상에서<span aria-hidden="true"> ✿</span></h1><p class="subtitle">작은 동료들의 하루를 둘러보세요. 책상을 누르면 이야기가 보여요.</p></div><span class="intro-note">상상 속 팀의<br><strong>아늑한 작업 공간</strong></span></section>
+    <h1 id="page-title" class="office-heading">LITTLE OFFICE <span>작은 팀의 작업실</span></h1>
     <section class="import-bar" aria-label="표시 데이터 선택">
       <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="rooms">방·Project 보기 · 가상 2개 방</option><option value="view-import">방·Project 보기 · 수동 가져오기</option><option value="movement">이동 DEMO · 세션 배정</option><option value="snapshot">관찰 스냅샷 · 단일 기록</option></select>
-      <label for="skin-select">오피스 스킨</label><select id="skin-select"><option value="illustration">일러스트 · 기본</option><option value="pixel">픽셀 · 방 전체</option></select>
+      <label for="skin-select">오피스 스킨</label><select id="skin-select"><option value="simulation">시뮬레이션 · 기본</option><option value="illustration">일러스트</option><option value="pixel">픽셀 · 방 전체</option></select>
       <label class="file-label" for="snapshot-file">JSON 가져오기 <input id="snapshot-file" type="file" accept=".json,application/json"></label>
+      <button id="expression-play" type="button" aria-pressed="true">표정 일시정지</button><span id="expression-status" role="status"></span>
       <p id="import-message" role="status">데모입니다. 파일은 이 브라우저에서만 읽습니다.</p>
     </section>
     <section id="view-controls" class="import-bar" hidden aria-label="저장소 방 및 Project 보기">
@@ -40,16 +42,17 @@
       <p id="movement-stage" role="status" aria-live="polite"></p>
       <small>일시정지: 현재 단계 유지 · 다음 단계: 정지 후 한 단계 · 초기화: 정지 후 첫 등장. 스킨/모드 변경 시 정지.</small>
     </section>
+    <section class="office-hud" aria-label="현재 보이는 작업과 관찰 출처"><strong id="work-count"></strong><span id="data-source"></span><span id="observation-time"></span></section>
     <div class="office-layout">
       <section class="scene-card" aria-label="네 명의 가상 에이전트가 있는 작은 오피스">
         <div class="scene-caption"><span>☀ 햇살이 드는 오피스</span><span>가상 동료 4명</span></div>
         <svg id="office" viewBox="0 0 880 790" xmlns="http://www.w3.org/2000/svg" aria-labelledby="office-title office-desc">
-          <title id="office-title">작은 동료들의 아이소메트릭 오피스</title><desc id="office-desc">식물과 소파가 있는 따뜻한 사무실입니다. 네 개의 책상을 Tab으로 탐색하고 Enter 또는 Space로 선택하세요.</desc>
+          <title id="office-title">작은 동료들의 아이소메트릭 오피스</title><desc id="office-desc">작은 직원들과 네 책상이 있는 사무실입니다. 네 개의 책상을 Tab으로 탐색하고 Enter 또는 Space로 선택하세요.</desc>
           <g id="room-art" aria-hidden="true"></g>
           <g id="desks"></g>
           <g id="movement-actor" aria-hidden="true"></g>
           <g id="room-front-art" aria-hidden="true"></g>
-          <text x="440" y="776" text-anchor="middle" class="scene-bottom">작은 책상, 서로 다른 이야기.</text>
+          <text x="440" y="776" text-anchor="middle" class="scene-bottom">ONE ROOM · FOUR DESKS</text>
         </svg>
         <p id="asset-message" role="status" aria-live="polite"></p>
         <button id="asset-retry" type="button" hidden>이미지 다시 불러오기</button>
