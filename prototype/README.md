@@ -112,8 +112,8 @@ regardless of Project owner, repository name, or branch. It never changes workfl
 assignment, policy, or backend state, and adds no actor travel between rooms. Selection
 survives while visible; a filtered-out selection falls back to the first visible record
 in input order, or clears all detail/Issue links when empty. Room/filter choices persist
-across skin changes and mode visits when valid. A newly imported file resets selection
-and filters. Filtering preserves each desk's room position and artwork slot.
+across skin changes and mode visits when valid. A newly selected file retains room, Project, selection and logical desk focus only
+while their stable identities still match; unavailable choices reset with an explanation. Filtering preserves each desk's room position and artwork slot.
 
 For manual multi-record input, copy **views-example.json** and use JSON 가져오기;
 the UI switches to **방·Project 보기 · 수동 가져오기**. `views-sample.js` defines the
@@ -162,7 +162,7 @@ delivery limitation; a native key acknowledgement alone proves no DOM event.
 
 ## Living office (Issue35)
 
-The default **시뮬레이션** skin uses original small human employees, a fixed 10×10 isometric room, four desks in two rows, and a compact scene-first HUD. Illustration and pixel remain selectable. This is a static layout preset, not a tile/pathfinding engine; there is no walking, economy, growth, furniture editor, storage, collector, or live refresh. All sample employees and observations are fictional.
+The default **시뮬레이션** skin uses original small human employees, a fixed 10×10 isometric room, four desks in two rows, and a compact scene-first HUD. Illustration and pixel remain selectable. This is a static layout preset, not a tile/pathfinding engine; there is no walking, economy, growth, furniture editor, storage, collector, or automatic live refresh. All sample employees and observations are fictional.
 
 The HUD counts only the displayed work in the chosen mode/room/Project. It labels the source and observation timestamp from that displayed snapshot or view envelope; DEMO has no invented observation clock. Selected work retains its own Issue, timestamp, execution, Workflow, association and liveness in the detail panel. On mobile the details sit below the room. Artwork owns no hit targets, keyboard focus, logical identity or status. Small status symbols remain visible; nameplates expand for selection/hover/focus.
 
@@ -183,3 +183,43 @@ An employee descriptor may additionally declare `expressions: {typing: [frame0, 
 Reduced motion and hidden documents stop active frame animations and cancel the presentation expiry callback. They resume only if user play intent remains enabled and evidence permits. A single bounded callback exists only while an eligible imported replay is active, to stop it when observation age crosses 24 hours; it observes no backend and changes no data. There is no global animation scheduler. The separate movement DEMO play/next/reset controls still advance only their explicit fictional scenario.
 
 Focused validation: `node prototype/expressions.test.cjs` exercises all expression mappings, conservative missing/conflicting/unknown/future/stale evidence, v1/v2/view/demo/movement, immutable observations, optional frame safety/anchors, and the actual DOM-local controller's pause/hidden/reduced/expiry/timer lifecycle. Existing snapshot, snapshot-v2, views, movement and skins checks still apply. Browser DOM handler/focus tests do not certify native keyboard event delivery.
+
+## Manual refresh file (Issue37 M1)
+
+**파일로 관찰 갱신** opens a fresh file picker on every click. Select a newly
+sanitized v1, v2 or view JSON file; **JSON 가져오기** remains available and uses
+the same guarded read handler. This reads the newly selected browser File, never
+claims to reread a previously selected disk file, and performs no server fetch,
+polling, collection, storage or backend writes. The Coordinator supplies private
+sanitized observations separately; actual input and native receipts stay outside
+tracked files. File names, paths and native read exceptions are never displayed.
+
+The displayed observation time, **마지막 성공 관찰** and **읽기 수락** history,
+and **파일 읽기 시도** time/outcome have separate meanings. Success is local format
+acceptance of an unverified manual claim, not authentication or current state.
+Cancellation keeps the currently displayed data and last-success history, fences
+pending completions, and records cancellation. Selecting a file clears previous
+data while reading; size/read/abort/parse/future-time failures leave an empty
+observation view. Late completions from superseded reads are ignored. Timestamps
+older than a previously accepted matching coverage or Work Item are rejected,
+even after a failed attempt. Equal observation times are permitted for corrected
+manual copies. Historical files remain inspectable with an explicit **오래된 관찰 ·
+현재 상태 아님** notice and observation age in the HUD; they cannot animate as current
+activity. Nothing silently falls back to an earlier candidate. Last-success history
+may therefore describe a prior accepted file while the current display is empty.
+
+Matching canonical room/Project URLs retain the filters. A selected/focused record
+retains identity only when record ID, Issue URL, repository URL and workspace alias
+all match and it remains visible. Missing or changed identities use the normal
+first-visible/empty fallback and explain the reset. Skin stays unchanged. Logical
+desk focus is restored when available without stealing focus from another control
+used during the read. Every selected import pauses expressions and movement; cancel
+alone does not alter playback intent. Everything remains in memory until reload.
+
+Run `node prototype/refresh.test.cjs` for actual production import/picker handlers
+with controlled FileReader ordering, cancel/error/abort/size/invalid transitions,
+history separation, timestamps, identity/filter/focus/skin retention, changed
+identities, and v1/v2/view inputs. Run the existing six focused suites and affected
+JavaScript syntax checks as well. Browser checks cover file/HTTP, desktop/390px,
+all skins, imported pause and retained views; DOM focus/handler checks do not prove
+native Orca input or cross-command state persistence.

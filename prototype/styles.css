@@ -21,3 +21,5 @@ body{background:#e9ece3}.topbar{height:48px;padding:0 20px;background:#f9f6ec;bo
 /* JS disables playback as well: hidden/reduced modes own no active animations. */
 @media(prefers-reduced-motion:reduce){[data-playing=true]>.expression-frame{animation:none;visibility:hidden}[data-playing=true]>.frame-0{visibility:visible}}
 [data-playing=true][data-frames="3"]>.expression-frame{animation-name:office-expression-three}@keyframes office-expression-three{0%{visibility:visible}33.333%,100%{visibility:hidden}}
+
+#import-history,#import-attempt{overflow-wrap:anywhere}#import-attempt{font-weight:700}#refresh-file{font:inherit;max-width:100%}

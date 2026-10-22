@@ -337,6 +337,8 @@
       : mode === 'movement' ? 'FICTIONAL · 세션 배정 DEMO' : 'FICTIONAL · 가상 직원 4명';
     byId('observation-time').textContent = isView ? `보기 관찰 ${viewData?.observed_at || '미확인'}`
       : mode === 'snapshot' ? `관찰 ${snapshot?.observed_at || '미확인'}` : '고정 DEMO · 실제 관찰 시각 없음';
+    const shownAt = isView ? viewData?.observed_at : mode === 'snapshot' ? snapshot?.observed_at : null;
+    if (shownAt && Date.now() - Date.parse(shownAt) > 86400000) byId('observation-time').textContent += ' · 오래된 관찰 · 현재 상태 아님';
     updateAssetMessage();
     if (focusedDesk) [...desks.querySelectorAll('.desk')].find(node => node.dataset.id === focusedDesk)?.focus();
     document.querySelector('.sample-notice p').textContent = isView ? (mode === 'rooms' ? '가상 2개 방 샘플 · 실제 저장소나 배정 데이터가 아닙니다.' : '수동 관찰과 Project 회원 관계는 미검증 주장입니다. 출처를 인증하지 않습니다.') : mode === 'movement' ? '스크립트 DEMO · 실제 Orca 세션이나 배정 관찰이 아닙니다.' : isSnapshot && snapshot?.version === 2 ? '연결과 출처는 가져온 관찰의 주장입니다. 인증된 backend 사실이나 Nexus 정책 입력이 아닙니다.' : isSnapshot ? '캐릭터는 작업의 삽화입니다. 실제 에이전트 배정·생존·승인·수락을 증명하지 않습니다.' : '이 동료는 데모 속 캐릭터예요. 실제 에이전트나 작업 기록이 아닙니다.';
@@ -443,41 +445,113 @@
     byId('import-message').textContent = mode === 'movement' ? '이동 DEMO · 가상 관찰 · 자동 실행 권한 없음' : mode === 'demo' ? '데모입니다. 파일은 이 브라우저에서만 읽습니다.' : mode === 'rooms' ? '가상 2개 방 샘플 · 실제 관찰 데이터가 아닙니다.' : mode === 'view-import' ? (importedView ? '미검증 수동 보기 · 자동 갱신 없음' : '수동 보기 JSON을 가져오세요.') : snapshot ? '관찰 사본 · 자동 갱신 없음' : '관찰 미확인 · JSON 파일을 가져오세요.';
     render();
   });
-  byId('snapshot-file').addEventListener('change', event => {
-    movement.pause();
-    expressionIntent = false;
+  // Manual local reads only. Generations fence every completion, including cancel.
+  let lastAccepted = null;
+  let importContext = null;
+  let logicalFocus = null;
+  const observationWatermarks = new Map();
+  desks.addEventListener('focusin', event => {
+    const desk = event.target.closest?.('.desk');
+    if (desk) logicalFocus = desk.dataset.id;
+  });
+  function importIdentity(entry) {
+    if (!entry?.work) return null;
+    const value = entry.work.observation || snapshot;
+    return JSON.stringify([entry.work.id, value?.work.url,
+      value?.office?.repository?.url || null, value?.office?.workspace?.alias || null]);
+  }
+  function captureImportContext() {
+    if (!snapshot && !importedView) return importContext;
+    return {mode, roomURL, projectURL, selected: importIdentity(scene.find(entry => entry.work?.id === selectedId)),
+      focus: importIdentity(scene.find(entry => entry.work?.id === logicalFocus))};
+  }
+  let attemptStartedAt = null;
+  function attempt(outcome, started = false) {
+    if (started || !attemptStartedAt) attemptStartedAt = new Date().toISOString();
+    byId('import-attempt').textContent = `파일 읽기 시도 ${attemptStartedAt} · ${outcome}`;
+  }
+  function cancelImport() {
+    ++importGeneration;
+    attempt('취소 · 표시와 마지막 성공 관찰 유지', true);
+  }
+  function readObservation(event) {
+    const file = event.target.files?.[0];
+    event.target.value = ''; // A fresh choice, including the same path, must read a new File.
+    if (!file) { cancelImport(); return; }
     const generation = ++importGeneration;
-    const previousSelection = scene.find(entry => entry.work?.id === selectedId)?.workId;
-    const previousFocus = scene.find(entry => entry.work?.id === document.activeElement?.dataset.id)?.workId;
-    const file = event.target.files[0];
-    snapshot = null; importedView = null; roomURL = ''; projectURL = ''; selectedId = null;
+    importContext = captureImportContext();
+    const previous = importContext;
+    movement.pause(); expressionIntent = false;
+    snapshot = null; importedView = null; selectedId = null; roomURL = ''; projectURL = '';
     mode = 'snapshot'; byId('display-mode').value = mode;
     render();
-    function fail(message) { byId('import-message').textContent = '가져오기 실패 · 관찰 미확인: ' + message; }
-    if (!file) { fail('파일을 선택하세요.'); return; }
-    if (file.size > window.officeSnapshot.VIEW_MAX_BYTES) { fail('보기 최대 64 KiB, 단일 기록 최대 16 KiB입니다.'); event.target.value = ''; return; }
-    byId('import-message').textContent = '읽는 중 · 관찰 미확인';
+    attempt('읽는 중 · 이전 표시 지움', true);
+    byId('import-message').textContent = '읽는 중 · 관찰 미확인 · 서버 수집 없음';
+    function fail(message) {
+      if (generation !== importGeneration) return;
+      attempt('실패 · 표시 데이터 없음');
+      // Never show file names, paths, FileReader errors or untrusted exception text.
+      byId('import-message').textContent = `파일 갱신 실패 · 이전 표시 지움 · ${message}`;
+    }
+    if (file.size > window.officeSnapshot.VIEW_MAX_BYTES) { fail('보기 최대 64 KiB, 단일 기록 최대 16 KiB입니다.'); return; }
     const reader = new FileReader();
     reader.onload = () => {
       if (generation !== importGeneration) return;
-      try {
-        const input = window.officeSnapshot.parseView(reader.result);
-        if (input.kind === 'view') { importedView = input; mode = 'view-import'; }
-        else { snapshot = input.snapshot; mode = 'snapshot'; }
-        byId('display-mode').value = mode;
-        byId('import-message').textContent = '미검증 수동 사본을 읽었습니다 · 자동 갱신 없음';
+      let input;
+      try { input = window.officeSnapshot.parseView(reader.result); }
+      catch (_) { fail('허용된 JSON 관찰 형식과 비공개 정보 제거 여부를 확인하세요.'); return; }
+      const observedAt = input.kind === 'view' ? input.observed_at : input.snapshot.observed_at;
+      const records = input.kind === 'view' ? input.records.map(record => record.observation) : [input.snapshot];
+      const coverage = JSON.stringify(records.map(value => value.work.url).sort());
+      const stamps = [[`${input.kind}:${coverage}`, observedAt],
+        ...records.map(value => [value.work.url, value.observed_at])];
+      if (stamps.some(([key, stamp]) => Date.parse(stamp) < (observationWatermarks.get(key) ?? -Infinity))) {
+        fail('이전에 읽은 관찰보다 오래된 파일입니다.'); return;
       }
-      catch (error) { fail(error.message); }
-      if (snapshot?.work.url === previousSelection) selectedId = 'work';
-      else if (importedView) selectedId = importedView.records.find(record => record.observation.work.url === previousSelection)?.id || null;
+      const age = Date.now() - Date.parse(observedAt);
+      if (age < 0) { fail('미래 시각의 관찰입니다.'); return; }
+      stamps.forEach(([key, stamp]) => observationWatermarks.set(key, Date.parse(stamp)));
+      if (input.kind === 'view') { importedView = input; mode = 'view-import'; }
+      else { snapshot = input.snapshot; mode = 'snapshot'; }
+      let reset = false;
+      if (previous?.mode === mode) {
+        roomURL = previous.roomURL; projectURL = previous.projectURL;
+        if (importedView) {
+          if (!importedView.records.some(record => record.observation.office.repository.url === roomURL)) { roomURL = ''; reset = true; }
+          if (projectURL && !importedView.projects.some(project => project.url === projectURL)) { projectURL = ''; reset = true; }
+        }
+      } else if (previous) reset = true;
+      byId('display-mode').value = mode;
       render();
-      const retainedFocus = scene.find(entry => entry.workId === previousFocus);
-      if (retainedFocus) [...desks.querySelectorAll('.desk')].find(node => node.dataset.id === retainedFocus.work?.id)?.focus();
+      const retained = previous?.selected && scene.find(entry => importIdentity(entry) === previous.selected);
+      if (retained) select(retained.work.id);
+      else if (previous?.selected) reset = true;
+      const focused = previous?.focus && scene.find(entry => importIdentity(entry) === previous.focus);
+      const active = document.activeElement;
+      if (focused && (active === document.body || active?.dataset?.id || ['refresh-file', 'refresh-input', 'snapshot-file'].includes(active?.id))) {
+        [...desks.querySelectorAll('.desk')].find(node => node.dataset.id === focused.work.id)?.focus();
+      }
+      if (previous?.focus && !focused) reset = true;
+      lastAccepted = {observedAt, importedAt: new Date().toISOString()};
+      byId('import-history').textContent = `마지막 성공 관찰 ${lastAccepted.observedAt} · 읽기 수락 ${lastAccepted.importedAt} · 미검증 수동 사본`;
+      attempt('성공 · 표정 정지');
+      byId('import-message').textContent = `${age > 86400000 ? '오래된 관찰 · 24시간 초과 · 현재 상태 아님' : '관찰 사본 · 현재 상태 증명 아님'} · ${reset ? '신원/보기 변경으로 선택·필터·포커스 일부 초기화' : '일치하는 방·Project·선택·포커스 유지'} · 자동 수집 없음`;
+      importContext = null;
     };
-    reader.onerror = () => { if (generation === importGeneration) fail('파일을 읽을 수 없습니다.'); };
-    reader.readAsText(file);
-    event.target.value = '';
+    reader.onerror = () => fail('파일을 읽을 수 없습니다. 새 파일을 선택하세요.');
+    reader.onabort = () => fail('파일 읽기가 중단되었습니다.');
+    try { reader.readAsText(file); }
+    catch (_) { fail('파일을 읽을 수 없습니다. 새 파일을 선택하세요.'); }
+  }
+  byId('refresh-file').addEventListener('click', () => {
+    const picker = byId('refresh-input');
+    ++importGeneration;
+    picker.value = ''; picker.click();
   });
+  for (const id of ['snapshot-file', 'refresh-input']) {
+    byId(id).addEventListener('change', readObservation);
+    byId(id).addEventListener('cancel', cancelImport);
+  }
   byId('movement-play').addEventListener('click', () => movement.state().playing ? movement.pause() : movement.play());
   byId('movement-next').addEventListener('click', () => movement.step());
   byId('movement-reset').addEventListener('click', () => movement.reset());

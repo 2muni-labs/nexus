@@ -24,7 +24,11 @@
       <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="rooms">방·Project 보기 · 가상 2개 방</option><option value="view-import">방·Project 보기 · 수동 가져오기</option><option value="movement">이동 DEMO · 세션 배정</option><option value="snapshot">관찰 스냅샷 · 단일 기록</option></select>
       <label for="skin-select">오피스 스킨</label><select id="skin-select"><option value="simulation">시뮬레이션 · 기본</option><option value="illustration">일러스트</option><option value="pixel">픽셀 · 방 전체</option></select>
       <label class="file-label" for="snapshot-file">JSON 가져오기 <input id="snapshot-file" type="file" accept=".json,application/json"></label>
+      <button id="refresh-file" type="button">파일로 관찰 갱신</button>
+      <input id="refresh-input" type="file" accept=".json,application/json" hidden>
       <button id="expression-play" type="button" aria-pressed="true">표정 일시정지</button><span id="expression-status" role="status"></span>
+      <p id="import-history"></p>
+      <p id="import-attempt" role="status"></p>
       <p id="import-message" role="status">데모입니다. 파일은 이 브라우저에서만 읽습니다.</p>
     </section>
     <section id="view-controls" class="import-bar" hidden aria-label="저장소 방 및 Project 보기">
