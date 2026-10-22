@@ -36,7 +36,9 @@
         hit: {x: -68, y: -76, width: 136, height: 146},
         ring: 'M-70 0L0-35 70 0 0 36Z', nameplate: 'translate(-56 -105)',
         bubble: 'translate(-65 -11)', movementSlots: [2, 1],
-        entrance: {x: 186, y: 518}, beside: {x: 208, y: 460}}
+        entrance: {x: 186, y: 518}, beside: {x: 208, y: 460},
+        movementAnchors: {'통로 A': {x: 200, y: 450}, '통로 B': {x: 440, y: 510},
+          '우측 통로': {x: 700, y: 470}, '커피': {x: 710, y: 414}}}
     },
     illustration: {
       room: room('room-illustration.svg'), roomFront: room('room-front-illustration.svg'),

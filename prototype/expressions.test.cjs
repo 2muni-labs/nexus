@@ -41,7 +41,7 @@ assert.equal(select({mode:'snapshot',snapshot:fresh,association:snapshot.associa
 assert.equal(JSON.stringify(fresh),frozen, 'selection never mutates data');
 for (let i=0;i<movement.count;i++) {
  const state=select({mode:'movement',movement:movement.frame(i)});
- assert.equal(state.eligible,[2,5,6,11].includes(i));
+ assert.equal(state.eligible,[2,4,5,6,11].includes(i));
 }
 const context={window:{}};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'sample-data.js'),'utf8'),context);
 assert.deepEqual(context.window.officeSamples.map(sample=>select({mode:'demo',sample}).kind).join(','),'typing,waiting,review,unknown');
