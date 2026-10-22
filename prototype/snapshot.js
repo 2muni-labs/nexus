@@ -20,7 +20,7 @@
     if (new TextEncoder().encode(raw).length > MAX_BYTES) throw Error('파일은 16 KiB 이하여야 합니다.');
     let value;
     try { value = JSON.parse(raw); } catch (_) { throw Error('JSON을 읽을 수 없습니다.'); }
-    object(value, value.version === 2 ? ['version', 'observed_at', 'work', 'execution', 'office'] : ['version', 'observed_at', 'work', 'execution']);
+    object(value, value.version === 2 ? ['version', 'observed_at', 'work', 'execution', 'office', 'evidence'] : ['version', 'observed_at', 'work', 'execution']);
     if (![1, 2].includes(value.version)) throw Error('version: 1 또는 2 형식만 지원합니다.');
     if (value.version === 2) { uniqueKeys(raw); privateBoundary(value); }
     const observed = text(value.observed_at, 30, false);
@@ -35,7 +35,10 @@
       result = {status: status(value.execution.status, execution), source: text(value.execution.source, 240, true)};
     }
     const parsed = {version: value.version, observed_at: observed, work: {url, title: text(value.work.title, 160, false), workflow_status: status(value.work.workflow_status, workflow)}, execution: result};
-    if (value.version === 2) parsed.office = office(value.office);
+    if (value.version === 2) {
+      parsed.office = office(value.office);
+      if (Object.hasOwn(value, 'evidence')) parsed.evidence = evidence(value.evidence, url.split('/issues/')[0]);
+    }
     return parsed;
   }
   // JSON.parse keeps only the last repeated key; reject ambiguous v2 input first.
@@ -109,6 +112,44 @@
       }
     }
     return out;
+  }
+  // Optional display claims only. Null facts remain incomplete, never approved evidence.
+  function evidence(value, repository) {
+    if (value === null) return null;
+    exact(value, ['candidate', 'pr', 'ci', 'review', 'validation'], ['candidate', 'pr', 'ci', 'review', 'validation']);
+    const states = {pr: ['draft', 'ready', 'unknown'], ci: ['success', 'failure', 'pending', 'cancelled', 'unknown'],
+      review: ['pending', 'submitted', 'approved', 'changes_requested', 'commented', 'unknown'], validation: ['PASS', 'FAIL', 'NEEDS-WORK', 'unknown']};
+    function description(value, max) {
+      const result = text(value, max, true);
+      if (result && /[a-z][a-z0-9+.-]*:\/\//i.test(result)) throw Error('주소는 별도 url 필드에 넣으세요.');
+      return result;
+    }
+    function observation(part, kind) {
+      if (part == null) return null;
+      const extra = kind === 'candidate' ? [] : kind === 'ci' ? ['state', 'label'] : kind === 'validation' ? ['state', 'independent'] : ['state'];
+      exact(part, ['revision', 'source', 'observed_at', 'url', ...extra]);
+      if (part.revision !== null && (typeof part.revision !== 'string' || !/^[a-f0-9]{40}$/.test(part.revision))) throw Error('소문자 SHA40 revision이 필요합니다.');
+      const out = {revision: part.revision, source: description(part.source, 160), observed_at: part.observed_at === null ? null : time(part.observed_at), url: part.url};
+      if (part.url !== null) {
+        const route = typeof part.url === 'string' && part.url.startsWith(repository + '/') ? part.url.slice(repository.length) : '';
+        const allowed = kind === 'candidate' ? /^\/commit\/[a-f0-9]{40}$/ : kind === 'ci' ? /^\/(?:actions\/runs\/[1-9]\d*(?:\/job\/[1-9]\d*)?|runs\/[1-9]\d*)$/ : /^\/pull\/[1-9]\d*$/;
+        if (typeof part.url !== 'string' || part.url.length > 300 || !allowed.test(route) || new URL(part.url).href !== part.url) throw Error('같은 저장소의 정규 GitHub 근거 주소가 필요합니다.');
+        if (kind === 'candidate' && part.revision && route !== '/commit/' + part.revision) throw Error('candidate commit 주소와 revision을 확인하세요.');
+      }
+      if (kind !== 'candidate') {
+        if (part.state !== null && !states[kind].includes(part.state)) throw Error('근거 상태를 확인하세요.');
+        out.state = part.state;
+      }
+      if (kind === 'ci') out.label = description(part.label, 80);
+      if (kind === 'validation') {
+        if (part.independent !== null && typeof part.independent !== 'boolean') throw Error('독립 검증 관찰은 boolean 또는 null입니다.');
+        out.independent = part.independent;
+      }
+      return out;
+    }
+    if (value.ci != null && (!Array.isArray(value.ci) || value.ci.length > 8 || value.ci.some(part => part === null))) throw Error('CI 관찰은 최대 8개입니다.');
+    return {candidate: observation(value.candidate, 'candidate'), pr: observation(value.pr, 'pr'),
+      ci: value.ci == null ? [] : value.ci.map(part => observation(part, 'ci')), review: observation(value.review, 'review'), validation: observation(value.validation, 'validation')};
   }
   function association(snapshot, now = Date.now()) {
     const bundle = snapshot.office;

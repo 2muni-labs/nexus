@@ -15,6 +15,16 @@
       version: 2, observed_at,
       work: {url: work_url, title: 'Fiction · ' + title, workflow_status: ['Review', 'Ready', 'In Progress', 'Blocked'][index]},
       execution: {status: ['succeeded', 'unknown', 'running', 'awaiting_input'][index], source: 'Fictional manual result example'},
+      evidence: index === 3 ? null : (() => {
+        const revision = 'a'.repeat(40), older = 'b'.repeat(40);
+        const claim = (state, url, extra = {}) => ({revision, source: 'Fictional evidence example only', observed_at, url, state, ...extra});
+        return {candidate: {revision, source: 'Fictional candidate example only', observed_at, url: url + '/commit/' + revision},
+          pr: claim('ready', url + '/pull/' + n),
+          ci: [claim('success', url + '/actions/runs/' + n, {label: 'Fiction CI'}),
+            ...(index === 1 ? [claim('failure', url + '/actions/runs/99', {label: 'Fiction CI'})] : [])],
+          review: {...claim(index === 1 ? 'submitted' : 'pending', url + '/pull/' + n), ...(index === 2 ? {revision: older} : {})},
+          validation: index === 1 ? claim('NEEDS-WORK', url + '/pull/' + n, {independent: true}) : null};
+      })(),
       office: {
         source: 'Fictional manual shape example only', observed_at, coverage: 'single-record',
         repository: {alias: repo, label: 'Fiction · ' + (index < 2 ? 'Paper' : 'Garden') + ' room', url},
