@@ -12,7 +12,7 @@
   const byId = id => document.getElementById(id);
   const svgNS = 'http://www.w3.org/2000/svg';
   const colors = { mint: '#b6d6bc', peach: '#edc3ab', lavender: '#cab9e2', gray: '#c8c6d0' };
-  let skin = 'illustration';
+  let skin = 'simulation';
   let selectedId = null;
   let scene = [];
   function svg(tag, attributes = {}) {
@@ -65,10 +65,59 @@
     byId('asset-message').textContent = failed ? `! 이미지 오류 ${failed}개 · 등록 또는 파일을 확인하고 다시 불러오거나 스킨을 바꾸세요. 작업 선택과 상세 정보는 계속 사용할 수 있습니다.` : '';
     byId('asset-retry').hidden = !failed;
   }
+  let expressionIntent = true;
+  let expressionTimer = null;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  function expressionState(entry, actor = false) {
+    if (mode === 'movement' && !actor) return {kind: 'static', eligible: false};
+    return window.officeExpressions.select({mode, sample: entry?.work,
+      snapshot: entry?.work?.observation || snapshot, movement: movement.state(),
+      viewObservedAt: mode === 'rooms' ? roomSample.observed_at : mode === 'view-import' ? importedView?.observed_at : null,
+      association: window.officeSnapshot.association});
+  }
+  function paintCharacter(holder, registration, state) {
+    holder.dataset.expression = state.kind;
+    const frames = registration?.expressions?.[state.kind];
+    // Absence is compatible static art; declared-but-invalid frames are explicit errors.
+    if (frames === undefined) { asset(holder, registration); return; }
+    holder.replaceChildren();
+    if (!Array.isArray(frames) || frames.length < 2 || frames.length > 3) { asset(holder, null); return; }
+    holder.dataset.frames = frames.length;
+    frames.forEach((frame, index) => {
+      const slot = svg('g', {class: `expression-frame frame-${index}`});
+      slot.style.setProperty('--frames', frames.length);
+      slot.style.setProperty('--frame', index);
+      holder.append(slot); asset(slot, frame);
+    });
+  }
+  function refreshExpressions() {
+    clearTimeout(expressionTimer); expressionTimer = null;
+    let expiry = Infinity, active = 0;
+    document.querySelectorAll('#desks [data-art="character"], #movement-actor [data-actor-art]').forEach(holder => {
+      const actor = holder.hasAttribute('data-actor-art');
+      const entry = actor ? null : scene.find(item => item.id === holder.dataset.desk);
+      if (!actor && (mode === 'movement' || entry?.showCharacter === false)) return;
+      const state = expressionState(entry, actor);
+      const registration = window.officeSkins[skin]?.characters?.[actor ? 'leaf-mint' : entry?.characterKey];
+      if (holder.dataset.expression !== state.kind) paintCharacter(holder, registration, state);
+      const playing = window.officeExpressions.allowed(expressionIntent, document.hidden, reducedMotion.matches, state);
+      holder.dataset.playing = String(playing);
+      if (playing && holder.querySelector('.expression-frame')) active++;
+      if (playing && state.expiresAt) expiry = Math.min(expiry, state.expiresAt);
+      const signal = holder.parentNode.querySelector('.compact-signal');
+      if (signal) signal.textContent = state.symbol || '·';
+    });
+    byId('expression-play').textContent = expressionIntent ? '표정 일시정지' : '표정 재생';
+    byId('expression-play').setAttribute('aria-pressed', String(expressionIntent));
+    byId('expression-status').textContent = document.hidden ? '숨김 · 표정 정지' : reducedMotion.matches ? '동작 줄이기 · 표정 정지'
+      : !expressionIntent ? '표정 정지 · 시나리오와 별개' : active ? `${active}개 표정 재현 · 실시간 아님` : '정적 표시 · 재현 근거/프레임 없음';
+    // Only an active imported visual replay owns one bounded expiry callback.
+    if (Number.isFinite(expiry)) expressionTimer = setTimeout(refreshExpressions, Math.max(1, Math.min(30000, expiry - Date.now())));
+  }
   function paintPortrait(sample) {
     const portrait = byId('portrait');
     portrait.style.background = 'var(--paper)';
-    const frame = svg('svg', {viewBox: '-50 -70 100 125'});
+    const frame = svg('svg', {viewBox: window.officeSkins[skin]?.layout?.portraitViewBox || '-50 -70 100 125'});
     const holder = svg('g');
     frame.append(holder); portrait.replaceChildren(frame);
     const desk = scene.find(entry => entry.work?.id === sample.id);
@@ -81,13 +130,20 @@
     actor.style.display = mode === 'movement' ? '' : 'none';
     if (mode !== 'movement') { actor.replaceChildren(); return; }
     const fact = movement.state();
-    const point = window.officeMovement.position(fact);
+    const layout = window.officeSkins[skin]?.layout;
+    let point = window.officeMovement.position(fact);
+    if (layout) {
+      const index = fact.location === '책상 A' ? 0 : fact.location === '책상 B' ? 1 : -1;
+      const slot = index < 0 ? null : layout.positions[layout.movementSlots[index]];
+      point = slot ? {x: slot.x + layout.characterOffset.x, y: slot.y + layout.characterOffset.y}
+        : fact.location === '책상 A 옆' ? layout.beside : layout.entrance;
+    }
     actor.style.transform = `translate(${point.x}px, ${point.y}px)`;
     actor.dataset.session = fact.session;
     actor.dataset.location = fact.location;
-    const art = svg('g');
-    asset(art, window.officeSkins[skin]?.characters?.['leaf-mint']);
-    const label = svg('text', {x: 0, y: -85, 'text-anchor': 'middle', class: 'actor-label'});
+    const art = svg('g', {'data-actor-art': 'true'});
+    paintCharacter(art, window.officeSkins[skin]?.characters?.['leaf-mint'], expressionState(null, true));
+    const label = svg('text', {x: 0, y: skin === 'simulation' ? -78 : -85, 'text-anchor': 'middle', class: 'actor-label'});
     label.textContent = `${fact.session} ${fact.liveness === 'unknown' ? '?' : fact.liveness === 'exited' ? '· 종료' : ''}`;
     actor.replaceChildren(art, label);
     byId('movement-stage').textContent = `${fact.index + 1}/${window.officeMovement.count} · ${fact.label} · ${fact.playing ? '재생 중' : '정지'} — ${fact.reason}`;
@@ -97,17 +153,38 @@
   }
   function paintSkin() {
     const manifest = window.officeSkins[skin];
+    byId('office').dataset.skin = skin;
+    applyLayout();
     asset(byId('room-art'), manifest?.room);
     asset(byId('room-front-art'), manifest?.roomFront);
     desks.querySelectorAll('[data-art]').forEach(holder => {
       const desk = scene.find(entry => entry.id === holder.dataset.desk);
       if (holder.dataset.art === 'character' && desk.showCharacter === false) { holder.replaceChildren(); return; }
-      asset(holder, holder.dataset.art === 'desk' ? manifest?.desk : manifest?.characters?.[desk.characterKey]);
+      if (holder.dataset.art === 'desk') asset(holder, manifest?.desk);
+      else paintCharacter(holder, manifest?.characters?.[desk.characterKey], expressionState(desk));
     });
     paintMovement();
+    refreshExpressions();
     const selected = samples.find(sample => sample.id === selectedId);
     if (selected) paintPortrait(selected);
     updateAssetMessage();
+  }
+  function applyLayout() {
+    const layout = window.officeSkins[skin]?.layout;
+    byId('office').setAttribute('viewBox', layout ? '0 40 880 650' : '0 0 880 790');
+    [...desks.children].forEach((group, index) => {
+      const entry = scene[index];
+      const slot = mode === 'movement' ? (layout?.movementSlots[index] ?? index) : (entry.slot ?? index);
+      const point = layout?.positions[slot] || entry;
+      group.setAttribute('transform', `translate(${point.x} ${point.y})`);
+      const offset = layout?.characterOffset || window.officeScene.characterOffset;
+      group.querySelector('[data-art="character"]')?.setAttribute('transform', `translate(${offset.x} ${offset.y})`);
+      group.querySelector('.selection-ring')?.setAttribute('d', layout?.ring || 'M-63 49L35 0 172 69 73 121Z');
+      const hit = group.querySelector('.desk-hit-area');
+      if (hit) Object.entries(layout?.hit || {x: 12, y: -91, width: 100, height: 125}).forEach(([k,v]) => hit.setAttribute(k,v));
+      group.querySelector('.nameplate-group')?.setAttribute('transform', layout?.nameplate || 'translate(-15 123)');
+      group.querySelector('.bubble-group')?.setAttribute('transform', layout?.bubble || '');
+    });
   }
   const desks = document.getElementById('desks');
   function render() {
@@ -149,7 +226,7 @@
         scene = viewSelection.records.map(record => {
           const index = viewSelection.owned.indexOf(record);
           const entry = window.officeScene.view('snapshot', record.observation, demo)[0];
-          return {...entry, id: record.id, x: positions[index].x, y: positions[index].y,
+          return {...entry, slot: index, id: record.id, x: positions[index].x, y: positions[index].y,
             characterKey: positions[index].characterKey,
             work: {...entry.work, id: record.id, observation: record.observation, memberships: record.projects}};
         });
@@ -213,18 +290,20 @@
       group.append(svg('path', {class: 'selection-ring', d: 'M-63 49L35 0 172 69 73 121Z'}),
         svg('rect', {class: 'desk-hit-area', x: 12, y: -91, width: 100, height: 125, fill: 'transparent'}), characterArt, deskArt);
       if (sample.id !== 'coco') {
-        group.append(svg('path', {class: 'speech', d: 'M23-120H110Q119-120 119-111V-96Q119-87 110-87H76L69-78 65-87H23Q14-87 14-96V-111Q14-120 23-120Z'}));
+        const speech = svg('g', {class: 'bubble-group'});
+        speech.append(svg('path', {class: 'speech', d: 'M23-120H110Q119-120 119-111V-96Q119-87 110-87H76L69-78 65-87H23Q14-87 14-96V-111Q14-120 23-120Z'}));
         const bubble = svg('text', {class: 'speech-text', x: 66, y: -100, 'text-anchor': 'middle'});
-        bubble.textContent = sample.bubble; group.append(bubble);
+        bubble.textContent = sample.bubble; speech.append(bubble); group.append(speech);
       }
-      const nameplate = svg('g', {transform: 'translate(-15 123)'});
+      const nameplate = svg('g', {class: 'nameplate-group', transform: 'translate(-15 123)'});
       nameplate.append(svg('rect', {class: 'nameplate', width: 158, height: 38, rx: 12}), svg('circle', {cx: 18, cy: 19, r: 10, fill: colors[sample.tone]}));
       [[sample.icon, 18, 23, 'desk-label'], [sample.name, 35, 17, 'desk-label'], [sample.status, 35, 30, 'desk-state']].forEach(([value, x, y, className], index) => {
         const text = svg('text', {x, y, class: className});
         if (!index) text.setAttribute('text-anchor', 'middle');
         text.textContent = index === 1 && value.length > 18 ? value.slice(0, 18) + '…' : value; nameplate.append(text);
       });
-      group.append(nameplate);
+      const signal = svg('text', {class: 'compact-signal', x: 55, y: -50, 'text-anchor': 'middle'});
+      signal.textContent = sample.icon; group.append(signal, nameplate);
       group.addEventListener('click', () => select(sample.id));
       group.addEventListener('keydown', event => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -252,6 +331,12 @@
       byId('detail-status').className = 'status-pill gray';
       byId('snapshot-fields').replaceChildren();
     }
+    byId('work-count').textContent = `${samples.length} WORK · ${isView ? '선택한 방·Project' : '표시한 작업'}`;
+    byId('data-source').textContent = isView ? `${mode === 'rooms' ? 'FICTIONAL · ' : '수동 · '}${viewData?.source || '가져온 보기 없음'}`
+      : mode === 'snapshot' ? `수동 · ${snapshot?.execution?.source || '출처 미확인'} · 자동 갱신 없음`
+      : mode === 'movement' ? 'FICTIONAL · 세션 배정 DEMO' : 'FICTIONAL · 가상 직원 4명';
+    byId('observation-time').textContent = isView ? `보기 관찰 ${viewData?.observed_at || '미확인'}`
+      : mode === 'snapshot' ? `관찰 ${snapshot?.observed_at || '미확인'}` : '고정 DEMO · 실제 관찰 시각 없음';
     updateAssetMessage();
     if (focusedDesk) [...desks.querySelectorAll('.desk')].find(node => node.dataset.id === focusedDesk)?.focus();
     document.querySelector('.sample-notice p').textContent = isView ? (mode === 'rooms' ? '가상 2개 방 샘플 · 실제 저장소나 배정 데이터가 아닙니다.' : '수동 관찰과 Project 회원 관계는 미검증 주장입니다. 출처를 인증하지 않습니다.') : mode === 'movement' ? '스크립트 DEMO · 실제 Orca 세션이나 배정 관찰이 아닙니다.' : isSnapshot && snapshot?.version === 2 ? '연결과 출처는 가져온 관찰의 주장입니다. 인증된 backend 사실이나 Nexus 정책 입력이 아닙니다.' : isSnapshot ? '캐릭터는 작업의 삽화입니다. 실제 에이전트 배정·생존·승인·수락을 증명하지 않습니다.' : '이 동료는 데모 속 캐릭터예요. 실제 에이전트나 작업 기록이 아닙니다.';
@@ -339,6 +424,9 @@
     }
     paintPortrait(sample);
   }
+  byId('expression-play').addEventListener('click', () => { expressionIntent = !expressionIntent; refreshExpressions(); });
+  document.addEventListener('visibilitychange', refreshExpressions);
+  reducedMotion.addEventListener('change', refreshExpressions);
   byId('asset-retry').addEventListener('click', paintSkin);
   byId('skin-select').addEventListener('change', event => {
     movement.pause();
@@ -351,12 +439,16 @@
   byId('display-mode').addEventListener('change', event => {
     movement.pause();
     mode = event.target.value;
+    expressionIntent = false;
     byId('import-message').textContent = mode === 'movement' ? '이동 DEMO · 가상 관찰 · 자동 실행 권한 없음' : mode === 'demo' ? '데모입니다. 파일은 이 브라우저에서만 읽습니다.' : mode === 'rooms' ? '가상 2개 방 샘플 · 실제 관찰 데이터가 아닙니다.' : mode === 'view-import' ? (importedView ? '미검증 수동 보기 · 자동 갱신 없음' : '수동 보기 JSON을 가져오세요.') : snapshot ? '관찰 사본 · 자동 갱신 없음' : '관찰 미확인 · JSON 파일을 가져오세요.';
     render();
   });
   byId('snapshot-file').addEventListener('change', event => {
     movement.pause();
+    expressionIntent = false;
     const generation = ++importGeneration;
+    const previousSelection = scene.find(entry => entry.work?.id === selectedId)?.workId;
+    const previousFocus = scene.find(entry => entry.work?.id === document.activeElement?.dataset.id)?.workId;
     const file = event.target.files[0];
     snapshot = null; importedView = null; roomURL = ''; projectURL = ''; selectedId = null;
     mode = 'snapshot'; byId('display-mode').value = mode;
@@ -376,7 +468,11 @@
         byId('import-message').textContent = '미검증 수동 사본을 읽었습니다 · 자동 갱신 없음';
       }
       catch (error) { fail(error.message); }
+      if (snapshot?.work.url === previousSelection) selectedId = 'work';
+      else if (importedView) selectedId = importedView.records.find(record => record.observation.work.url === previousSelection)?.id || null;
       render();
+      const retainedFocus = scene.find(entry => entry.workId === previousFocus);
+      if (retainedFocus) [...desks.querySelectorAll('.desk')].find(node => node.dataset.id === retainedFocus.work?.id)?.focus();
     };
     reader.onerror = () => { if (generation === importGeneration) fail('파일을 읽을 수 없습니다.'); };
     reader.readAsText(file);
