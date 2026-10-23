@@ -450,6 +450,7 @@
   byId('room-select').addEventListener('change', event => { roomURL = event.target.value; render(); });
   byId('project-select').addEventListener('change', event => { projectURL = event.target.value; render(); });
   byId('display-mode').addEventListener('change', event => {
+    ++importGeneration; // Explicit mode choices supersede pending local reads.
     movement.pause();
     mode = event.target.value;
     expressionIntent = false;
