@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="styles.css">
   <script defer src="sample-data.js"></script>
   <script defer src="snapshot.js"></script>
+  <script defer src="views.js"></script>
+  <script defer src="views-sample.js"></script>
   <script defer src="scene.js"></script>
   <script defer src="skins.js"></script>
   <script defer src="movement.js"></script>
@@ -18,10 +20,16 @@
   <main>
     <section class="intro" aria-labelledby="page-title"><div><p class="eyebrow">A LITTLE SPACE FOR BIG IDEAS</p><h1 id="page-title">오늘도, 각자의 책상에서<span aria-hidden="true"> ✿</span></h1><p class="subtitle">작은 동료들의 하루를 둘러보세요. 책상을 누르면 이야기가 보여요.</p></div><span class="intro-note">상상 속 팀의<br><strong>아늑한 작업 공간</strong></span></section>
     <section class="import-bar" aria-label="표시 데이터 선택">
-      <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="movement">이동 DEMO · 세션 배정</option><option value="snapshot">관찰 스냅샷 · 단일 기록</option></select>
+      <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="rooms">방·Project 보기 · 가상 2개 방</option><option value="view-import">방·Project 보기 · 수동 가져오기</option><option value="movement">이동 DEMO · 세션 배정</option><option value="snapshot">관찰 스냅샷 · 단일 기록</option></select>
       <label for="skin-select">캐릭터·책상 스킨</label><select id="skin-select"><option value="illustration">일러스트 · 기본</option><option value="pixel">픽셀 시험 · 캐릭터·책상만</option></select>
       <label class="file-label" for="snapshot-file">JSON 가져오기 <input id="snapshot-file" type="file" accept=".json,application/json"></label>
       <p id="import-message" role="status">데모입니다. 파일은 이 브라우저에서만 읽습니다.</p>
+    </section>
+    <section id="view-controls" class="import-bar" hidden aria-label="저장소 방 및 Project 보기">
+      <label for="room-select">저장소 방</label><select id="room-select"></select>
+      <label for="project-select">GitHub Project</label><select id="project-select"></select>
+      <p id="view-summary" role="status" aria-live="polite"></p>
+      <p>저장소가 방과 책상을 소유합니다. Project는 명시한 회원 관계의 보기 필터입니다. 배정·상태 변경이나 방 간 캐릭터 이동이 없습니다.</p>
     </section>
     <section id="movement-controls" class="movement-controls" hidden aria-label="이동 DEMO 제어">
       <strong>이동 DEMO · 가상 관찰</strong>
