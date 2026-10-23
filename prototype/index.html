@@ -15,6 +15,7 @@
   <script defer src="skins.js"></script>
   <script defer src="movement.js"></script>
   <script defer src="expressions.js"></script>
+  <script defer src="campus.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
@@ -22,7 +23,7 @@
   <main>
     <h1 id="page-title" class="office-heading">LITTLE OFFICE <span>작은 팀의 작업실</span></h1>
     <section class="import-bar" aria-label="표시 데이터 선택">
-      <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="rooms">방·Project 보기 · 가상 2개 방</option><option value="view-import">방·Project 보기 · 수동 가져오기</option><option value="movement">이동 DEMO · 세션 배정</option><option value="snapshot">관찰 스냅샷 · 단일 기록</option></select>
+      <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="campus">건물 데모 · 두 작업실과 라운지</option><option value="rooms">방·Project 보기 · 가상 2개 방</option><option value="view-import">방·Project 보기 · 수동 가져오기</option><option value="movement">이동 DEMO · 세션 배정</option><option value="snapshot">관찰 스냅샷 · 단일 기록</option></select>
       <label for="skin-select">오피스 스킨</label><select id="skin-select"><option value="simulation">시뮬레이션 · 기본</option><option value="illustration">일러스트</option><option value="pixel">픽셀 · 방 전체</option></select>
       <label class="file-label" for="snapshot-file">JSON 가져오기 <input id="snapshot-file" type="file" accept=".json,application/json"></label>
       <button id="refresh-file" type="button">파일로 관찰 갱신</button>
@@ -69,6 +70,7 @@
         <p class="agent-role" id="agent-role"></p><h2 id="detail-heading"></h2><span id="detail-status" class="status-pill"></span>
         <div class="detail-copy" aria-live="polite" aria-atomic="true"><p class="field-label">맡고 있는 샘플 작업</p><h3 id="task-name"></h3><p id="task-note"></p></div>
         <section id="evidence-panel" aria-label="선택 작업 근거"></section>
+        <dl id="campus-fields" hidden></dl>
         <dl id="movement-fields" hidden></dl>
         <dl id="snapshot-fields" hidden></dl>
         <div class="sample-notice"><span aria-hidden="true">♧</span><p>이 동료는 데모 속 캐릭터예요.<br>실제 에이전트나 작업 기록이 아닙니다.</p></div>
