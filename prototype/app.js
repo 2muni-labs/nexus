@@ -7,7 +7,7 @@
   let roomURL = '';
   let projectURL = '';
   const roomSample = window.officeSnapshot.parseView(JSON.stringify(window.officeRoomSample));
-  let mode = 'demo';
+  let mode = new URLSearchParams(window.location.search).get('view') === 'campus' ? 'campus' : 'demo';
   let importGeneration = 0;
   const byId = id => document.getElementById(id);
   const svgNS = 'http://www.w3.org/2000/svg';
@@ -68,7 +68,9 @@
   let expressionIntent = true;
   let expressionTimer = null;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const activeSkin = () => mode === 'campus' ? window.officeCampus.manifest(window.officeSkins[skin]) : window.officeSkins[skin];
   function expressionState(entry, actor = false) {
+    if (mode === 'campus') return {kind: 'static', eligible: false};
     if (mode === 'movement' && !actor) return {kind: 'static', eligible: false};
     return window.officeExpressions.select({mode, sample: entry?.work,
       snapshot: entry?.work?.observation || snapshot, movement: movement.state(),
@@ -117,12 +119,16 @@
   function paintPortrait(sample) {
     const portrait = byId('portrait');
     portrait.style.background = 'var(--paper)';
-    const frame = svg('svg', {viewBox: window.officeSkins[skin]?.layout?.portraitViewBox || '-50 -70 100 125'});
+    const desk = scene.find(entry => entry.work?.id === sample.id);
+    const art = activeSkin()?.characters?.[desk.characterKey];
+    const portraitBox = mode === 'campus' && art
+      ? `${-art.anchor.x * art.display.width / art.width} ${-art.anchor.y * art.display.height / art.height} ${art.display.width} ${art.display.height}`
+      : activeSkin()?.layout?.portraitViewBox || '-50 -70 100 125';
+    const frame = svg('svg', {viewBox: portraitBox});
     const holder = svg('g');
     frame.append(holder); portrait.replaceChildren(frame);
-    const desk = scene.find(entry => entry.work?.id === sample.id);
     if (desk.showCharacter === false) { updateAssetMessage(); portrait.textContent = '미연결'; return; }
-    asset(holder, window.officeSkins[skin]?.characters?.[desk.characterKey]);
+    asset(holder, art);
   }
   const movement = window.officeMovement.create(() => { if (mode === 'movement') render(); },
     setTimeout, clearTimeout, () => performance.now(), () => { if (mode === 'movement') paintMotion(); });
@@ -156,8 +162,9 @@
     byId('movement-play').disabled = Boolean(fact.suspended) || fact.index === window.officeMovement.count - 1;
   }
   function paintSkin() {
-    const manifest = window.officeSkins[skin];
+    const manifest = activeSkin();
     byId('office').dataset.skin = skin;
+    byId('office').dataset.mode = mode;
     applyLayout();
     asset(byId('room-art'), manifest?.room);
     asset(byId('room-front-art'), manifest?.roomFront);
@@ -174,8 +181,8 @@
     updateAssetMessage();
   }
   function applyLayout() {
-    const layout = window.officeSkins[skin]?.layout;
-    byId('office').setAttribute('viewBox', layout ? '0 40 880 650' : '0 0 880 790');
+    const layout = activeSkin()?.layout;
+    byId('office').setAttribute('viewBox', mode === 'campus' ? '0 0 1000 640' : layout ? '0 40 880 650' : '0 0 880 790');
     [...desks.children].forEach((group, index) => {
       const entry = scene[index];
       const slot = mode === 'movement' ? (layout?.movementSlots[index] ?? index) : (entry.slot ?? index);
@@ -199,7 +206,7 @@
     const isSnapshot = mode === 'snapshot' || isView;
     const viewData = mode === 'rooms' ? roomSample : importedView;
     let viewSelection = null;
-    scene = window.officeScene.view(mode, snapshot, demo);
+    scene = mode === 'campus' ? window.officeCampus.view() : window.officeScene.view(mode, snapshot, demo);
     if (mode === 'movement') {
       const fact = movement.state();
       scene = window.officeMovement.workspaces.map((workspace, index) => ({
@@ -243,6 +250,8 @@
     }
     byId('movement-controls').hidden = mode !== 'movement';
     byId('movement-fields').hidden = mode !== 'movement';
+    byId('campus-fields').hidden = mode !== 'campus';
+    byId('evidence-panel').hidden = mode === 'campus';
     samples = scene.filter(desk => desk.work).map(desk => desk.work);
     document.querySelector('.sample-tag').textContent = isSnapshot ? '◷ 스냅샷' : '✳ 데모 샘플';
     document.querySelector('.scene-caption span:last-child').textContent = isSnapshot ? (snapshot ? snapshot.version === 2 ? '단일 관찰 기록 · 전체 현황 아님' : '작업 1개 · 삽화' : '관찰 미확인 · 빈 책상') : '가상 동료 4명';
@@ -269,11 +278,19 @@
       document.querySelector('.scene-card').setAttribute('aria-label', '선택한 저장소 소유 책상과 명시한 Project 보기');
       byId('office-desc').textContent = '선택한 방에 속하는 작업만 표시합니다. Tab과 Enter 또는 Space로 책상을 선택하세요. Project는 배정을 바꾸지 않습니다.';
     }
+    if (mode === 'campus') {
+      document.querySelector('.sample-tag').textContent = '건물 DEMO';
+      document.querySelector('.scene-caption span:first-child').textContent = 'CAMPUS · 두 작업실과 커피 라운지';
+      document.querySelector('.scene-caption span:last-child').textContent = '가상 저장소 2 · 책상 4 · 고정 배치';
+      document.querySelector('.scene-card').setAttribute('aria-label', '민트와 블루 작업실, 연결 복도와 공유 라운지가 있는 가상 오피스 건물');
+      byId('office-desc').textContent = '민트와 블루 저장소의 두 작업실에 책상이 두 개씩 있습니다. 복도와 라운지는 장식입니다. 네 가상 직원 또는 책상을 Tab과 Enter / Space로 선택하세요.';
+    }
     scene.forEach(entry => {
       const sample = entry.work;
       const group = svg('g', {transform: `translate(${entry.x} ${entry.y})`});
       group.dataset.visualDesk = entry.id;
       group.dataset.work = entry.workId || '';
+      if (mode === 'campus') group.dataset.room = entry.roomId;
       const deskArt = svg('g', {'data-art': 'desk', 'data-desk': entry.id});
       if (!sample) {
         group.setAttribute('aria-hidden', 'true');
@@ -284,7 +301,7 @@
       group.setAttribute('class', 'desk');
       group.setAttribute('role', 'button');
       group.setAttribute('tabindex', '0');
-      group.setAttribute('aria-label', mode === 'movement' ? `${sample.name}, ${sample.task}, ${sample.status}, 이동 DEMO` : isSnapshot ? `${sample.name}, ${sample.observation?.work.title || snapshot?.work.title}, ${(sample.observation || snapshot)?.version === 2 ? '가져온 관찰 주장' : '스냅샷 삽화'}` : `${sample.name}의 책상, ${sample.status}, ${sample.task}, 데모 샘플`);
+      group.setAttribute('aria-label', mode === 'campus' ? `${sample.name}, ${sample.room.label}, ${sample.workItem}, ${sample.workspace}, ${sample.session}, 가상 건물 DEMO` : mode === 'movement' ? `${sample.name}, ${sample.task}, ${sample.status}, 이동 DEMO` : isSnapshot ? `${sample.name}, ${sample.observation?.work.title || snapshot?.work.title}, ${(sample.observation || snapshot)?.version === 2 ? '가져온 관찰 주장' : '스냅샷 삽화'}` : `${sample.name}의 책상, ${sample.status}, ${sample.task}, 데모 샘플`);
       group.setAttribute('aria-pressed', 'false');
       group.dataset.id = sample.id;
       const offset = window.officeScene.characterOffset;
@@ -339,7 +356,7 @@
     byId('work-count').textContent = `${samples.length} WORK · ${isView ? '선택한 방·Project' : '표시한 작업'}`;
     byId('data-source').textContent = isView ? `${mode === 'rooms' ? 'FICTIONAL · ' : '수동 · '}${viewData?.source || '가져온 보기 없음'}`
       : mode === 'snapshot' ? `수동 · ${snapshot?.execution?.source || '출처 미확인'} · 자동 갱신 없음`
-      : mode === 'movement' ? 'FICTIONAL · 세션 배정 DEMO' : 'FICTIONAL · 가상 직원 4명';
+      : mode === 'campus' ? 'FICTIONAL · 건물 DEMO · 두 저장소 작업실' : mode === 'movement' ? 'FICTIONAL · 세션 배정 DEMO' : 'FICTIONAL · 가상 직원 4명';
     byId('observation-time').textContent = isView ? `보기 관찰 ${viewData?.observed_at || '미확인'}`
       : mode === 'snapshot' ? `관찰 ${snapshot?.observed_at || '미확인'}` : '고정 DEMO · 실제 관찰 시각 없음';
     const shownAt = isView ? viewData?.observed_at : mode === 'snapshot' ? snapshot?.observed_at : null;
@@ -430,6 +447,21 @@
       byId('task-note').textContent = `${workspace.task} / ${workspace.worktree}는 이 책상에 고정됩니다. 초상화는 외형 예시이며 현재 배정 증거가 아닙니다.`;
       document.querySelector('.sample-notice p').textContent = '스크립트 DEMO · 실제 Orca 세션이나 배정 관찰이 아닙니다.';
     }
+    const campusFields = byId('campus-fields');
+    campusFields.hidden = mode !== 'campus';
+    campusFields.replaceChildren();
+    if (mode === 'campus') {
+      const values = [['저장소 / 작업실 · 가상', `${sample.room.repository} / ${sample.room.label}`],
+        ['Work Item · 가상', sample.workItem], ['worktree · 가상 별칭', sample.workspace],
+        ['세션 · 가상 별칭', sample.session], ['선택 근거', '건물 DEMO의 명시적 고정 연결 · 직원/책상 → 이 작업실의 Work Item / worktree / 세션'],
+        ['배치 근거', '장식용 고정 좌표 · 관찰된 위치나 실제 배정 아님']];
+      values.forEach(([label,value]) => {
+        const term = document.createElement('dt'); term.textContent = label;
+        const detail = document.createElement('dd'); detail.textContent = value;
+        campusFields.append(term, detail);
+      });
+      byId('task-note').textContent = `${sample.workItem} · ${sample.workspace} · ${sample.session}`;
+    }
     paintPortrait(sample);
   }
   byId('expression-play').addEventListener('click', () => { expressionIntent = !expressionIntent; refreshExpressions(); });
@@ -454,7 +486,7 @@
     movement.pause();
     mode = event.target.value;
     expressionIntent = false;
-    byId('import-message').textContent = mode === 'movement' ? '이동 DEMO · 가상 관찰 · 자동 실행 권한 없음' : mode === 'demo' ? '데모입니다. 파일은 이 브라우저에서만 읽습니다.' : mode === 'rooms' ? '가상 2개 방 샘플 · 실제 관찰 데이터가 아닙니다.' : mode === 'view-import' ? (importedView ? '미검증 수동 보기 · 자동 갱신 없음' : '수동 보기 JSON을 가져오세요.') : snapshot ? '관찰 사본 · 자동 갱신 없음' : '관찰 미확인 · JSON 파일을 가져오세요.';
+    byId('import-message').textContent = mode === 'campus' ? '건물 DEMO · 두 가상 저장소의 고정 배치 · 실제 관찰이나 배정이 아닙니다.' : mode === 'movement' ? '이동 DEMO · 가상 관찰 · 자동 실행 권한 없음' : mode === 'demo' ? '데모입니다. 파일은 이 브라우저에서만 읽습니다.' : mode === 'rooms' ? '가상 2개 방 샘플 · 실제 관찰 데이터가 아닙니다.' : mode === 'view-import' ? (importedView ? '미검증 수동 보기 · 자동 갱신 없음' : '수동 보기 JSON을 가져오세요.') : snapshot ? '관찰 사본 · 자동 갱신 없음' : '관찰 미확인 · JSON 파일을 가져오세요.';
     render();
   });
   // Manual local reads only. Generations fence every completion, including cancel.
@@ -567,6 +599,11 @@
   byId('movement-play').addEventListener('click', () => movement.state().playing ? movement.pause() : movement.play());
   byId('movement-next').addEventListener('click', () => movement.step());
   byId('movement-reset').addEventListener('click', () => movement.reset());
+  byId('display-mode').value = mode;
+  if (mode === 'campus') {
+    expressionIntent = false;
+    byId('import-message').textContent = '건물 DEMO · 두 가상 저장소의 고정 배치 · 실제 관찰이나 배정이 아닙니다.';
+  }
   stopHiddenMovement();
   render();
 })();

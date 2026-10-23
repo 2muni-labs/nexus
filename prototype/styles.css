@@ -27,3 +27,15 @@ body{background:#e9ece3}.topbar{height:48px;padding:0 20px;background:#f9f6ec;bo
 #evidence-panel{grid-column:1/-1;min-width:0;width:100%;margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:6px;background:#f4f0e7;font-size:11px;line-height:1.6}#evidence-panel h3{font-size:13px;margin:0 0 5px}#evidence-panel dl{margin:0}#evidence-panel dt{margin-top:10px;color:var(--muted)}#evidence-panel dd{margin:2px 0 0;overflow-wrap:anywhere}#evidence-panel :is(code,small,a){display:block;font:inherit;overflow-wrap:anywhere}#evidence-panel code{font-family:ui-monospace,monospace;font-size:10px}#evidence-panel a{text-decoration:underline}#evidence-panel a:focus-visible{outline:2px solid #675080;outline-offset:2px}.evidence-notice{margin:5px 0;color:var(--muted);overflow-wrap:anywhere}
 
 #evidence-panel dd>code{display:inline;margin-left:5px;color:var(--muted)}#evidence-panel details{margin-top:2px}#evidence-panel summary{cursor:pointer;color:var(--muted);font-size:10px}#evidence-panel details[open]{padding:4px 0}#evidence-panel summary:focus-visible{outline:2px solid #675080;outline-offset:2px}
+
+/* Campus shares the selected furniture/staff skin, with fixed decorative placement. */
+#office[data-mode=campus]{margin-top:0;background:#e8eee5}
+#office[data-mode=campus] .scene-bottom,#office[data-mode=campus] .bubble-group,#office[data-mode=campus] .compact-signal{display:none}
+#office[data-mode=campus] .nameplate-group{visibility:hidden}
+#office[data-mode=campus] .desk:is(:hover,:focus-visible,[aria-pressed=true]) .nameplate-group{visibility:visible}
+#office[data-mode=campus] .nameplate{width:112px;height:35px;rx:4px}
+#office[data-mode=campus] .desk-label{font-size:11px}
+#office[data-mode=campus] .desk-state{font-size:9px}
+#campus-fields{font-size:12px;line-height:1.7;width:100%;grid-column:1/-1}
+#campus-fields[hidden]{display:none}#campus-fields dt{font-size:10px;color:var(--muted);margin-top:12px}
+#campus-fields dd{margin:3px 0 0;overflow-wrap:anywhere}

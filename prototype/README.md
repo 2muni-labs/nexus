@@ -321,3 +321,22 @@ and the six earlier suites, plus affected JS syntax checks. Real browser accepta
 also checks production DOM rendering, long labels/empty states, selection, skin and
 refresh retention over file/HTTP at 969px and 390px. DOM-driven tests do not prove
 native Orca cross-command key/input persistence or OS preference delivery.
+
+### 건물 데모
+
+표시 메뉴의 **건물 데모 · 두 작업실과 라운지**, 또는 `index.html?view=campus`로
+고정된 가상 건물을 엽니다. 민트와 블루 작업실은 각각 별개의 가상 저장소를 나타내며,
+각 방의 두 책상은 서로 다른 Work Item / worktree / 세션 별칭에 명시적으로 연결됩니다.
+직원이나 책상을 클릭하거나 Tab과 Enter / Space로 선택하면 그 연결 근거를 확인할 수
+있습니다. 복도와 커피 라운지는 장식이고, 위치·이동·실제 배정을 관찰하거나 추론하지
+않습니다. 첫 버전의 네 직원은 정적이며 별도 이동 타이머가 없습니다.
+
+`campus.js`의 가상 소유 관계와 고정 배치, 로컬 `campus-building.svg` /
+`campus-front.svg`, 기존 스킨의 책상·직원 아트는 분리되어 있습니다. 세 스킨은 같은
+배치와 소유 관계를 사용하며 선택한 스킨의 아트를 작게 표시합니다. 기존 단일 방과
+관찰 가져오기 형식은 그대로이고, 알 수 없는 `view` 값은 기본 데모로 열립니다.
+
+추가 검사: `node prototype/campus.test.cjs`. 실제 페이지의 브라우저 검사는
+`campus.browser.test.js`를 읽고 `runOfficeCampusTests(window)`를 호출합니다.
+이는 스크립트로 입력 이벤트를 주입하는 검사이며 실제 키보드/포인터 입력 증거와는
+구분합니다. 기존 `refresh.test.cjs`는 campus 선택 이후 늦게 도착한 파일 콜백도 검사합니다.
