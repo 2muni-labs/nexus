@@ -12,7 +12,9 @@
     return desks.map((desk, index) => {
       const work = mode === 'demo' ? demo.find(sample => sample.id === desk.demoWorkId)
         : snapshot && index === 0 ? {...demo[0], id: 'work', name: '작업 1', tone: observed[0], icon: observed[1], status: observed[2], task: snapshot.work.title, bubble: '관찰 사본'} : null;
-      return {...desk, work, workId: work ? (mode === 'demo' ? `demo-work-${work.id}` : snapshot.work.url) : null};
+      const relation = mode === 'snapshot' && snapshot?.version === 2 ? window.officeSnapshot.association(snapshot) : null;
+      if (work && relation) { work.name = snapshot.office?.workspace?.label || '공간 미확인'; work.bubble = relation.state === 'conflict' ? '충돌 · 연결 없음' : relation.attached ? relation.temporal === 'stale' ? '오래된 배정 관찰' : '가져온 배정 주장' : '미연결'; }
+      return {...desk, showCharacter: !relation || relation.attached, characterId: relation?.attached ? snapshot.office.session.alias : desk.characterId, work, workId: work ? (mode === 'demo' ? `demo-work-${work.id}` : snapshot.work.url) : null};
     });
   }
   window.officeScene = {view, characterOffset: {x: 62, y: -21}};

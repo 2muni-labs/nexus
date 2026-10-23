@@ -11,7 +11,7 @@ const unsafe = '<img src=x onerror=alert(1)><script>alert(1)</script>';
 assert.equal(read({...valid,work:{...valid.work,title:unsafe}}).work.title,unsafe); // plain text, not markup
 for (const url of ['javascript:alert(1)','http://github.com/a/b/issues/1','https://github.com/a/b/issues/1?x=1','https://github.com/a/b/issues/0','https://github.com.evil/a/b/issues/1','https://github.com/a/../issues/1']) assert.throws(()=>read({...valid,work:{...valid.work,url}}));
 for (const source of ['/Users/person/private','file:///tmp/data','/etc/passwd','/opt/tool/config','ctx_private123','C:\\secret']) assert.throws(()=>read({...valid,execution:{source}}));
-for (const value of [{...valid,version:2},{...valid,extra:true},{...valid,observed_at:'2026-02-30T00:00:00Z'},{...valid,work:{...valid.work,title:'x'.repeat(161)}},{...valid,execution:[]},{...valid,execution:{status:4}}]) assert.throws(()=>read(value));
+for (const value of [{...valid,version:99},{...valid,extra:true},{...valid,observed_at:'2026-02-30T00:00:00Z'},{...valid,work:{...valid.work,title:'x'.repeat(161)}},{...valid,execution:[]},{...valid,execution:{status:4}}]) assert.throws(()=>read(value));
 assert.throws(()=>parse('{'));
 assert.throws(()=>parse(' '.repeat(MAX_BYTES+1)));
 console.log('PASS: snapshot bounds, schema, links, unknowns, status separation and untrusted text');

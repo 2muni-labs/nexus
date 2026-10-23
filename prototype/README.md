@@ -8,7 +8,7 @@
 
 ## 관찰 사본 가져오기 (v1)
 
-표시 선택에서 데모 / 스냅샷을 전환하거나 JSON 파일을 가져오세요. 한 Work Item은 한 책상이며 나머지는 빈 장식입니다. 캐릭터는 작업의 삽화이고 실제 에이전트 배정의 증거가 아닙니다. GitHub Workflow와 실행 관찰은 별도이며, 실행 성공은 Done·승인·수락·현재 생존을 뜻하지 않습니다. 시각은 UTC로 표시하고 24시간 초과 또는 미래 5분 초과를 경고합니다. 자동 갱신은 없습니다.
+표시 선택에서 데모 / 스냅샷을 전환하거나 JSON 파일을 가져오세요. 한 Work Item은 한 책상이며 나머지는 빈 장식입니다. 캐릭터는 작업의 삽화이고 실제 에이전트 배정의 증거가 아닙니다. GitHub Workflow와 실행 관찰은 별도이며, 실행 성공은 Done·승인·수락·현재 생존을 뜻하지 않습니다. 시각은 UTC로 표시하고 24시간 초과 또는 미래 시각을 경고합니다. 자동 갱신은 없습니다.
 
 다음은 **완전히 가상의 형식 예시**입니다. 실제 관찰 데이터는 저장소에 넣지 마세요.
 
@@ -64,3 +64,32 @@ Workflow 인식 값은 `Backlog`, `Ready`, `In Progress`, `Blocked`, `Review`, `
 처음에는 정지 상태입니다. 재생은 2.2초마다 다음 관찰을 표시하며 마지막 단계에서 정지합니다. 일시정지는 현재 관찰 단계를 유지하며 짧은 시각적 이동은 해당 위치까지 마칩니다. 다음 단계는 재생을 정지하고 한 단계만 진행합니다. 처음으로는 정지 후 첫 등장으로 돌아갑니다. 스킨·표시 모드 변경과 JSON 가져오기도 재생을 정지합니다. 이동 DEMO로 돌아오면 이전 단계를 유지합니다. reduced-motion에서는 위치가 즉시 바뀌며 같은 사실·제어를 유지합니다. 데모4 / snapshot-v1 데이터 형식은 그대로입니다.
 
 `movement.js`가 고정된 사실과 취소 가능한 재생 제어를 관리하고 공통 renderer가 기존 SVG/PNG 스킨으로 그립니다. 데이터·스킨·이동 좌표는 분리되어 있으며 저장·수집·네트워크 요청은 없습니다. 추가 검증: `node prototype/movement.test.cjs` 및 `node --check prototype/movement.js`.
+
+## Manual office observation envelope (v2, Issue27)
+
+The separate **관찰 스냅샷** view accepts a manually sanitized v2 file. It never turns the fictional movement DEMO into a live view. [snapshot-v2-example.json](snapshot-v2-example.json) is a **fictional shape example**, never an actual observation. Real private inputs must stay outside tracked files. This is a bounded presentation envelope, not a new core/backend contract, collector, authenticated receipt, or Nexus policy input.
+
+V2 preserves v1 `observed_at`, `work` and `execution` meanings and limits, changes `version` to `2`, and allows one optional `office` object (omitted/null = missing). Root GitHub Workflow and execution result remain separate. The exact office shape is:
+
+| Field | Shape / limit |
+| --- | --- |
+| `source` | sanitized manual observation description, text ≤240 or null |
+| `observed_at` | required valid UTC ISO timestamp, seconds or exactly three fractional digits |
+| `coverage` | exactly `"single-record"`; never a complete fleet |
+| `repository` | null or `{alias, label, url}`; repository = room label |
+| `workspace` | null or `{alias, label, repository}`; workspace/worktree = selectable desk; `repository` references repository alias |
+| `session` | null or `{alias, label, workspace, liveness, source, observed_at}`; session = character only when the relation is usable; `workspace` is a display alias or null |
+| `assignment` | null or `{session, workspace, work_url, source, observed_at}`; explicit session/workspace/Work Item relation |
+| `retention` | null or `{state, source}`; a separate checkout retention claim |
+
+Office `source` and component objects may be omitted or null; missing source fields in components also mean missing evidence. Other listed component keys and office `observed_at`/`coverage` are required when their object is present; extra or duplicate JSON keys, arrays and wrong types reject. `label` is nonempty text ≤80. Aliases are **path-free display aliases**, `display-` plus 1–33 lowercase letters/digits/hyphens (first suffix character alphanumeric), ≤40 total. Entity aliases must be distinct. References use the same alias syntax. Do not derive aliases or associations automatically from names, branches, UUID similarity or native receipts. Native IDs are private opaque receipts and never belong in this payload; the browser does not establish native identity.
+
+Repository `url` is canonical `https://github.com/OWNER/REPO`; `work.url` and `assignment.work_url` are canonical `https://github.com/OWNER/REPO/issues/POSITIVE_INTEGER`, with no credentials, query, fragment or trailing slash. Repository and Issue ownership must match exactly, and assignment Issue must equal root Issue. `source` is text ≤240 or null. `liveness` recognizes `live`, `exited`, `unknown`; retention `state` recognizes `retained`, `removed`, `unknown`. Unknown strings become unknown; non-string/non-null values reject. Neither idle, success, Completed, release, absence nor time implies liveness or a state transition. Even explicit exit/result grants no Done, acceptance, release or deletion eligibility.
+
+The renderer explicitly labels **association and source as claims from the imported observation**, never cryptographic or authenticated backend truth. Missing bundle/components/references/source show missing/unassociated and suppress a character on the desk and portrait. Duplicate aliases, incompatible references, repository/Issue mismatch, assignment to an exited session or removed workspace, or inconsistent observation times show conflict and suppress pairing. There is no fallback to an arbitrary desk. Null retention does not manufacture retention evidence; session liveness has its own source/time, and root execution result is independent.
+
+Session and assignment observation timestamps must be ≤ office observation time, which must be ≤ root observation time. Inconsistency is a visible conflict. Any timestamp later than browser current time is visibly future/non-current and suppresses pairing. Any of these observations older than **24 hours** is visibly stale/non-current; a historical non-conflicting relation can still be shown as an imported claim. Browser current time only labels age at render; no auto-refresh, state transition or inferred exit occurs. v1 retains its **illustrative-only** character and never gains a fabricated session assignment.
+
+Files remain ≤16 KiB UTF-8. V2 additionally rejects markup delimiters, control characters, backslashes, personal/absolute paths, common native receipt prefixes/UUIDs, secret-like token/key/password/bearer patterns, raw transcript markers and non-GitHub HTTP/file URL schemes. These bounded checks are defense in depth, not a complete secret detector: the Coordinator must manually remove private paths, transcripts, credentials and native IDs before import. All accepted text uses `textContent`; only validated Issue URLs become links, and artwork remains the fixed local skin manifest. No imported HTML/JS or remote resource URL is executed. No fetch, storage, backend access, publication or scheduling is added.
+
+Focused validation: `node prototype/snapshot-v2.test.cjs`, existing `snapshot.test.cjs` and `movement.test.cjs`, and `node --check` for affected JS. Browser acceptance also requires a separately collected real sanitized input, file/HTTP, both skins, conflict/missing non-pairing, mode/import/selection/focus regression and 390px/desktop layouts. Synthetic fixtures alone do not satisfy actual-observation acceptance. DOM keyboard handler/focus checks do not prove native Orca key delivery.
