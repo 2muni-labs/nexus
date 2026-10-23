@@ -162,11 +162,11 @@ delivery limitation; a native key acknowledgement alone proves no DOM event.
 
 ## Living office (Issue35)
 
-The default **시뮬레이션** skin uses original small human employees, a fixed 10×10 isometric room, four desks in two rows, and a compact scene-first HUD. Illustration and pixel remain selectable. This is a static layout preset, not a tile/pathfinding engine; there is no walking, economy, growth, furniture editor, storage, collector, or automatic live refresh. All sample employees and observations are fictional.
+The default **시뮬레이션** skin uses original small human employees, a fixed 10×10 isometric room, four desks in two rows, and a compact scene-first HUD. Illustration and pixel remain selectable. This is a static layout preset, not a tile/pathfinding engine; only the separate fictional movement DEMO walks; there is no economy, growth, furniture editor, storage, collector, or automatic live refresh. All sample employees and observations are fictional.
 
 The HUD counts only the displayed work in the chosen mode/room/Project. It labels the source and observation timestamp from that displayed snapshot or view envelope; DEMO has no invented observation clock. Selected work retains its own Issue, timestamp, execution, Workflow, association and liveness in the detail panel. On mobile the details sit below the room. Artwork owns no hit targets, keyboard focus, logical identity or status. Small status symbols remain visible; nameplates expand for selection/hover/focus.
 
-The registry still accepts scalar `src/width/height/anchor/display/pixelated` descriptors. A skin can optionally provide a bounded `layout` object with four stable slot positions, character offset, portrait frame, hit/ring/nameplate/bubble geometry and movement-DEMO slot/entrance/beside positions. Filtering retains each record's room-owned slot. Layout changes never change entity IDs, room ownership, work or session associations. The old movement script still requires a new session/worktree for a new Task and retains the last position when liveness is unknown.
+The registry still accepts scalar `src/width/height/anchor/display/pixelated` descriptors. A skin can optionally provide a bounded `layout` object with four stable slot positions, character offset, portrait frame, hit/ring/nameplate/bubble geometry and movement-DEMO slot/entrance/beside positions. Filtering retains each record's room-owned slot. Layout changes never change entity IDs, room ownership, work or session associations. The movement script still requires a new session/worktree for a new Task and retains the last position when liveness is unknown.
 
 Simulation descriptors use one uniform **2×** display scale:
 
@@ -223,3 +223,39 @@ identities, and v1/v2/view inputs. Run the existing six focused suites and affec
 JavaScript syntax checks as well. Browser checks cover file/HTTP, desktop/390px,
 all skins, imported pause and retained views; DOM focus/handler checks do not prove
 native Orca input or cross-command state persistence.
+
+## Waypoint movement DEMO (Issue38 M2)
+
+Movement play now follows a short explicit sequence of skin-local waypoints: desk
+approach, work, unknown liveness at the last known position, coffee/wait, return,
+delivery, explicit exit, then a visually matching **NEW session** at Task B / worktree B.
+Coffee and return retain Task A, worktree A and session 1. The new session label and
+separate IDs prevent appearance from implying session reuse. Delivery still grants
+neither exit nor Done, acceptance, release or deletion eligibility. All facts are
+fictional; imported v1/v2/views never receive movement or assignment changes.
+
+The simulation uses its existing room, small staff, desk anchors and hit targets,
+plus optional `layout.movementAnchors` for the side/front aisles and right-wall
+coffee cabinet. Illustration and pixel use the same script with simple fallback
+coordinates. Routes are fixed point lists with distance-weighted interpolation;
+there is no pathfinding, random activity, navigation engine or backend observation.
+The actor stays below the room foreground, and the simulation desk row occludes
+seated staff. No CSS position transition continues after controller cancellation.
+
+The stage counter/reason describes the explicit script; the separate motion line
+reports visual progress, frozen position or completed transition. Visual arrival is
+not another factual observation. Pause freezes the rendered waypoint position;
+Play resumes it. Next stops playback and presents the next stage immediately as an
+accessible static equivalent. Reset stops and restores the first session/entrance.
+Skin/mode changes and selected imports stop movement. Hidden/reduced-motion handlers
+cancel the sole movement callback and block playback while constrained; returning
+visible or disabling reduced motion requires explicit Play. Static Next remains
+available. Imported expressions continue to start paused.
+
+`node prototype/movement.test.cjs` covers real route/controller/painter and
+visibility/reduced handlers with a controlled clock: intermediate positions,
+resume, stale callbacks, same-task excursions, unknown freeze, static steps,
+reset, identity and simulation anchors. Run it with the other six suites including
+manual refresh. Browser DOM checks and iframe viewports exercise production handlers
+and responsive CSS; they do not certify native keyboard/OS preference delivery or
+cross-command Orca browser state persistence.

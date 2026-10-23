@@ -8,6 +8,8 @@
     let expiresAt = null;
     if (mode === 'movement') {
       if (movement?.liveness !== 'present' || movement.assignment === null) return result('unknown', false, '배정·생존 미확인 또는 종료');
+      if (movement.visual?.progress < 1) return result('static', false, '경유점 이동 연출');
+      if (movement.index === 4) return result('waiting', true, '가상 커피 대기');
       if (movement.index === 6) return result('review', true, '가상 Review 관찰');
       return [2, 5, 11].includes(movement.index) ? result('typing', true, '가상 작업 관찰') : result('static');
     }

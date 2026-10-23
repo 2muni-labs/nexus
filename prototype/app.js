@@ -124,32 +124,36 @@
     if (desk.showCharacter === false) { updateAssetMessage(); portrait.textContent = '미연결'; return; }
     asset(holder, window.officeSkins[skin]?.characters?.[desk.characterKey]);
   }
-  const movement = window.officeMovement.create(() => { if (mode === 'movement') render(); });
+  const movement = window.officeMovement.create(() => { if (mode === 'movement') render(); },
+    setTimeout, clearTimeout, () => performance.now(), () => { if (mode === 'movement') paintMotion(); });
+  function paintMotion() {
+    const fact = movement.state();
+    const point = window.officeMovement.position(fact, window.officeSkins[skin]?.layout);
+    const actor = byId('movement-actor');
+    actor.style.transform = `translate(${point.x}px, ${point.y}px)`;
+    // The simulation desks share one depth row; room foreground always stays above staff.
+    byId('office').insertBefore(actor, skin === 'simulation' && point.y < 450 ? desks : byId('room-front-art'));
+    byId('movement-motion').textContent = fact.suspended || (fact.visual.progress < 1
+      ? `${fact.playing ? '경유점 이동 중' : '이동 위치 일시정지'} · ${Math.round(fact.visual.progress * 100)}% → ${fact.location}`
+      : `시각 전환 완료 · ${fact.location} · 단계 진행과 별개`);
+  }
   function paintMovement() {
     const actor = byId('movement-actor');
     actor.style.display = mode === 'movement' ? '' : 'none';
     if (mode !== 'movement') { actor.replaceChildren(); return; }
     const fact = movement.state();
-    const layout = window.officeSkins[skin]?.layout;
-    let point = window.officeMovement.position(fact);
-    if (layout) {
-      const index = fact.location === '책상 A' ? 0 : fact.location === '책상 B' ? 1 : -1;
-      const slot = index < 0 ? null : layout.positions[layout.movementSlots[index]];
-      point = slot ? {x: slot.x + layout.characterOffset.x, y: slot.y + layout.characterOffset.y}
-        : fact.location === '책상 A 옆' ? layout.beside : layout.entrance;
-    }
-    actor.style.transform = `translate(${point.x}px, ${point.y}px)`;
+    paintMotion();
     actor.dataset.session = fact.session;
     actor.dataset.location = fact.location;
     const art = svg('g', {'data-actor-art': 'true'});
     paintCharacter(art, window.officeSkins[skin]?.characters?.['leaf-mint'], expressionState(null, true));
     const label = svg('text', {x: 0, y: skin === 'simulation' ? -78 : -85, 'text-anchor': 'middle', class: 'actor-label'});
-    label.textContent = `${fact.session} ${fact.liveness === 'unknown' ? '?' : fact.liveness === 'exited' ? '· 종료' : ''}`;
+    label.textContent = `${fact.session === 'demo-session-2' ? 'NEW · ' : ''}${fact.session} ${fact.liveness === 'unknown' ? '?' : fact.liveness === 'exited' ? '· 종료' : ''}`;
     actor.replaceChildren(art, label);
     byId('movement-stage').textContent = `${fact.index + 1}/${window.officeMovement.count} · ${fact.label} · ${fact.playing ? '재생 중' : '정지'} — ${fact.reason}`;
     byId('movement-play').textContent = fact.playing ? '일시정지' : '재생';
     byId('movement-next').disabled = fact.index === window.officeMovement.count - 1;
-    byId('movement-play').disabled = fact.index === window.officeMovement.count - 1;
+    byId('movement-play').disabled = Boolean(fact.suspended) || fact.index === window.officeMovement.count - 1;
   }
   function paintSkin() {
     const manifest = window.officeSkins[skin];
@@ -427,8 +431,13 @@
     paintPortrait(sample);
   }
   byId('expression-play').addEventListener('click', () => { expressionIntent = !expressionIntent; refreshExpressions(); });
-  document.addEventListener('visibilitychange', refreshExpressions);
-  reducedMotion.addEventListener('change', refreshExpressions);
+  function stopHiddenMovement() {
+    movement.suspend(document.hidden ? '숨김 · 이동 정지 · 돌아온 뒤 재생 필요'
+      : reducedMotion.matches ? '동작 줄이기 · 이동 정지 · 다음 단계로 정적 탐색' : '');
+    refreshExpressions();
+  }
+  document.addEventListener('visibilitychange', stopHiddenMovement);
+  reducedMotion.addEventListener('change', stopHiddenMovement);
   byId('asset-retry').addEventListener('click', paintSkin);
   byId('skin-select').addEventListener('change', event => {
     movement.pause();
@@ -555,5 +564,6 @@
   byId('movement-play').addEventListener('click', () => movement.state().playing ? movement.pause() : movement.play());
   byId('movement-next').addEventListener('click', () => movement.step());
   byId('movement-reset').addEventListener('click', () => movement.reset());
+  stopHiddenMovement();
   render();
 })();
