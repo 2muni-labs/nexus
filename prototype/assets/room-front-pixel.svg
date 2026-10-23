@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="790" viewBox="0 0 880 790" shape-rendering="crispEdges">
+  <!-- Foreground cushion cat preserves the original occlusion slot. -->
+  <path d="M612 632L652 612 700 636 660 656Z" fill="#d6c2ad"/>
+  <path d="M620 612H628V600H640V608H660V600H676V612H688V636H676V644H632V636H620Z" fill="#c6a086"/>
+  <path d="M624 612H636V604H640V616H664V608H672V616H684V632H672V640H636V632H624Z" fill="#efd5b2"/>
+  <path d="M636 620H644V624H636Z M660 620H668V624H660Z M648 628H656V632H648Z" fill="#8e766c"/>
+  <path d="M620 628H608V620H600V636H620Z" fill="#c6a086"/>
+</svg>
