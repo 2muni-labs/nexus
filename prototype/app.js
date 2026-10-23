@@ -21,30 +21,49 @@
     return node;
   }
   function asset(holder, registration) {
-    const {width, height, anchor, display} = registration;
-    const image = svg('image', {
-      x: -anchor.x * display.width / width, y: -anchor.y * display.height / height,
-      width: display.width, height: display.height, 'aria-hidden': 'true',
-      class: registration.pixelated ? 'skin-art pixel-art' : 'skin-art'
-    });
+    const valid = registration && typeof registration.src === 'string' && registration.src.length > 0 &&
+      [registration.width, registration.height, registration.display?.width, registration.display?.height].every(value => Number.isFinite(value) && value > 0) &&
+      [registration.anchor?.x, registration.anchor?.y].every(Number.isFinite);
+    const image = svg('image', {'aria-hidden': 'true'});
+    if (valid) {
+      const {width, height, anchor, display} = registration;
+      Object.entries({x: -anchor.x * display.width / width, y: -anchor.y * display.height / height,
+        width: display.width, height: display.height,
+        class: registration.pixelated ? 'skin-art pixel-art' : 'skin-art'
+      }).forEach(([key, value]) => image.setAttribute(key, value));
+    }
     const error = svg('g', {class: 'asset-error', role: 'img', 'aria-label': '이미지 파일 오류', 'aria-hidden': 'true'});
     error.append(svg('rect', {x: -38, y: -12, width: 92, height: 26, rx: 4}));
     const label = svg('text', {x: 8, y: 5, 'text-anchor': 'middle'});
     label.textContent = '! 이미지 오류';
     error.append(label);
+    if (holder.id === 'room-art' || holder.id === 'room-front-art') error.setAttribute('transform', 'translate(440 710)');
     error.style.display = 'none';
     holder.replaceChildren(image, error);
     // Each replacement owns its own nodes; old requests cannot alter the new slot.
     const current = () => holder.isConnected && holder.firstChild === image;
-    image.addEventListener('error', () => {
+    const fail = () => {
       if (!current()) return;
       image.style.display = 'none'; error.style.display = ''; error.setAttribute('aria-hidden', 'false');
-    });
+      error.dataset.failed = 'true'; updateAssetMessage();
+    };
+    image.addEventListener('error', fail);
     image.addEventListener('load', () => {
       if (!current()) return;
       image.style.display = ''; error.style.display = 'none'; error.setAttribute('aria-hidden', 'true');
+      delete error.dataset.failed; updateAssetMessage();
     });
-    image.setAttribute('href', registration.src);
+    if (valid) image.setAttribute('href', registration.src);
+    else {
+      image.style.display = 'none'; error.style.display = ''; error.setAttribute('aria-hidden', 'false');
+      error.dataset.failed = 'true';
+    }
+    updateAssetMessage();
+  }
+  function updateAssetMessage() {
+    const failed = document.querySelectorAll('.asset-error[data-failed="true"]').length;
+    byId('asset-message').textContent = failed ? `! 이미지 오류 ${failed}개 · 등록 또는 파일을 확인하고 다시 불러오거나 스킨을 바꾸세요. 작업 선택과 상세 정보는 계속 사용할 수 있습니다.` : '';
+    byId('asset-retry').hidden = !failed;
   }
   function paintPortrait(sample) {
     const portrait = byId('portrait');
@@ -53,8 +72,8 @@
     const holder = svg('g');
     frame.append(holder); portrait.replaceChildren(frame);
     const desk = scene.find(entry => entry.work?.id === sample.id);
-    if (desk.showCharacter === false) { portrait.textContent = '미연결'; return; }
-    asset(holder, window.officeSkins[skin].characters[desk.characterKey]);
+    if (desk.showCharacter === false) { updateAssetMessage(); portrait.textContent = '미연결'; return; }
+    asset(holder, window.officeSkins[skin]?.characters?.[desk.characterKey]);
   }
   const movement = window.officeMovement.create(() => { if (mode === 'movement') render(); });
   function paintMovement() {
@@ -67,7 +86,7 @@
     actor.dataset.session = fact.session;
     actor.dataset.location = fact.location;
     const art = svg('g');
-    asset(art, window.officeSkins[skin].characters['leaf-mint']);
+    asset(art, window.officeSkins[skin]?.characters?.['leaf-mint']);
     const label = svg('text', {x: 0, y: -85, 'text-anchor': 'middle', class: 'actor-label'});
     label.textContent = `${fact.session} ${fact.liveness === 'unknown' ? '?' : fact.liveness === 'exited' ? '· 종료' : ''}`;
     actor.replaceChildren(art, label);
@@ -78,14 +97,17 @@
   }
   function paintSkin() {
     const manifest = window.officeSkins[skin];
+    asset(byId('room-art'), manifest?.room);
+    asset(byId('room-front-art'), manifest?.roomFront);
     desks.querySelectorAll('[data-art]').forEach(holder => {
       const desk = scene.find(entry => entry.id === holder.dataset.desk);
       if (holder.dataset.art === 'character' && desk.showCharacter === false) { holder.replaceChildren(); return; }
-      asset(holder, holder.dataset.art === 'desk' ? manifest.desk : manifest.characters[desk.characterKey]);
+      asset(holder, holder.dataset.art === 'desk' ? manifest?.desk : manifest?.characters?.[desk.characterKey]);
     });
     paintMovement();
     const selected = samples.find(sample => sample.id === selectedId);
     if (selected) paintPortrait(selected);
+    updateAssetMessage();
   }
   const desks = document.getElementById('desks');
   function render() {
@@ -230,6 +252,7 @@
       byId('detail-status').className = 'status-pill gray';
       byId('snapshot-fields').replaceChildren();
     }
+    updateAssetMessage();
     if (focusedDesk) [...desks.querySelectorAll('.desk')].find(node => node.dataset.id === focusedDesk)?.focus();
     document.querySelector('.sample-notice p').textContent = isView ? (mode === 'rooms' ? '가상 2개 방 샘플 · 실제 저장소나 배정 데이터가 아닙니다.' : '수동 관찰과 Project 회원 관계는 미검증 주장입니다. 출처를 인증하지 않습니다.') : mode === 'movement' ? '스크립트 DEMO · 실제 Orca 세션이나 배정 관찰이 아닙니다.' : isSnapshot && snapshot?.version === 2 ? '연결과 출처는 가져온 관찰의 주장입니다. 인증된 backend 사실이나 Nexus 정책 입력이 아닙니다.' : isSnapshot ? '캐릭터는 작업의 삽화입니다. 실제 에이전트 배정·생존·승인·수락을 증명하지 않습니다.' : '이 동료는 데모 속 캐릭터예요. 실제 에이전트나 작업 기록이 아닙니다.';
   }
@@ -316,6 +339,7 @@
     }
     paintPortrait(sample);
   }
+  byId('asset-retry').addEventListener('click', paintSkin);
   byId('skin-select').addEventListener('change', event => {
     movement.pause();
     skin = event.target.value;
