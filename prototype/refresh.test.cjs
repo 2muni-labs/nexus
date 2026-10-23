@@ -6,8 +6,9 @@ const vm = require('node:vm');
 const path = require('node:path');
 const parser = require('./snapshot.js');
 const views = require('./views.js');
+const movement = require('./movement.js');
 const app = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
-const handlers = app.slice(app.indexOf('  // Manual local reads only.'), app.indexOf("  byId('movement-play').addEventListener"));
+const handlers = app.slice(app.indexOf("  byId('display-mode').addEventListener"), app.indexOf('  stopHiddenMovement();'));
 const now = Date.parse('2026-10-22T12:00:00Z');
 const base = JSON.parse(fs.readFileSync(path.join(__dirname, 'views-example.json'), 'utf8'));
 function fixture(delta = 0) {
@@ -22,6 +23,8 @@ function fixture(delta = 0) {
 }
 function harness() {
   const readers = [];
+  const timers = new Map();
+  let nextTimer = 0, renders = 0;
   const controls = new Map();
   const node = id => controls.get(id) || controls.set(id, {id, value:'', textContent:'', handlers:{},
     addEventListener(type, fn) { this.handlers[type] = fn; }, click() { this.clicks = (this.clicks || 0) + 1; }}).get(id);
@@ -29,11 +32,13 @@ function harness() {
   const state = {window:{officeSnapshot:parser, officeViews:views}, document:doc,
     Date:class extends Date { constructor(...args) {super(...(args.length ? args : [now]));} static now() {return now;} },
     snapshot:null, importedView:null, mode:'demo', scene:[], selectedId:null, roomURL:'', projectURL:'', skin:'pixel',
-    importGeneration:0, expressionIntent:true, movement:{pause() {}}, byId:node,
+    importGeneration:0, expressionIntent:true,
+    movement:movement.create(() => {}, fn => {const id = ++nextTimer; timers.set(id, fn); return id;}, id => timers.delete(id), () => 0), byId:node,
     desks:{addEventListener(type, fn) { this[type] = fn; }, querySelectorAll() {return state.scene.filter(entry=>entry.work).map(entry => ({dataset:{id:entry.work.id}, focus() {doc.activeElement=this;}}));}},
     FileReader:class {constructor(){readers.push(this);} readAsText(file){if(file.throws)throw Error('private path');} },
     select(id) {state.selectedId = id;},
     render() {
+      renders++;
       state.scene=[];
       if (state.importedView) {
         const chosen=views.select(state.importedView,state.roomURL,state.projectURL,state.selectedId);
@@ -48,8 +53,56 @@ function harness() {
     target.handlers.change({target});return readers.at(-1);
   }
   function complete(reader,value) {reader.result=JSON.stringify(value);reader.onload();}
-  return {state,node,doc,readers,start,complete};
+  return {state,node,doc,readers,start,complete,timers,renders:()=>renders};
 }
+// A newer explicit mode choice owns the display, even when old reads settle later.
+for (const mode of ['demo', 'movement']) {
+  for (const completion of ['onload', 'onerror', 'onabort']) {
+    const chosen = harness(), value = fixture();
+    chosen.complete(chosen.start(value), value);
+    const history = chosen.node('import-history').textContent;
+    const pending = chosen.start(value);
+    chosen.node('display-mode').value = mode;
+    chosen.doc.activeElement = chosen.node('display-mode');
+    chosen.node('display-mode').handlers.change({target:chosen.node('display-mode')});
+    chosen.state.select(mode === 'movement' ? 'demo-task-B' : 'coco');
+    if (mode === 'movement') chosen.node('movement-play').handlers.click();
+    assert.equal(chosen.state.mode, mode);
+    assert.equal(chosen.timers.size, mode === 'movement' ? 1 : 0);
+    const timer = [...chosen.timers.entries()][0];
+    function display() {
+      return JSON.stringify({mode:chosen.state.mode, selected:chosen.state.selectedId,
+        room:chosen.state.roomURL, project:chosen.state.projectURL, snapshot:chosen.state.snapshot,
+        view:chosen.state.importedView, expression:chosen.state.expressionIntent,
+        controls:['display-mode','room-select','project-select','movement-play','import-message','import-attempt','import-history'].map(id =>
+          [chosen.node(id).value, chosen.node(id).textContent]),
+        focus:chosen.doc.activeElement.id, renders:chosen.renders(), player:chosen.state.movement.state()});
+    }
+    const before = display();
+    if (completion === 'onload') chosen.complete(pending, value);
+    else pending[completion]();
+    assert.equal(display(), before, `${mode}: obsolete ${completion} preserves chosen display and player`);
+    assert.equal(chosen.node('import-history').textContent, history);
+    assert.equal(chosen.timers.size, mode === 'movement' ? 1 : 0);
+    if (timer) {
+      assert.equal(chosen.timers.get(timer[0]), timer[1], 'obsolete read keeps the current player timer');
+      chosen.timers.delete(timer[0]); timer[1]();
+      assert.equal(chosen.state.movement.state().index, 1, 'the retained timer still advances movement');
+      assert.equal(chosen.timers.size, 1);
+      const lateTimer = [...chosen.timers.values()][0];
+      chosen.node('display-mode').handlers.change({target:{value:'demo'}});
+      assert.equal(chosen.state.movement.state().playing, false);
+      assert.equal(chosen.timers.size, 0, 'leaving movement cancels autoplay');
+      lateTimer();
+      assert.equal(chosen.timers.size, 0, 'cancelled movement callback cannot restart autoplay');
+    }
+    chosen.complete(chosen.start(value), value);
+    assert.equal(chosen.state.mode, 'view-import', 'a fresh import still succeeds after changing mode');
+    assert.ok(chosen.state.importedView);
+    assert.equal(chosen.timers.size, 0);
+  }
+}
+console.log('PASS newer mode choices fence obsolete load/error/abort; movement keeps one live timer, leaving cancels it, fresh imports succeed');
 const h=harness(), value=fixture();
 h.node('refresh-file').handlers.click();assert.equal(h.node('refresh-input').clicks,1);assert.equal(h.node('refresh-input').value,'');
 h.complete(h.start(value),value);
