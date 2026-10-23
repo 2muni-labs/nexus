@@ -32,12 +32,18 @@
   // Selected skin remains visible through the shared asset renderer. Compact staff
   // retain each skin's original art; all desks occupy the same logical 64×48 at 2×.
   function manifest(skin) {
-    const fit = (art, width, height, anchor) => art && {...art,
-      display:{width,height},anchor:anchor || art.anchor,expressions:undefined};
-    const simulation = skin.desk.width === 64;
+    if (!skin || typeof skin !== 'object') return skin;
+    const fit = (art, width, height, anchor) => {
+      // Invalid registrations must reach the shared error/retry renderer unchanged.
+      const valid = art && typeof art.src === 'string' && art.src.length > 0 &&
+        [art.width,art.height,art.display?.width,art.display?.height].every(v => Number.isFinite(v) && v > 0) &&
+        [art.anchor?.x,art.anchor?.y].every(Number.isFinite);
+      return valid ? {...art,display:{width,height},anchor:anchor || art.anchor,expressions:undefined} : art;
+    };
+    const simulation = skin.desk?.width === 64;
     return {...skin, room:roomArt('campus-building'),roomFront:roomArt('campus-front'),layout,
       desk:fit(skin.desk,128,96,simulation ? skin.desk.anchor : {x:120,y:80}),
-      characters:Object.fromEntries(Object.entries(skin.characters).map(([key,art]) =>
+      characters:Object.fromEntries(Object.entries(skin.characters || {}).map(([key,art]) =>
         [key,fit(art,48,64)]))};
   }
   const api = {rooms, assignments, layout, view, manifest};

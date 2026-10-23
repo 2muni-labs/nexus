@@ -35,3 +35,13 @@ for(const query of ['', '?view=unknown', '?view=rooms', '?view=Campus', '?view=c
  assert.equal(vm.runInNewContext(initial,{URLSearchParams,window:{location:{search:query}}}),query==='?view=campus'?'campus':'demo');
 }
 console.log('PASS only the exact campus query changes the existing initial mode');
+
+for(const missing of [undefined,null]) assert.equal(campus.manifest(missing),missing);
+for(const broken of [undefined,null,{}, {src:'assets/broken.svg',width:0}, {...context.window.officeSkins.simulation.desk,anchor:null}]){
+ const fitted=campus.manifest({...context.window.officeSkins.simulation,desk:broken});
+ assert.equal(fitted.desk,broken,'invalid desk reaches shared error renderer unchanged');
+}
+assert.deepEqual(Object.keys(campus.manifest({}).characters),[]);
+const malformed={...context.window.officeSkins.simulation.characters['leaf-mint'],anchor:null};
+assert.equal(campus.manifest({characters:{'leaf-mint':malformed}}).characters['leaf-mint'],malformed);
+console.log('PASS absent skins/desks/characters and malformed registrations remain explicit errors without throwing or success-art substitution');

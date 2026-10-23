@@ -32,6 +32,23 @@ async function runOfficeCampusTests(w) {
     assert(!d.querySelector('[data-playing="true"]'),'static campus owns no replay');
     assert(get('movement-actor').style.display==='none','movement actor removed');
   }
+  // Missing or malformed registrations use the existing explicit error/retry UI.
+  change('skin-select','simulation');const healthy=w.officeSkins.simulation;
+  const brokenCharacter={...healthy.characters['leaf-mint'],anchor:null};
+  for(const [label,broken] of [['missing skin',undefined],['missing desk',{...healthy,desk:undefined}],
+    ['missing characters',{...healthy,characters:undefined}],['malformed desk',{...healthy,desk:{...healthy.desk,width:0}}],
+    ['malformed character',{...healthy,characters:{...healthy.characters,'leaf-mint':brokenCharacter}}]]){
+    const errors=[];const observe=e=>{errors.push(e.message);e.preventDefault();};w.addEventListener('error',observe);
+    try{
+      w.officeSkins.simulation=broken;get('asset-retry').click();
+      assert(!errors.length,label+' does not throw');
+      assert(get('asset-message').textContent.includes('이미지 오류')&&!get('asset-retry').hidden,label+' explicit asset error');
+      d.querySelector('.desk').dispatchEvent(new w.MouseEvent('click',{bubbles:true}));selected(w.officeCampus.assignments[0]);
+      w.officeSkins.simulation=healthy;get('asset-retry').click();
+      assert(!get('asset-message').textContent&&get('asset-retry').hidden,label+' restored retry recovers');
+      assert(JSON.stringify(facts())===original,label+' keeps ownership');
+    }finally{w.officeSkins.simulation=healthy;w.removeEventListener('error',observe);}
+  }
   for(const mode of ['demo','rooms','movement','snapshot','view-import']){
     change('display-mode',mode);assert(get('office').dataset.mode===mode,'leave campus '+mode);
     assert(get('campus-fields').hidden,'campus details hidden '+mode);

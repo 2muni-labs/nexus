@@ -121,7 +121,9 @@
     portrait.style.background = 'var(--paper)';
     const desk = scene.find(entry => entry.work?.id === sample.id);
     const art = activeSkin()?.characters?.[desk.characterKey];
-    const portraitBox = mode === 'campus' && art
+    const compactPortrait = art && [art.width,art.height,art.display?.width,art.display?.height].every(value => Number.isFinite(value) && value > 0) &&
+      [art.anchor?.x,art.anchor?.y].every(Number.isFinite);
+    const portraitBox = mode === 'campus' && compactPortrait
       ? `${-art.anchor.x * art.display.width / art.width} ${-art.anchor.y * art.display.height / art.height} ${art.display.width} ${art.display.height}`
       : activeSkin()?.layout?.portraitViewBox || '-50 -70 100 125';
     const frame = svg('svg', {viewBox: portraitBox});
