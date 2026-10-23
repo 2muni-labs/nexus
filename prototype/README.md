@@ -259,3 +259,65 @@ reset, identity and simulation anchors. Run it with the other six suites includi
 manual refresh. Browser DOM checks and iframe viewports exercise production handlers
 and responsive CSS; they do not certify native keyboard/OS preference delivery or
 cross-command Orca browser state persistence.
+
+## Selected-work evidence (Issue39 M3)
+
+**선택 작업 근거** shows candidate revision, PR Draft/Ready, each CI observation,
+review decision and independent validation separately. CI is always a partial,
+unattested list: all supplied runs passing does not establish complete or required
+CI coverage. Ready and submitted review do not imply approval; an imported approval
+or PASS remains a claim. The panel never grants acceptance, merge or Done.
+
+V1 is unchanged. V2 and each v2 record inside a view may optionally add `evidence`;
+old files still work. See the **fictional** `views-example.json` / room sample for
+ready + CI success + pending review + unknown validation, mixed CI results,
+submitted review, mismatched revision and absent evidence. Fixed historical sample
+timestamps remain historical, with unknown current state. Examples contain no real
+observations, receipts or credentials.
+
+`evidence` is null or an object with optional nullable `candidate`, `pr`, `ci`,
+`review`, `validation`. `ci` is null or an array of at most eight observations,
+without deduplication. Each nonnull observation requires `revision`, `source`,
+`observed_at`, `url`, all nullable. Nonnull revision is exactly 40 lowercase hex
+characters; source is at most 160 characters; time uses the existing UTC ISO format.
+All noncandidate observations additionally require nullable `state`. Values are:
+
+| Observation | State values | Extra required fields |
+| --- | --- | --- |
+| PR | `draft`, `ready`, `unknown` | none |
+| CI | `success`, `failure`, `pending`, `cancelled`, `unknown` | `label`: null or ≤80 characters |
+| Review | `pending`, `submitted`, `approved`, `changes_requested`, `commented`, `unknown` | none |
+| Validation | `PASS`, `FAIL`, `NEEDS-WORK`, `unknown` | `independent`: boolean or null |
+
+URLs are null or canonical HTTPS GitHub URLs in the selected Issue's repository.
+Candidate uses `/commit/SHA40` matching its revision; PR/review/validation use
+`/pull/POSITIVE_INTEGER`; CI uses `/actions/runs/POSITIVE_INTEGER`, optionally
+`/job/POSITIVE_INTEGER`, or `/runs/POSITIVE_INTEGER`. No query, fragment, credentials,
+foreign repository, arbitrary link or markup is accepted. Source/label descriptions
+contain text rather than URLs; put references in `url`. The existing private-data,
+duplicate-key, string and 16 KiB v2 / 64 KiB view limits remain in force.
+
+A usable displayed observation needs its own revision, source, time and reference,
+a complete candidate, matching exact revision, and nonfuture times within 24 hours
+and no later than the selected record's observation time. Missing/incomplete,
+mismatched, stale or inconsistent observations show **미확인**, while retaining the
+literal historical claim and its separate provenance. Review/validation links must
+match a usable PR observation at the same candidate; a contradictory PR revision
+also makes the candidate association unknown. Independent validation additionally needs `independent: true`.
+These are conservative display labels, not authentication, repository acceptance
+policy, native required-check discovery or an approval engine. Validation acceptance
+remains unknown even for an independent PASS claim. No collectors, credentials,
+backend, external resources, storage or writes are added.
+
+Selection, room/Project filters, empty states, skins and manual refresh use the
+existing controller; refresh retains only matching work identities and their newly
+supplied candidate-bound evidence, with expressions paused. Failed imports clear
+the panel. The browser-only `evidence.browser.test.js` exports
+`runOfficeEvidenceTests(appIframe.contentWindow, optionalSanitizedV2)` for an
+isolated app iframe at each viewport; it exercises the production parser, real DOM
+and file-import handlers without packages. Full provenance expands per row.
+Run `node prototype/evidence.test.cjs`, `node prototype/refresh.test.cjs`
+and the six earlier suites, plus affected JS syntax checks. Real browser acceptance
+also checks production DOM rendering, long labels/empty states, selection, skin and
+refresh retention over file/HTTP at 969px and 390px. DOM-driven tests do not prove
+native Orca cross-command key/input persistence or OS preference delivery.

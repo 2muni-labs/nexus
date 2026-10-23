@@ -102,10 +102,24 @@ assert.match(stale.node('import-message').textContent,/오래된 관찰.*현재 
 const future=harness();future.complete(future.start(fixture(2000)),fixture(2000));assert.equal(future.state.importedView,null);
 // Both single formats use exactly the same guarded handler and Work Item identity.
 for(const version of [1,2]) {
- const single=harness();const v=fixture().records[0].observation;if(version===1){v.version=1;delete v.office;}
+ const single=harness();const v=fixture().records[0].observation;if(version===1){v.version=1;delete v.office;delete v.evidence;}
  single.complete(single.start(v),v);assert.equal(single.state.snapshot.version,version);
  single.state.desks.focusin({target:{closest:()=>({dataset:{id:'work'}})}});
  single.complete(single.start(v),v);assert.equal(single.doc.activeElement.dataset.id,'work');assert.match(single.node('import-message').textContent,/유지/);
  single.complete(single.start({}),{});assert.equal(single.state.snapshot,null);
 }
+// Candidate-bound evidence survives the actual production manual refresh handler unchanged.
+const evidenceRefresh=harness(), withEvidence=fixture();
+evidenceRefresh.complete(evidenceRefresh.start(withEvidence),withEvidence);
+const beforeEvidence=JSON.stringify(evidenceRefresh.state.importedView.records[0].observation.evidence);
+evidenceRefresh.complete(evidenceRefresh.start(withEvidence),withEvidence);
+assert.equal(JSON.stringify(evidenceRefresh.state.importedView.records[0].observation.evidence),beforeEvidence);
+assert.equal(evidenceRefresh.state.expressionIntent,false);
+const newCandidate=fixture();const freshEvidence=newCandidate.records[0].observation.evidence;
+freshEvidence.candidate.revision='c'.repeat(40);freshEvidence.candidate.url=freshEvidence.candidate.url.replace(/a{40}$/,'c'.repeat(40));
+evidenceRefresh.complete(evidenceRefresh.start(newCandidate),newCandidate);
+const retainedEvidence=evidenceRefresh.state.importedView.records[0].observation.evidence;
+assert.equal(retainedEvidence.candidate.revision,'c'.repeat(40));
+assert.equal(require('./evidence.js').rows(evidenceRefresh.state.importedView.records[0].observation,now)[2].state.startsWith('미확인'),true);
+
 console.log('PASS production refresh handlers: fresh picker, v1/v2/view, paused imports, identity/filter/skin/focus retention, reset, cancel, reordered reads, read/abort/size/parse errors, history, stale/future and chronological fences');

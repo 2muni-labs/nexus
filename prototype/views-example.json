@@ -5,27 +5,64 @@
   "projects": [
     {
       "url": "https://github.com/orgs/example/projects/1",
-      "label": "Fiction \u00b7 Shared garden"
+      "label": "Fiction · Shared garden"
     },
     {
       "url": "https://github.com/users/example/projects/2",
-      "label": "Fiction \u00b7 Paper only"
+      "label": "Fiction · Paper only"
     }
   ],
   "records": [
     {
       "id": "display-record-1",
+      "projects": [
+        "https://github.com/orgs/example/projects/1",
+        "https://github.com/users/example/projects/2"
+      ],
       "observation": {
         "version": 2,
         "observed_at": "2026-01-01T00:00:00Z",
         "work": {
           "url": "https://github.com/example/fiction-paper/issues/1",
-          "title": "Fiction \u00b7 Shared paper task",
+          "title": "Fiction · Shared paper task",
           "workflow_status": "Review"
         },
         "execution": {
           "status": "succeeded",
           "source": "Fictional manual result example"
+        },
+        "evidence": {
+          "candidate": {
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "source": "Fictional candidate example only",
+            "observed_at": "2026-01-01T00:00:00Z",
+            "url": "https://github.com/example/fiction-paper/commit/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "pr": {
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "source": "Fictional evidence example only",
+            "observed_at": "2026-01-01T00:00:00Z",
+            "url": "https://github.com/example/fiction-paper/pull/1",
+            "state": "ready"
+          },
+          "ci": [
+            {
+              "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "source": "Fictional evidence example only",
+              "observed_at": "2026-01-01T00:00:00Z",
+              "url": "https://github.com/example/fiction-paper/actions/runs/1",
+              "state": "success",
+              "label": "Fiction CI"
+            }
+          ],
+          "review": {
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "source": "Fictional evidence example only",
+            "observed_at": "2026-01-01T00:00:00Z",
+            "url": "https://github.com/example/fiction-paper/pull/1",
+            "state": "pending"
+          },
+          "validation": null
         },
         "office": {
           "source": "Fictional manual shape example only",
@@ -33,7 +70,7 @@
           "coverage": "single-record",
           "repository": {
             "alias": "display-paper",
-            "label": "Fiction \u00b7 Paper room",
+            "label": "Fiction · Paper room",
             "url": "https://github.com/example/fiction-paper"
           },
           "workspace": {
@@ -61,25 +98,70 @@
             "source": null
           }
         }
-      },
-      "projects": [
-        "https://github.com/orgs/example/projects/1",
-        "https://github.com/users/example/projects/2"
-      ]
+      }
     },
     {
       "id": "display-record-2",
+      "projects": [],
       "observation": {
         "version": 2,
         "observed_at": "2026-01-01T00:00:00Z",
         "work": {
           "url": "https://github.com/example/fiction-paper/issues/2",
-          "title": "Fiction \u00b7 No Project membership",
+          "title": "Fiction · No Project membership",
           "workflow_status": "Ready"
         },
         "execution": {
           "status": "unknown",
           "source": "Fictional manual result example"
+        },
+        "evidence": {
+          "candidate": {
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "source": "Fictional candidate example only",
+            "observed_at": "2026-01-01T00:00:00Z",
+            "url": "https://github.com/example/fiction-paper/commit/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "pr": {
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "source": "Fictional evidence example only",
+            "observed_at": "2026-01-01T00:00:00Z",
+            "url": "https://github.com/example/fiction-paper/pull/2",
+            "state": "ready"
+          },
+          "ci": [
+            {
+              "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "source": "Fictional evidence example only",
+              "observed_at": "2026-01-01T00:00:00Z",
+              "url": "https://github.com/example/fiction-paper/actions/runs/2",
+              "state": "success",
+              "label": "Fiction CI"
+            },
+            {
+              "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "source": "Fictional evidence example only",
+              "observed_at": "2026-01-01T00:00:00Z",
+              "url": "https://github.com/example/fiction-paper/actions/runs/99",
+              "state": "failure",
+              "label": "Fiction CI"
+            }
+          ],
+          "review": {
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "source": "Fictional evidence example only",
+            "observed_at": "2026-01-01T00:00:00Z",
+            "url": "https://github.com/example/fiction-paper/pull/2",
+            "state": "submitted"
+          },
+          "validation": {
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "source": "Fictional evidence example only",
+            "observed_at": "2026-01-01T00:00:00Z",
+            "url": "https://github.com/example/fiction-paper/pull/2",
+            "state": "NEEDS-WORK",
+            "independent": true
+          }
         },
         "office": {
           "source": "Fictional manual shape example only",
@@ -87,7 +169,7 @@
           "coverage": "single-record",
           "repository": {
             "alias": "display-paper",
-            "label": "Fiction \u00b7 Paper room",
+            "label": "Fiction · Paper room",
             "url": "https://github.com/example/fiction-paper"
           },
           "workspace": {
@@ -115,22 +197,57 @@
             "source": null
           }
         }
-      },
-      "projects": []
+      }
     },
     {
       "id": "display-record-3",
+      "projects": [
+        "https://github.com/orgs/example/projects/1"
+      ],
       "observation": {
         "version": 2,
         "observed_at": "2026-01-01T00:00:00Z",
         "work": {
           "url": "https://github.com/example/fiction-garden/issues/3",
-          "title": "Fiction \u00b7 Shared garden task",
+          "title": "Fiction · Shared garden task",
           "workflow_status": "In Progress"
         },
         "execution": {
           "status": "running",
           "source": "Fictional manual result example"
+        },
+        "evidence": {
+          "candidate": {
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "source": "Fictional candidate example only",
+            "observed_at": "2026-01-01T00:00:00Z",
+            "url": "https://github.com/example/fiction-garden/commit/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "pr": {
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "source": "Fictional evidence example only",
+            "observed_at": "2026-01-01T00:00:00Z",
+            "url": "https://github.com/example/fiction-garden/pull/3",
+            "state": "ready"
+          },
+          "ci": [
+            {
+              "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "source": "Fictional evidence example only",
+              "observed_at": "2026-01-01T00:00:00Z",
+              "url": "https://github.com/example/fiction-garden/actions/runs/3",
+              "state": "success",
+              "label": "Fiction CI"
+            }
+          ],
+          "review": {
+            "revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "source": "Fictional evidence example only",
+            "observed_at": "2026-01-01T00:00:00Z",
+            "url": "https://github.com/example/fiction-garden/pull/3",
+            "state": "pending"
+          },
+          "validation": null
         },
         "office": {
           "source": "Fictional manual shape example only",
@@ -138,7 +255,7 @@
           "coverage": "single-record",
           "repository": {
             "alias": "display-garden",
-            "label": "Fiction \u00b7 Garden room",
+            "label": "Fiction · Garden room",
             "url": "https://github.com/example/fiction-garden"
           },
           "workspace": {
@@ -166,32 +283,31 @@
             "source": null
           }
         }
-      },
-      "projects": [
-        "https://github.com/orgs/example/projects/1"
-      ]
+      }
     },
     {
       "id": "display-record-4",
+      "projects": null,
       "observation": {
         "version": 2,
         "observed_at": "2026-01-01T00:00:00Z",
         "work": {
           "url": "https://github.com/example/fiction-garden/issues/4",
-          "title": "Fiction \u00b7 Membership unknown",
+          "title": "Fiction · Membership unknown",
           "workflow_status": "Blocked"
         },
         "execution": {
           "status": "awaiting_input",
           "source": "Fictional manual result example"
         },
+        "evidence": null,
         "office": {
           "source": "Fictional manual shape example only",
           "observed_at": "2026-01-01T00:00:00Z",
           "coverage": "single-record",
           "repository": {
             "alias": "display-garden",
-            "label": "Fiction \u00b7 Garden room",
+            "label": "Fiction · Garden room",
             "url": "https://github.com/example/fiction-garden"
           },
           "workspace": {
@@ -206,8 +322,7 @@
             "source": null
           }
         }
-      },
-      "projects": null
+      }
     }
   ]
 }

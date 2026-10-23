@@ -328,6 +328,7 @@
     if (samples.length) select(samples.some(sample => sample.id === selectedId) ? selectedId : samples[0].id);
     else {
       selectedId = null;
+      window.officeEvidence.render(byId('evidence-panel'), null);
       byId('portrait').replaceChildren();
       ['agent-role', 'task-name', 'task-note'].forEach(id => byId(id).textContent = '');
       byId('detail-heading').textContent = isView && viewData ? '일치하는 작업 없음' : '관찰 미확인';
@@ -354,6 +355,7 @@
     const currentSnapshot = sample.observation || snapshot;
     const isView = mode === 'rooms' || mode === 'view-import';
     selectedId = id;
+    window.officeEvidence.render(byId('evidence-panel'), (mode === 'snapshot' || isView) ? currentSnapshot : null, {fictional: mode === 'rooms'});
     desks.querySelectorAll('.desk').forEach((desk) => desk.setAttribute('aria-pressed', String(desk.dataset.id === id)));
     document.getElementById('agent-role').textContent = (mode === 'snapshot' || isView) ? 'Work Item · 관찰 사본' : sample.role + ' · 샘플';
     document.getElementById('detail-heading').textContent = sample.name;
