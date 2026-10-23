@@ -8,20 +8,35 @@
   <link rel="stylesheet" href="styles.css">
   <script defer src="sample-data.js"></script>
   <script defer src="snapshot.js"></script>
+  <script defer src="evidence.js"></script>
+  <script defer src="views.js"></script>
+  <script defer src="views-sample.js"></script>
   <script defer src="scene.js"></script>
   <script defer src="skins.js"></script>
   <script defer src="movement.js"></script>
+  <script defer src="expressions.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
   <header class="topbar"><a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">n.</span> nexus <span class="brand-divider">/</span> 작은 오피스</a><span class="sample-tag">✳ 데모 샘플</span></header>
   <main>
-    <section class="intro" aria-labelledby="page-title"><div><p class="eyebrow">A LITTLE SPACE FOR BIG IDEAS</p><h1 id="page-title">오늘도, 각자의 책상에서<span aria-hidden="true"> ✿</span></h1><p class="subtitle">작은 동료들의 하루를 둘러보세요. 책상을 누르면 이야기가 보여요.</p></div><span class="intro-note">상상 속 팀의<br><strong>아늑한 작업 공간</strong></span></section>
+    <h1 id="page-title" class="office-heading">LITTLE OFFICE <span>작은 팀의 작업실</span></h1>
     <section class="import-bar" aria-label="표시 데이터 선택">
-      <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="movement">이동 DEMO · 세션 배정</option><option value="snapshot">스냅샷 · 작업 1개</option></select>
-      <label for="skin-select">캐릭터·책상 스킨</label><select id="skin-select"><option value="illustration">일러스트 · 기본</option><option value="pixel">픽셀 시험 · 캐릭터·책상만</option></select>
+      <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="rooms">방·Project 보기 · 가상 2개 방</option><option value="view-import">방·Project 보기 · 수동 가져오기</option><option value="movement">이동 DEMO · 세션 배정</option><option value="snapshot">관찰 스냅샷 · 단일 기록</option></select>
+      <label for="skin-select">오피스 스킨</label><select id="skin-select"><option value="simulation">시뮬레이션 · 기본</option><option value="illustration">일러스트</option><option value="pixel">픽셀 · 방 전체</option></select>
       <label class="file-label" for="snapshot-file">JSON 가져오기 <input id="snapshot-file" type="file" accept=".json,application/json"></label>
+      <button id="refresh-file" type="button">파일로 관찰 갱신</button>
+      <input id="refresh-input" type="file" accept=".json,application/json" hidden>
+      <button id="expression-play" type="button" aria-pressed="true">표정 일시정지</button><span id="expression-status" role="status"></span>
+      <p id="import-history"></p>
+      <p id="import-attempt" role="status"></p>
       <p id="import-message" role="status">데모입니다. 파일은 이 브라우저에서만 읽습니다.</p>
+    </section>
+    <section id="view-controls" class="import-bar" hidden aria-label="저장소 방 및 Project 보기">
+      <label for="room-select">저장소 방</label><select id="room-select"></select>
+      <label for="project-select">GitHub Project</label><select id="project-select"></select>
+      <p id="view-summary" role="status" aria-live="polite"></p>
+      <p>저장소가 방과 책상을 소유합니다. Project는 명시한 회원 관계의 보기 필터입니다. 배정·상태 변경이나 방 간 캐릭터 이동이 없습니다.</p>
     </section>
     <section id="movement-controls" class="movement-controls" hidden aria-label="이동 DEMO 제어">
       <strong>이동 DEMO · 가상 관찰</strong>
@@ -30,46 +45,30 @@
       <button id="movement-next" type="button">다음 단계</button>
       <button id="movement-reset" type="button">처음으로</button>
       <p id="movement-stage" role="status" aria-live="polite"></p>
-      <small>일시정지: 현재 단계 유지 · 다음 단계: 정지 후 한 단계 · 초기화: 정지 후 첫 등장. 스킨/모드 변경 시 정지.</small>
+      <p id="movement-motion"></p>
+      <small>일시정지: 현재 이동 위치 유지 · 다음 단계: 이동 없이 정적 한 단계 · 초기화: 정지 후 첫 등장. 스킨/모드 변경·숨김·동작 줄이기 시 정지. 경유점은 연출이며 실제 관찰이 아닙니다.</small>
     </section>
+    <section class="office-hud" aria-label="현재 보이는 작업과 관찰 출처"><strong id="work-count"></strong><span id="data-source"></span><span id="observation-time"></span></section>
     <div class="office-layout">
       <section class="scene-card" aria-label="네 명의 가상 에이전트가 있는 작은 오피스">
         <div class="scene-caption"><span>☀ 햇살이 드는 오피스</span><span>가상 동료 4명</span></div>
         <svg id="office" viewBox="0 0 880 790" xmlns="http://www.w3.org/2000/svg" aria-labelledby="office-title office-desc">
-          <title id="office-title">작은 동료들의 아이소메트릭 오피스</title><desc id="office-desc">식물과 소파가 있는 따뜻한 사무실입니다. 네 개의 책상을 Tab으로 탐색하고 Enter 또는 Space로 선택하세요.</desc>
-          <defs>
-            <pattern id="floorboards" width="90" height="44" patternUnits="userSpaceOnUse" patternTransform="matrix(1 .5 -1 .5 440 330)"><rect width="90" height="44" fill="#f5e6cd"/><path d="M0 0H90V44" fill="none" stroke="#e8d5b8" stroke-width="2"/></pattern>
-            <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#665464" flood-opacity=".12"/></filter>
-            <g id="plant"><ellipse cx="0" cy="8" rx="29" ry="13" fill="#c4bcae" opacity=".25"/><path d="M-20-25L-15 5Q0 17 15 5L20-25" fill="#d9b39d" stroke="#aa8777" stroke-width="2"/><ellipse cy="-25" rx="20" ry="8" fill="#efd2bc"/><path d="M0-24V-75M0-48Q-43-45-30-71Q-5-76 0-48M0-62Q27-98 32-73Q34-52 0-48M0-36Q-24-34-24-53Q-8-60 0-36" fill="#91b89b" stroke="#618b72" stroke-width="3" stroke-linejoin="round"/></g>
-          </defs>
-          <ellipse cx="439" cy="589" rx="341" ry="108" fill="#e6ddd9" opacity=".55"/>
-          <g stroke-linejoin="round">
-            <path d="M52 450L440 255 829 450V462L440 657 52 462Z" fill="#d4bca4"/>
-            <path d="M52 450L440 255 829 450 440 645Z" fill="url(#floorboards)" stroke="#d2bca5" stroke-width="2"/>
-            <path d="M52 450V255L440 60V255Z" fill="#e9dfef" stroke="#cfc1dc" stroke-width="2"/>
-            <path d="M440 60L829 255V450L440 255Z" fill="#f5eee5" stroke="#d7cdbf" stroke-width="2"/>
-            <path d="M52 450L440 255" stroke="#d1c0db" stroke-width="10" transform="translate(0 -2)"/>
-            <path d="M440 255L829 450" stroke="#ded0bd" stroke-width="10"/>
-          </g>
-          <!-- Light, window and wall objects are decorative, with no live state. -->
-          <g transform="translate(280 300) scale(-1 1)" stroke-linejoin="round"><path d="M0-35L128 29V-69L0-133Z" fill="#fff9ee" stroke="#c3adca" stroke-width="7"/><path d="M7-41L121 16V-64L7-121Z" fill="#d1e9e4"/><path d="M64-93V-12M7-83L121-26" stroke="#fff9ee" stroke-width="6"/><path d="M-9-34L130 36 146 28 7-42Z" fill="#eee2ed" stroke="#c3adca" stroke-width="2"/><path d="M13-104L46-89 13-59Z" fill="#eff9eb" opacity=".8"/></g>
-          <g transform="translate(625 243)"><path d="M-40-67L43-25V37L-40-5Z" fill="#e1caaa" stroke="#b8a48e" stroke-width="3"/><path d="M-32-54L35-20V25L-32-9Z" fill="#fff5df"/><path d="M-20-29L-5-22V-8L-20-15Z" fill="#b8cdbb"/><path d="M7-17L24-9V6L7-2Z" fill="#cfbedb"/><text x="-27" y="-30" font-size="11" fill="#756e71" transform="skewY(27)">little ideas</text></g>
-          <g transform="translate(478 212)"><ellipse rx="23" ry="28" fill="#fdf9ef" stroke="#bbacb8" stroke-width="4"/><path d="M0-16V0L11 10" fill="none" stroke="#8c7d95" stroke-width="3" stroke-linecap="round"/></g>
-          <path d="M270 477L450 387 666 495 486 588Z" fill="#d7cce3" opacity=".7"/><path d="M286 477L450 395 650 495 486 577Z" fill="none" stroke="#f3eaf5" stroke-width="3" stroke-dasharray="5 7"/>
-          <g transform="translate(708 391)" filter="url(#shadow)"><path d="M-19-45L62-5V45L-19 5Z" fill="#aac5b3" stroke="#789f88" stroke-width="2"/><path d="M-44-5L-19-18 63 23 38 37Z" fill="#cee1ce" stroke="#789f88" stroke-width="2"/><path d="M-44-5V22L38 64V37Z" fill="#9bbb9f" stroke="#789f88" stroke-width="2"/><path d="M38 37L63 23V49L38 64Z" fill="#86ab91"/><path d="M-32-9V-28L-16-20V10M39 27V9L55 17V39" fill="#b7d1b9" stroke="#789f88" stroke-width="7" stroke-linecap="round"/><path d="M-4-28L19-16 19 6-4-5Z" fill="#f4e7c5"/><path d="M-28 33V43M48 58V68" stroke="#9a816c" stroke-width="5"/></g>
-          <use href="#plant" x="95" y="440"/><use href="#plant" x="771" y="505"/>
-          <g transform="translate(188 579)"><ellipse rx="46" ry="23" fill="#d7baa1"/><path d="M-46 0V10Q0 48 46 10V0Q0 32-46 0" fill="#c6a58c"/><path d="M-22 21V51M23 22V52" stroke="#ae8c78" stroke-width="7"/><ellipse cx="0" cy="-8" rx="14" ry="7" fill="#fcf6e6"/><path d="M-14-8V0Q0 12 14 0V-8" fill="#f5ead7"/><path d="M0-8V-29M0-16Q-19-41-17-20Q-12-12 0-16M0-22Q16-46 18-28Q19-18 0-17" fill="#8eae8c" stroke="#6d9479" stroke-width="2"/></g>
+          <title id="office-title">작은 동료들의 아이소메트릭 오피스</title><desc id="office-desc">작은 직원들과 네 책상이 있는 사무실입니다. 네 개의 책상을 Tab으로 탐색하고 Enter 또는 Space로 선택하세요.</desc>
+          <g id="room-art" aria-hidden="true"></g>
           <g id="desks"></g>
           <g id="movement-actor" aria-hidden="true"></g>
-          <g transform="translate(653 624)"><path d="M-37-10Q-37-38-5-30Q15-51 34-25Q58-13 39 11Q32 31 1 20Q-25 31-37-10" fill="#ead9c5" stroke="#bb9b81" stroke-width="2"/><path d="M-20-13Q-28-49-8-37L1-24M15-26Q34-52 35-20" fill="#ead9c5" stroke="#bb9b81" stroke-width="2"/><path d="M-11-7l5 2M14-5l5-2M0 3l4 2 4-2M-28 8Q-65 15-51-9" fill="none" stroke="#967e70" stroke-width="2" stroke-linecap="round"/></g>
-          <text x="440" y="776" text-anchor="middle" class="scene-bottom">작은 책상, 서로 다른 이야기.</text>
+          <g id="room-front-art" aria-hidden="true"></g>
+          <text x="440" y="776" text-anchor="middle" class="scene-bottom">ONE ROOM · FOUR DESKS</text>
         </svg>
+        <p id="asset-message" role="status" aria-live="polite"></p>
+        <button id="asset-retry" type="button" hidden>이미지 다시 불러오기</button>
         <p class="scene-hint"><span aria-hidden="true">↖</span> 책상을 클릭하거나 <kbd>Tab</kbd> → <kbd>Enter</kbd> / <kbd>Space</kbd>로 선택하세요</p>
       </section>
       <aside class="detail-card" aria-labelledby="detail-heading">
         <p class="eyebrow">DESK NOTE <span>책상 이야기</span></p><div class="portrait" id="portrait" aria-hidden="true"></div>
         <p class="agent-role" id="agent-role"></p><h2 id="detail-heading"></h2><span id="detail-status" class="status-pill"></span>
         <div class="detail-copy" aria-live="polite" aria-atomic="true"><p class="field-label">맡고 있는 샘플 작업</p><h3 id="task-name"></h3><p id="task-note"></p></div>
+        <section id="evidence-panel" aria-label="선택 작업 근거"></section>
         <dl id="movement-fields" hidden></dl>
         <dl id="snapshot-fields" hidden></dl>
         <div class="sample-notice"><span aria-hidden="true">♧</span><p>이 동료는 데모 속 캐릭터예요.<br>실제 에이전트나 작업 기록이 아닙니다.</p></div>

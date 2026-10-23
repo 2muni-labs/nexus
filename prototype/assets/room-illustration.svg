@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="790" viewBox="0 0 880 790">
+<defs><radialGradient id="backdrop"><stop offset="10%" stop-color="#fffcf4"/><stop offset="90%" stop-color="#f4f0eb"/></radialGradient></defs><path d="M0 0H880V790H0Z" fill="url(#backdrop)"/>
+          <defs>
+            <pattern id="floorboards" width="90" height="44" patternUnits="userSpaceOnUse" patternTransform="matrix(1 .5 -1 .5 440 330)"><rect width="90" height="44" fill="#f5e6cd"/><path d="M0 0H90V44" fill="none" stroke="#e8d5b8" stroke-width="2"/></pattern>
+            <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#665464" flood-opacity=".12"/></filter>
+            <g id="plant"><ellipse cx="0" cy="8" rx="29" ry="13" fill="#c4bcae" opacity=".25"/><path d="M-20-25L-15 5Q0 17 15 5L20-25" fill="#d9b39d" stroke="#aa8777" stroke-width="2"/><ellipse cy="-25" rx="20" ry="8" fill="#efd2bc"/><path d="M0-24V-75M0-48Q-43-45-30-71Q-5-76 0-48M0-62Q27-98 32-73Q34-52 0-48M0-36Q-24-34-24-53Q-8-60 0-36" fill="#91b89b" stroke="#618b72" stroke-width="3" stroke-linejoin="round"/></g>
+          </defs>
+          <ellipse cx="439" cy="589" rx="341" ry="108" fill="#e6ddd9" opacity=".55"/>
+          <g stroke-linejoin="round">
+            <path d="M52 450L440 255 829 450V462L440 657 52 462Z" fill="#d4bca4"/>
+            <path d="M52 450L440 255 829 450 440 645Z" fill="url(#floorboards)" stroke="#d2bca5" stroke-width="2"/>
+            <path d="M52 450V255L440 60V255Z" fill="#e9dfef" stroke="#cfc1dc" stroke-width="2"/>
+            <path d="M440 60L829 255V450L440 255Z" fill="#f5eee5" stroke="#d7cdbf" stroke-width="2"/>
+            <path d="M52 450L440 255" stroke="#d1c0db" stroke-width="10" transform="translate(0 -2)"/>
+            <path d="M440 255L829 450" stroke="#ded0bd" stroke-width="10"/>
+          </g>
+          <!-- Light, window and wall objects are decorative, with no live state. -->
+          <g transform="translate(280 300) scale(-1 1)" stroke-linejoin="round"><path d="M0-35L128 29V-69L0-133Z" fill="#fff9ee" stroke="#c3adca" stroke-width="7"/><path d="M7-41L121 16V-64L7-121Z" fill="#d1e9e4"/><path d="M64-93V-12M7-83L121-26" stroke="#fff9ee" stroke-width="6"/><path d="M-9-34L130 36 146 28 7-42Z" fill="#eee2ed" stroke="#c3adca" stroke-width="2"/><path d="M13-104L46-89 13-59Z" fill="#eff9eb" opacity=".8"/></g>
+          <g transform="translate(625 243)"><path d="M-40-67L43-25V37L-40-5Z" fill="#e1caaa" stroke="#b8a48e" stroke-width="3"/><path d="M-32-54L35-20V25L-32-9Z" fill="#fff5df"/><path d="M-20-29L-5-22V-8L-20-15Z" fill="#b8cdbb"/><path d="M7-17L24-9V6L7-2Z" fill="#cfbedb"/><text x="-27" y="-30" font-size="11" fill="#756e71" transform="skewY(27)">little ideas</text></g>
+          <g transform="translate(478 212)"><ellipse rx="23" ry="28" fill="#fdf9ef" stroke="#bbacb8" stroke-width="4"/><path d="M0-16V0L11 10" fill="none" stroke="#8c7d95" stroke-width="3" stroke-linecap="round"/></g>
+          <path d="M270 477L450 387 666 495 486 588Z" fill="#d7cce3" opacity=".7"/><path d="M286 477L450 395 650 495 486 577Z" fill="none" stroke="#f3eaf5" stroke-width="3" stroke-dasharray="5 7"/>
+          <g transform="translate(708 391)" filter="url(#shadow)"><path d="M-19-45L62-5V45L-19 5Z" fill="#aac5b3" stroke="#789f88" stroke-width="2"/><path d="M-44-5L-19-18 63 23 38 37Z" fill="#cee1ce" stroke="#789f88" stroke-width="2"/><path d="M-44-5V22L38 64V37Z" fill="#9bbb9f" stroke="#789f88" stroke-width="2"/><path d="M38 37L63 23V49L38 64Z" fill="#86ab91"/><path d="M-32-9V-28L-16-20V10M39 27V9L55 17V39" fill="#b7d1b9" stroke="#789f88" stroke-width="7" stroke-linecap="round"/><path d="M-4-28L19-16 19 6-4-5Z" fill="#f4e7c5"/><path d="M-28 33V43M48 58V68" stroke="#9a816c" stroke-width="5"/></g>
+          <use href="#plant" x="95" y="440"/><use href="#plant" x="771" y="505"/>
+          <g transform="translate(188 579)"><ellipse rx="46" ry="23" fill="#d7baa1"/><path d="M-46 0V10Q0 48 46 10V0Q0 32-46 0" fill="#c6a58c"/><path d="M-22 21V51M23 22V52" stroke="#ae8c78" stroke-width="7"/><ellipse cx="0" cy="-8" rx="14" ry="7" fill="#fcf6e6"/><path d="M-14-8V0Q0 12 14 0V-8" fill="#f5ead7"/><path d="M0-8V-29M0-16Q-19-41-17-20Q-12-12 0-16M0-22Q16-46 18-28Q19-18 0-17" fill="#8eae8c" stroke="#6d9479" stroke-width="2"/></g>
+</svg>

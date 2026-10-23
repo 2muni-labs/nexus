@@ -20,8 +20,9 @@
     if (new TextEncoder().encode(raw).length > MAX_BYTES) throw Error('파일은 16 KiB 이하여야 합니다.');
     let value;
     try { value = JSON.parse(raw); } catch (_) { throw Error('JSON을 읽을 수 없습니다.'); }
-    object(value, ['version', 'observed_at', 'work', 'execution']);
-    if (value.version !== 1) throw Error('version: 1 형식만 지원합니다.');
+    object(value, value.version === 2 ? ['version', 'observed_at', 'work', 'execution', 'office', 'evidence'] : ['version', 'observed_at', 'work', 'execution']);
+    if (![1, 2].includes(value.version)) throw Error('version: 1 또는 2 형식만 지원합니다.');
+    if (value.version === 2) { uniqueKeys(raw); privateBoundary(value); }
     const observed = text(value.observed_at, 30, false);
     if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z$/.test(observed) || !Number.isFinite(Date.parse(observed)) || new Date(observed).toISOString() !== observed.replace(/Z$/, observed.includes('.') ? 'Z' : '.000Z')) throw Error('관찰 시각은 유효한 UTC ISO 시각이어야 합니다.');
     object(value.work, ['url', 'title', 'workflow_status']);
@@ -33,9 +34,212 @@
       object(value.execution, ['status', 'source']);
       result = {status: status(value.execution.status, execution), source: text(value.execution.source, 240, true)};
     }
-    return {version: 1, observed_at: observed, work: {url, title: text(value.work.title, 160, false), workflow_status: status(value.work.workflow_status, workflow)}, execution: result};
+    const parsed = {version: value.version, observed_at: observed, work: {url, title: text(value.work.title, 160, false), workflow_status: status(value.work.workflow_status, workflow)}, execution: result};
+    if (value.version === 2) {
+      parsed.office = office(value.office);
+      if (Object.hasOwn(value, 'evidence')) parsed.evidence = evidence(value.evidence, url.split('/issues/')[0]);
+    }
+    return parsed;
   }
-  const api = {parse, MAX_BYTES};
+  // JSON.parse keeps only the last repeated key; reject ambiguous v2 input first.
+  function uniqueKeys(raw) {
+    const stack = [];
+    for (const match of raw.matchAll(/"(?:\\[\s\S]|[^"\\])*"|[{}\[\]]/g)) {
+      const token = match[0];
+      if (token === '{' || token === '[') stack.push(token === '{' ? new Set() : null);
+      else if (token === '}' || token === ']') stack.pop();
+      else if (/^\s*:/.test(raw.slice(match.index + token.length))) {
+        const keys = stack[stack.length - 1];
+        const key = JSON.parse(token);
+        if (keys?.has(key)) throw Error('중복 JSON 키는 지원하지 않습니다.');
+        keys?.add(key);
+      }
+    }
+  }
+  // V2 is one manually sanitized display record, never an adapter receipt.
+  function privateBoundary(value) {
+    const visit = item => {
+      if (typeof item === 'string') {
+        if (/[<>`\\]|[\u0000-\u001f\u007f]|(?:^|[\s"'(=])(?:\/|~\/|\.{1,2}\/)|\b(?:file:|https?:)(?!\/\/github\.com\/)|\b(?:term|ctx|task|run|wtr|repo|session|dispatch)_[a-z0-9-]+|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}|\b(?:gh[pousr]_|github_pat_|sk-|AKIA|ASIA)|(?:password|secret|token|api[_ -]?key|private[_ -]?key)\s*[:=]|\bbearer\s+\S+|BEGIN .*PRIVATE KEY|(?:transcript|rollout)\s*[:=]/i.test(item)) throw Error('비공개 경로·영수증·비밀·마크업을 제거하세요.');
+        if (item.length > 300) throw Error('문자열 한도를 초과했습니다.');
+      } else if (item && typeof item === 'object') Object.values(item).forEach(visit);
+    };
+    visit(value);
+  }
+  function exact(value, keys, optional = []) {
+    object(value, keys);
+    if (keys.some(key => !optional.includes(key) && !Object.hasOwn(value, key))) throw Error('v2 필수 필드를 확인하세요.');
+  }
+  function time(value) {
+    const result = text(value, 30, false);
+    if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z$/.test(result) || !Number.isFinite(Date.parse(result)) || new Date(result).toISOString() !== result.replace(/Z$/, result.includes('.') ? 'Z' : '.000Z')) throw Error('유효한 UTC ISO 시각이 필요합니다.');
+    return result;
+  }
+  function alias(value, nullable = false) {
+    if (nullable && value === null) return null;
+    if (typeof value !== 'string' || !/^display-[a-z0-9][a-z0-9-]{0,32}$/.test(value)) throw Error('display- 표시 별칭이 필요합니다.');
+    return value;
+  }
+  function nullableEnum(value, values) {
+    if (value !== null && typeof value !== 'string') throw Error('상태 형식을 확인하세요.');
+    return values.includes(value) ? value : null;
+  }
+  function office(value) {
+    if (value == null) return null;
+    exact(value, ['source', 'observed_at', 'coverage', 'repository', 'workspace', 'session', 'assignment', 'retention'], ['source', 'repository', 'workspace', 'session', 'assignment', 'retention']);
+    if (value.coverage !== 'single-record') throw Error('single-record 범위만 지원합니다.');
+    const out = {source: text(value.source, 240, true), observed_at: time(value.observed_at), coverage: value.coverage};
+    for (const name of ['repository', 'workspace', 'session', 'assignment', 'retention']) {
+      const part = value[name];
+      if (part == null) { out[name] = null; continue; }
+      if (name === 'repository') {
+        exact(part, ['alias', 'label', 'url']);
+        if (typeof part.url !== 'string' || !/^https:\/\/github\.com\/[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9_.-]+$/.test(part.url) || new URL(part.url).href !== part.url || /\/(?:\.|\.\.)$/.test(part.url)) throw Error('정규 GitHub 저장소 주소가 필요합니다.');
+        out[name] = {alias: alias(part.alias), label: text(part.label, 80, false), url: part.url};
+      } else if (name === 'workspace') {
+        exact(part, ['alias', 'label', 'repository']);
+        out[name] = {alias: alias(part.alias), label: text(part.label, 80, false), repository: alias(part.repository)};
+      } else if (name === 'session') {
+        exact(part, ['alias', 'label', 'workspace', 'liveness', 'source', 'observed_at'], ['source']);
+        out[name] = {alias: alias(part.alias), label: text(part.label, 80, false), workspace: alias(part.workspace, true), liveness: nullableEnum(part.liveness, ['live', 'exited', 'unknown']), source: text(part.source, 240, true), observed_at: time(part.observed_at)};
+      } else if (name === 'assignment') {
+        exact(part, ['session', 'workspace', 'work_url', 'source', 'observed_at'], ['source']);
+        if (typeof part.work_url !== 'string' || !/^https:\/\/github\.com\/[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})\/[A-Za-z0-9_.-]+\/issues\/[1-9]\d*$/.test(part.work_url) || new URL(part.work_url).href !== part.work_url) throw Error('배정 Issue 주소를 확인하세요.');
+        out[name] = {session: alias(part.session), workspace: alias(part.workspace), work_url: part.work_url, source: text(part.source, 240, true), observed_at: time(part.observed_at)};
+      } else {
+        exact(part, ['state', 'source'], ['source']);
+        out[name] = {state: nullableEnum(part.state, ['retained', 'removed', 'unknown']), source: text(part.source, 240, true)};
+      }
+    }
+    return out;
+  }
+  // Optional display claims only. Null facts remain incomplete, never approved evidence.
+  function evidence(value, repository) {
+    if (value === null) return null;
+    exact(value, ['candidate', 'pr', 'ci', 'review', 'validation'], ['candidate', 'pr', 'ci', 'review', 'validation']);
+    const states = {pr: ['draft', 'ready', 'unknown'], ci: ['success', 'failure', 'pending', 'cancelled', 'unknown'],
+      review: ['pending', 'submitted', 'approved', 'changes_requested', 'commented', 'unknown'], validation: ['PASS', 'FAIL', 'NEEDS-WORK', 'unknown']};
+    function description(value, max) {
+      const result = text(value, max, true);
+      if (result && /[a-z][a-z0-9+.-]*:\/\//i.test(result)) throw Error('주소는 별도 url 필드에 넣으세요.');
+      return result;
+    }
+    function observation(part, kind) {
+      if (part == null) return null;
+      const extra = kind === 'candidate' ? [] : kind === 'ci' ? ['state', 'label'] : kind === 'validation' ? ['state', 'independent'] : ['state'];
+      exact(part, ['revision', 'source', 'observed_at', 'url', ...extra]);
+      if (part.revision !== null && (typeof part.revision !== 'string' || !/^[a-f0-9]{40}$/.test(part.revision))) throw Error('소문자 SHA40 revision이 필요합니다.');
+      const out = {revision: part.revision, source: description(part.source, 160), observed_at: part.observed_at === null ? null : time(part.observed_at), url: part.url};
+      if (part.url !== null) {
+        const route = typeof part.url === 'string' && part.url.startsWith(repository + '/') ? part.url.slice(repository.length) : '';
+        const allowed = kind === 'candidate' ? /^\/commit\/[a-f0-9]{40}$/ : kind === 'ci' ? /^\/(?:actions\/runs\/[1-9]\d*(?:\/job\/[1-9]\d*)?|runs\/[1-9]\d*)$/ : /^\/pull\/[1-9]\d*$/;
+        if (typeof part.url !== 'string' || part.url.length > 300 || !allowed.test(route) || new URL(part.url).href !== part.url) throw Error('같은 저장소의 정규 GitHub 근거 주소가 필요합니다.');
+        if (kind === 'candidate' && part.revision && route !== '/commit/' + part.revision) throw Error('candidate commit 주소와 revision을 확인하세요.');
+      }
+      if (kind !== 'candidate') {
+        if (part.state !== null && !states[kind].includes(part.state)) throw Error('근거 상태를 확인하세요.');
+        out.state = part.state;
+      }
+      if (kind === 'ci') out.label = description(part.label, 80);
+      if (kind === 'validation') {
+        if (part.independent !== null && typeof part.independent !== 'boolean') throw Error('독립 검증 관찰은 boolean 또는 null입니다.');
+        out.independent = part.independent;
+      }
+      return out;
+    }
+    if (value.ci != null && (!Array.isArray(value.ci) || value.ci.length > 8 || value.ci.some(part => part === null))) throw Error('CI 관찰은 최대 8개입니다.');
+    return {candidate: observation(value.candidate, 'candidate'), pr: observation(value.pr, 'pr'),
+      ci: value.ci == null ? [] : value.ci.map(part => observation(part, 'ci')), review: observation(value.review, 'review'), validation: observation(value.validation, 'validation')};
+  }
+  function association(snapshot, now = Date.now()) {
+    const bundle = snapshot.office;
+    const conflicts = [];
+    const missing = [];
+    const dates = [snapshot.observed_at];
+    if (!bundle) return {state: 'missing', attached: false, conflicts, missing: ['office'], temporal: temporal(dates, now)};
+    dates.push(bundle.observed_at);
+    const {repository: repo, workspace: desk, session, assignment: relation, retention} = bundle;
+    for (const key of ['repository', 'workspace', 'session', 'assignment']) if (!bundle[key]) missing.push(key);
+    if (!bundle.source) missing.push('office.source');
+    const aliases = [repo?.alias, desk?.alias, session?.alias].filter(Boolean);
+    if (new Set(aliases).size !== aliases.length) conflicts.push('duplicate aliases');
+    if (repo && snapshot.work.url.slice(0, snapshot.work.url.indexOf('/issues/')) !== repo.url) conflicts.push('repository / Issue');
+    if (repo && desk && desk.repository !== repo.alias) conflicts.push('workspace / repository');
+    if (session) {
+      dates.push(session.observed_at);
+      if (!session.source) missing.push('session.source');
+      if (!session.workspace) missing.push('session.workspace');
+      else if (desk && session.workspace !== desk.alias) conflicts.push('session / workspace');
+    }
+    if (relation) {
+      dates.push(relation.observed_at);
+      if (!relation.source) missing.push('assignment.source');
+      if (session && relation.session !== session.alias) conflicts.push('assignment / session');
+      if (desk && relation.workspace !== desk.alias) conflicts.push('assignment / workspace');
+      if (relation.work_url !== snapshot.work.url) conflicts.push('assignment / Issue');
+    }
+    if (Date.parse(bundle.observed_at) > Date.parse(snapshot.observed_at) || [session, relation].some(part => part && Date.parse(part.observed_at) > Date.parse(bundle.observed_at))) conflicts.push('inconsistent observation times');
+    if (session?.liveness === 'exited' && relation) conflicts.push('exited session / assignment');
+    if (retention?.state === 'removed' && relation) conflicts.push('removed workspace / assignment');
+    if (relation && session && (!session.workspace || session.workspace !== relation.workspace)) conflicts.push('session / assignment workspace');
+    const state = conflicts.length ? 'conflict' : missing.length ? 'missing' : 'associated';
+    const dateState = conflicts.includes('inconsistent observation times') ? 'inconsistent' : temporal(dates, now);
+    return {state, attached: state === 'associated' && dateState !== 'future', conflicts, missing, temporal: dateState};
+  }
+  function temporal(dates, now) {
+    if (dates.some(date => Date.parse(date) > now)) return 'future';
+    return dates.some(date => now - Date.parse(date) > 86400000) ? 'stale' : 'observation-copy';
+  }
+  // A bounded presentation envelope; contained observations retain the v2 contract.
+  const VIEW_MAX_BYTES = 65536;
+  function parseView(raw) {
+    if (new TextEncoder().encode(raw).length > VIEW_MAX_BYTES) throw Error('보기 파일은 64 KiB 이하여야 합니다.');
+    let value;
+    try { value = JSON.parse(raw); } catch (_) { throw Error('JSON을 읽을 수 없습니다.'); }
+    if (!value || !Object.hasOwn(value, 'view_version')) return {kind: 'single', snapshot: parse(raw)};
+    uniqueKeys(raw); privateBoundary(value);
+    exact(value, ['view_version', 'source', 'observed_at', 'projects', 'records']);
+    if (value.view_version !== 1) throw Error('view_version: 1만 지원합니다.');
+    const source = text(value.source, 240, false), observed_at = time(value.observed_at);
+    if (!Array.isArray(value.projects) || value.projects.length > 8 || !Array.isArray(value.records) || !value.records.length || value.records.length > 8) throw Error('Project 최대 8개, 기록 1–8개만 지원합니다.');
+    const projects = value.projects.map(project => {
+      exact(project, ['url', 'label']);
+      const url = project.url;
+      if (typeof url !== 'string' || url.length > 300 || !/^https:\/\/github\.com\/(?:orgs|users)\/[A-Za-z0-9][A-Za-z0-9-]{0,38}\/projects\/[1-9]\d*$/.test(url) || new URL(url).href !== url) throw Error('정규 GitHub Project 주소가 필요합니다.');
+      return {url, label: text(project.label, 80, false)};
+    });
+    const projectURLs = new Set(projects.map(project => project.url));
+    if (projectURLs.size !== projects.length) throw Error('중복 Project 주소입니다.');
+    const ids = new Set(), issues = new Set(), aliases = new Map(), rooms = new Map();
+    function bind(alias, relation) {
+      if (aliases.has(alias) && aliases.get(alias) !== relation) throw Error('기록 간 별칭·관계 충돌입니다.');
+      aliases.set(alias, relation);
+    }
+    const records = value.records.map(record => {
+      exact(record, ['id', 'observation', 'projects']);
+      const id = alias(record.id);
+      const observation = parse(JSON.stringify(record.observation));
+      if (observation.version !== 2) throw Error('보기에는 기존 v2 관찰만 허용됩니다.');
+      if (ids.has(id) || issues.has(observation.work.url)) throw Error('중복 기록 또는 Issue입니다.');
+      ids.add(id); issues.add(observation.work.url);
+      if (Date.parse(observation.observed_at) > Date.parse(observed_at)) throw Error('보기보다 늦은 관찰입니다.');
+      const {repository: repo, workspace, session} = observation.office || {};
+      if (!repo || !workspace || workspace.repository !== repo.alias || observation.work.url.split('/issues/')[0] !== repo.url) throw Error('방 소유 저장소와 Issue·책상 관계를 확인하세요.');
+      bind(repo.alias, JSON.stringify(['repository', repo.url, repo.label]));
+      bind(workspace.alias, JSON.stringify(['workspace', repo.url, workspace.label, observation.work.url]));
+      if (session) bind(session.alias, JSON.stringify(['session', workspace.alias, session.workspace, session.label, observation.work.url]));
+      const room = rooms.get(repo.url);
+      if (room && (room.alias !== repo.alias || room.label !== repo.label)) throw Error('저장소 방 정의 충돌입니다.');
+      rooms.set(repo.url, {...repo, count: (room?.count || 0) + 1});
+      if (rooms.size > 4 || rooms.get(repo.url).count > 4) throw Error('방 최대 4개, 방마다 책상 최대 4개입니다.');
+      if (record.projects !== null && (!Array.isArray(record.projects) || record.projects.length > 8 || record.projects.some(url => !projectURLs.has(url)) || new Set(record.projects).size !== record.projects.length)) throw Error('명시한 Project 회원 관계를 확인하세요.');
+      return {id, observation, projects: record.projects === null ? null : [...record.projects]};
+    });
+    // Display record IDs and component aliases must never collide.
+    if ([...ids].some(id => aliases.has(id))) throw Error('표시 ID와 구성 별칭이 겹칩니다.');
+    return {kind: 'view', source, observed_at, projects, records};
+  }
+  const api = {parse, parseView, association, temporal, MAX_BYTES, VIEW_MAX_BYTES};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.officeSnapshot = api;
 })(typeof window === 'undefined' ? globalThis : window);
