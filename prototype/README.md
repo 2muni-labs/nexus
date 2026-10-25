@@ -376,6 +376,11 @@ native Orca cross-command key/input persistence or OS preference delivery.
   InstancedMesh, 관절 행렬을 그대로 쓰는 직원 재질별 InstancedMesh, 1024² 실 그림자와 바닥 아래의 단일 shadow catcher, 고정된 위쪽 왼쪽 광원과 주변광.
   Orthographic azimuth 45° / elevation 30°로 바닥 축은 2:1입니다. 90°씩 네 각도,
   확대/축소/이동/초기화, 월드 bounds 기반 fit과 카메라 쪽 벽 cutaway를 제공합니다.
+  왼쪽 포인터 이동이 6 CSS px 이하면 보이는 직원 표면만 클릭 선택하며, 넘으면
+  바닥 평면을 따라 드래그 이동하고 선택하지 않습니다. 캔버스의 세로 휠은 화면 중심을
+  기준으로 확대/축소하며 범위는 0.75–2.5입니다. Ctrl/Meta 휠은 브라우저에 맡기고
+  캔버스 밖 스크롤은 그대로입니다. 기존 HTML 카메라·직원 버튼도 계속 사용할 수 있습니다.
+  카메라 조작은 DEMO 시계·직원 ID·팔레트를 바꾸지 않습니다.
   그리기와 명시적 카메라 조작은 현재 CSS 크기·DPR(최대 1.5)·drawing buffer·투영을 함께 맞춥니다.
   **공간 규격 보기**는 격자·점유·기준점·소켓·높이선과 renderer 통계를 표시합니다.
 - `voxel-motion.js`: 네 직원의 **하나의 DEMO 시계**입니다. 같은 외출에서 작업과
