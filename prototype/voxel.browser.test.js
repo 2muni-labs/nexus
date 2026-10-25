@@ -57,6 +57,71 @@ async function runOfficeVoxelTests(w){
   return {passed:results.length,results,viewport:[w.innerWidth,w.innerHeight],source:'production DOM and actual renderer; scripted input, no frame-rate claim'};
 }
 
+// Observe production geometry through Three only while creating the real view;
+// no renderer test API, replacement clock or transform repair is installed.
+async function runOfficeVoxelContactTests(w){
+  const T=await import('./vendor/three/three.module.js'),d=w.document,results=[],samples=[],seen=new Map();
+  const assert=(v,label)=>{if(!v)throw Error(label);results.push(label);};
+  const change=(id,value)=>{const e=d.getElementById(id);e.value=value;e.dispatchEvent(new w.Event('change',{bubbles:true}));};
+  change('display-mode','demo');
+  const add=T.Object3D.prototype.add;let scene;
+  try{
+    T.Object3D.prototype.add=function(...objects){if(this.isScene)scene=this;return add.apply(this,objects);};
+    change('display-mode','voxel');
+    for(let i=0;i<200&&!w.officeVoxel.info().renderer;i++)await new Promise(r=>w.setTimeout(r,10));
+  }finally{T.Object3D.prototype.add=add;}
+  assert(!!scene&&!!w.officeVoxel.info().renderer,'production scene ready; observation hook restored');
+  const batches=scene.children.filter(o=>o.isInstancedMesh&&o.instanceMatrix.usage===T.DynamicDrawUsage);
+  const parts=[];scene.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh&&o.userData.logicalId)parts.push(o);});
+  const pairs=batches.map(batch=>({batch,parts:parts.filter(p=>p.material===batch.material)}));
+  assert(pairs.every(p=>p.parts.length===p.batch.count),'all submitted actor cuboids mapped by material/order');
+  const unit=new T.Box3(new T.Vector3(-.5,-.5,-.5),new T.Vector3(.5,.5,.5)),epsilon=1e-6;
+  function check(label){
+    const {state}=w.officeVoxel.info(),shoes=[];let matrixError=0,boundsError=0;
+    assert(!state.playing&&!state.pending,label+' is paused without a presentation callback');
+    for(const {batch,parts} of pairs)for(let i=0;i<parts.length;i++){
+      const part=parts[i],matrix=new T.Matrix4();batch.getMatrixAt(i,matrix);
+      matrixError=Math.max(matrixError,...matrix.elements.map((v,j)=>Math.abs(v-part.matrixWorld.elements[j])));
+      const actual=unit.clone().applyMatrix4(matrix),final=unit.clone().applyMatrix4(part.matrixWorld);
+      boundsError=Math.max(boundsError,actual.min.distanceTo(final.min),actual.max.distanceTo(final.max));
+      assert(batch.userData.ids[i]===part.userData.logicalId,label+' submitted stable ID '+i);
+      assert(batch.boundingBox.clone().expandByScalar(epsilon).containsBox(actual),label+' current batch bounds '+i);
+      assert(actual.min.distanceTo(batch.boundingSphere.center)<=batch.boundingSphere.radius+epsilon&&actual.max.distanceTo(batch.boundingSphere.center)<=batch.boundingSphere.radius+epsilon,label+' current ray/culling sphere '+i);
+      if(part.parent.children.length===2&&part.parent.children[1]===part&&part.scale.x===.25&&part.scale.y===.125&&part.scale.z===.375){
+        const actor=state.actors.find(a=>a.id===part.userData.logicalId),side=part.parent.parent.position.x<0?-1:1;
+        const step=actor.pose==='walk'?Math.sin(state.time*10+(side>0?Math.PI:0)):0;
+        const expected=actor.position.z+Math.max(0,step)*.1;
+        shoes.push({id:actor.id,side,sole:actual.min.y,expected});
+        assert(Math.abs(actual.min.y-expected)<epsilon,label+' geometric sole contact '+actor.id+'/'+side+' actual='+actual.min.y+' expected='+expected);
+        if(!seen.has(actor.id))seen.set(actor.id,new Set());
+        seen.get(actor.id).add(actor.pose==='walk'?'walk':actor.phase==='lounge'?'idle':'seated');
+      }
+    }
+    assert(shoes.length===8,label+' both shoes for all four staff');
+    assert(matrixError<epsilon&&boundsError<epsilon,label+' final hierarchy equals submitted matrices/geometry');
+    const canvas=d.querySelector('#voxel-host canvas'),pixels=canvas.toDataURL();
+    for(let angle=0;angle<4;angle++){
+      for(const actor of state.actors){const p=w.officeVoxel.project(actor.id),r=canvas.getBoundingClientRect();
+        assert(p.x>=r.left&&p.x<=r.right&&p.y>=r.top&&p.y<=r.bottom,label+' actor within camera '+angle+'/'+actor.id);
+      }
+      d.querySelector('[data-voxel-camera="rotate"]').click();
+    }
+    assert(canvas.toDataURL()===pixels,label+' four camera redraws cannot correct the paused image');
+    d.querySelector('[data-voxel-staff="'+w.officeVoxel.info().selected+'"]').click();
+    assert(canvas.toDataURL()===pixels,label+' same-time selection cannot correct the paused image');
+    assert(w.officeVoxel.info().state.time===state.time,label+' camera/selection preserve pose time');
+    samples.push({label,time:state.time,matrixError,boundsError,shoes});
+  }
+  d.getElementById('voxel-reset').click();d.getElementById('voxel-reset').click();check('Reset');
+  d.getElementById('voxel-next').click();assert(w.officeVoxel.info().state.time===6,'actual Next transitions zero to six');check('Reset then Next');
+  for(const trip of w.officeVoxelMotion.schedule())for(const [name,time] of [
+    ['walk',trip.start+.37],['idle',trip.start+trip.duration+1],['return',trip.end-.37],['seated',trip.end+.1]
+  ]){w.officeVoxel.diagnostics.seek(time);check(trip.id+' '+name);}
+  assert(w.officeVoxelWorld.staff.every(s=>['seated','walk','idle'].every(p=>seen.get(s.id)?.has(p))),'each staff exercised seated, idle and walking geometry');
+  d.getElementById('voxel-reset').click();
+  return {passed:results.length,results,samples,scope:'actual production Reset/Next and paused scenario transitions, submitted cuboids, contact, camera/selection pixel stability; scripted controls, no native-input or performance claim'};
+}
+
 // Exercise missed observer delivery in the same JS turn as a draw/control.
 async function runOfficeVoxelResizeTests(w){
   const {createRenderer}=await import('./voxel-renderer.mjs'),d=w.document,results=[];

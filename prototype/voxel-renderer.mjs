@@ -152,6 +152,8 @@ export function createRenderer(host,{onSelect=()=>{},onFailure=()=>{}}={}){
         const foot=a.root.localToWorld(new T.Vector3(side*.15625,.0625+(seated?-seatOffset:Math.max(0,step)*.1),seated?-.4375:-.0625+step*.15));
         shoe.position.copy(knee.worldToLocal(foot));shoe.rotation.x=-leg.rotation.x-knee.rotation.x;
       }
+      // Submit the finalized shoes, rather than the hierarchy from before foot correction.
+      a.root.updateMatrixWorld(true);
     }
     syncActorBatches();
     const selectedActor=values.find(v=>v.id===selected);if(selectedActor)selection.position.copy(toThree(selectedActor.position));draw();
