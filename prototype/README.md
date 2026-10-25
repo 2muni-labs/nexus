@@ -383,11 +383,13 @@ native Orca cross-command key/input persistence or OS preference delivery.
   stable ID 순서입니다. 다른 직원은 자기 의자에서 이유를 표시하며 기다립니다.
   경로가 없거나 가구 몸체에 막히면 마지막 유효 의자 위치에서 대기합니다.
   고정 경유점과 거리 보간만 사용하며 경로 탐색/물리 엔진은 없습니다.
-- 재생은 경과 시간을 유지하며 그림 갱신을 최대 약 30fps로 제한합니다. 정지 시
-  RAF가 없으며 카메라·선택은 요청할 때만 그립니다. 일시정지는 정확한 진행을 유지,
+- 재생은 실제 경과 시간을 유지하는 하나의 native setTimeout 시계로 그림 갱신을 최대 약 30fps로 제한합니다.
+  offscreen Orca에서 RAF가 정체되는 관찰에 따라 이 보기의 presentation clock만 timer를 사용합니다.
+  renderer CPU 시간도 다음 지연 계산에 반영하며 별도의 RAF나 두 번째 시계를 만들지 않습니다. 정지 시
+  presentation timer가 없으며 카메라·선택은 요청할 때만 그립니다. 일시정지는 정확한 진행을 유지,
   다음 단계는 일시정지한 정적 화면, 초기화는 0초 정지입니다. 숨김·동작 줄이기·
   모드/팔레트/스킨·선택한 가져오기는 취소하고 재생을 직접 다시 눌러야 합니다.
-  generation이 이전 콜백을 무효화하며 모드 종료는 RAF, listener, ResizeObserver,
+  generation이 이전 콜백을 무효화하며 모드 종료는 timer, listener, ResizeObserver,
   geometry/material/shadow/renderer와 컨텍스트를 정리합니다.
 - 125초는 **생존 미확인** 정지 화면입니다. 다음 단계의 130초 결과 전달도 종료나
   Done이 아닙니다. 140초는 명시적 가상 이전 세션 종료와 NEW task/worktree/session을

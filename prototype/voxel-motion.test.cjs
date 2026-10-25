@@ -19,4 +19,13 @@ c.play();assert.equal(callbacks.size,1);const stale=callbacks.get(next);now=1500
 c.play();now=2000;const cb=callbacks.get(next);callbacks.delete(next);cb(now);assert.equal(c.state().time,2);assert.equal(callbacks.size,1);
 c.suspend('hidden');const suspended=c.state();now=100000;stale(now);c.play();assert.equal(c.state().playing,false);assert.equal(c.state().time,suspended.time);assert.equal(callbacks.size,0);
 c.suspend('');assert.equal(c.state().playing,false);c.next();assert.equal(c.state().time,6);assert.equal(c.state().playing,false);c.reset();assert.equal(c.state().time,0);c.dispose();c.play();assert.equal(callbacks.size,0);
+// Exercise the production default timer rather than only an injected callback API.
+const realSet=global.setTimeout,realClear=global.clearTimeout;let nativeNow=0,owned=new Map(),handle=0,defaultPaints=0;
+try{global.setTimeout=(cb,delay)=>{assert.ok(delay>=1&&delay<=16);owned.set(++handle,{cb,delay});return handle;};global.clearTimeout=id=>owned.delete(id);
+ const native=M.create({now:()=>nativeNow,onChange:()=>defaultPaints++});native.play();assert.equal(owned.size,1);assert.equal(owned.get(handle).delay,16);
+ const tick=owned.get(handle).cb;owned.delete(handle);nativeNow=34;tick();assert.equal(native.state().time,.034);assert.equal(owned.size,1);assert.ok(defaultPaints>=2);
+ native.pause();assert.equal(owned.size,0);const before=native.state().time;nativeNow=100;tick();assert.equal(native.state().time,before);
+ native.play();assert.equal(owned.size,1);native.suspend('reduced-motion');assert.equal(owned.size,0);native.suspend('');assert.equal(native.state().playing,false);native.dispose();
+}finally{global.setTimeout=realSet;global.clearTimeout=realClear;}
+let reentrant;now=0;callbacks.clear();reentrant=M.create({now:()=>now,request:cb=>{callbacks.set(++next,cb);return next;},cancel:id=>callbacks.delete(id),onChange:s=>{if(s.time>0)reentrant.dispose();}});reentrant.play();const active=callbacks.get(next);callbacks.delete(next);now=100;active(now);assert.equal(callbacks.size,0);
 console.log('voxel motion: all routes/furniture clearance, reservations/collision, identity, unknown freeze, no-path, elapsed pause, suspension and stale callbacks PASS');

@@ -30,19 +30,23 @@
         reservation:time>=trip.start&&time<trip.end?trip.resource:null};
     });
   }
-  function create({onChange=()=>{},request=cb=>requestAnimationFrame(cb),cancel=id=>cancelAnimationFrame(id),now=()=>performance.now(),graph=W.edges}={}){
-    let time=0,playing=false,reason='',generation=0,raf=null,last=0,lastPaint=0,disposed=false;
-    function state(){return {time,playing,reason,generation,pending:raf!==null,actors:sample(time,graph)};}
+  // Wake at most one half-frame before a deadline: coalesced offscreen timers can add a frame.
+  // Only the absolute 30Hz deadlines publish; this remains one owned cancelable callback.
+  function create({onChange=()=>{},request=(cb,delay)=>setTimeout(()=>cb(now()),Math.min(16,delay)),cancel=id=>clearTimeout(id),now=()=>performance.now(),graph=W.edges}={}){
+    let time=0,playing=false,reason='',generation=0,callback=null,last=0,nextPaint=0,disposed=false;
+    function state(){return {time,playing,reason,generation,pending:callback!==null,actors:sample(time,graph)};}
     function publish(){onChange(state());}
-    function stop(){playing=false;generation++;if(raf!==null)cancel(raf);raf=null;}
-    function frame(stamp,token){if(disposed||!playing||token!==generation)return;raf=null;
+    function stop(){playing=false;generation++;if(callback!==null)cancel(callback);callback=null;}
+    function frame(stamp,token){if(disposed||!playing||token!==generation)return;callback=null;
       // Elapsed time is integrated only at accepted frames; pause accounts for the tail.
       time=Math.min(125,time+Math.max(0,stamp-last)/1000);last=stamp;
-      if(stamp-lastPaint>=1000/30-.5||time===125){lastPaint=stamp;publish();}
+      // A 1.5ms tolerance handles native timer quantization without accumulating drift.
+      if(stamp>=nextPaint-1.5||time===125){do{nextPaint+=1000/30;}while(nextPaint<=stamp+1.5);publish();}
       if(time>=125){stop();publish();return;}
-      raf=request(t=>frame(t,token));
+      if(disposed||!playing||token!==generation)return;
+      callback=request(t=>frame(t,token),Math.max(1,Math.floor(nextPaint-now())));
     }
-    return {state,play(){if(disposed||reason||playing||time>=125)return;playing=true;last=now();lastPaint=last-1000/30;const token=++generation;raf=request(t=>frame(t,token));publish();},
+    return {state,play(){if(disposed||reason||playing||time>=125)return;playing=true;last=now();nextPaint=last+1000/30;const token=++generation;callback=request(t=>frame(t,token),Math.max(1,Math.floor(nextPaint-now())));publish();},
       pause(){if(playing)time=Math.min(125,time+Math.max(0,now()-last)/1000);stop();publish();},
       next(){stop();time=stages.find(t=>t>time)??stages.at(-1);publish();},reset(){stop();time=0;publish();},
       suspend(value){if(playing)time=Math.min(125,time+Math.max(0,now()-last)/1000);stop();reason=value;publish();},
