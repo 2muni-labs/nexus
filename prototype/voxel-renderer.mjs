@@ -80,6 +80,23 @@ export function createRenderer(host,{onSelect=()=>{},onFailure=()=>{}}={}){
     return {root,joints,id:s.id};
   }
   W.staff.forEach(s=>actors.set(s.id,actor(s)));
+  // Keep the articulated hierarchy as the transform source, and submit its
+  // unchanged cuboids once per material. Instance IDs retain staff ray picking.
+  const actorBatches=new Map();
+  for(const a of actors.values())a.root.traverse(part=>{if(!part.isMesh)return;
+    const role=Object.keys(materials).find(role=>materials[role]===part.material);
+    if(!actorBatches.has(role))actorBatches.set(role,[]);
+    actorBatches.get(role).push({part,id:a.id});part.visible=false;
+  });
+  for(const [role,parts] of actorBatches){const mesh=new T.InstancedMesh(geometry,mat(role),parts.length);
+    mesh.userData.ids=parts.map(p=>p.id);mesh.castShadow=true;mesh.receiveShadow=true;
+    mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);scene.add(mesh);actorBatches.set(role,{mesh,parts});
+  }
+  function syncActorBatches(){for(const {mesh,parts} of actorBatches.values()){
+    parts.forEach(({part},i)=>mesh.setMatrixAt(i,part.matrixWorld));
+    mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingBox();mesh.computeBoundingSphere();
+  }}
+  actors.forEach(a=>a.root.updateMatrixWorld(true));syncActorBatches();
   const selection=new T.Group();scene.add(selection);
   [[0,-.55,1.1,.0625],[0,.55,1.1,.0625],[-.55,0,.0625,1.1],[.55,0,.0625,1.1]].forEach(([x,y,w,d])=>{const m=box(selection,W.part('ceramic',x,y,.02,w,d,.04));m.userData.ignorePick=true;m.castShadow=false;});
   const debug=new T.Group();debug.visible=false;scene.add(debug);
@@ -95,7 +112,12 @@ export function createRenderer(host,{onSelect=()=>{},onFailure=()=>{}}={}){
   scene.add(new T.AmbientLight(0xffffff,1.8));
   const light=new T.DirectionalLight(0xfff2dd,1.4);light.position.copy(toThree(W.point(-6,-8,24)));light.castShadow=true;light.shadow.mapSize.set(1024,1024);light.shadow.camera.left=-14;light.shadow.camera.right=14;light.shadow.camera.top=14;light.shadow.camera.bottom=-14;light.shadow.radius=3;light.shadow.normalBias=.015;light.shadow.bias=-.00015;scene.add(light);
   const target=new T.Vector3();
-  function fit(){if(disposed)return;const rect=host.getBoundingClientRect(),w=Math.max(1,rect.width),h=Math.max(1,rect.height);renderer.setSize(w,h,false);
+  let fittedWidth=0,fittedHeight=0,fittedDpr=0;
+  function fit(){if(disposed||lost)return;const rect=host.getBoundingClientRect(),w=Math.max(1,rect.width),h=Math.max(1,rect.height),dpr=Math.min(window.devicePixelRatio||1,1.5);
+    if(w!==fittedWidth||h!==fittedHeight||dpr!==fittedDpr){
+      if(dpr!==fittedDpr)renderer.setPixelRatio(dpr);renderer.setSize(w,h,false);
+      fittedWidth=w;fittedHeight=h;fittedDpr=dpr;
+    }
     const az=(45+90*angle)*Math.PI/180,el=30*Math.PI/180;
     target.copy(toThree(W.point(pan.x,pan.y,.8)));camera.position.copy(target).add(new T.Vector3(Math.sin(az)*Math.cos(el)*30,Math.sin(el)*30,Math.cos(az)*Math.cos(el)*30));camera.lookAt(target);camera.updateMatrixWorld();
     // Fit the actual world corners including wall height at each preset angle.
@@ -105,9 +127,13 @@ export function createRenderer(host,{onSelect=()=>{},onFailure=()=>{}}={}){
     const cameraWorld=W.point(camera.position.x,-camera.position.z,camera.position.y);
     walls.forEach(group=>{const n=group.userData.normal,front=n.x*cameraWorld.x+n.y*cameraWorld.y>0,full=group.userData.full,height=front?.5:full,{x,y}=group.userData.size;
       group.userData.main.scale.y=height;group.userData.main.position.y=height/2;group.userData.cap.position.copy(toThree(W.point(x,y,height+.0625)));if(group.userData.decoration)group.userData.decoration.visible=!front;
-    });draw();
+    });
   }
-  function draw(){if(disposed||lost)return;const start=performance.now();frameStamps.push(start);if(frameStamps.length>1200)frameStamps.shift();renderer.render(scene,camera);frames++;renderTimes.push(performance.now()-start);if(renderTimes.length>1200)renderTimes.shift();}
+  function draw(){if(disposed||lost)return;
+    // Observer delivery may lag an offscreen viewport change. Every actual draw
+    // agrees with current CSS bounds, without a second clock or resize polling.
+    const rect=host.getBoundingClientRect();
+    if(Math.max(1,rect.width)!==fittedWidth||Math.max(1,rect.height)!==fittedHeight||Math.min(window.devicePixelRatio||1,1.5)!==fittedDpr)fit();const start=performance.now();frameStamps.push(start);if(frameStamps.length>1200)frameStamps.shift();renderer.render(scene,camera);frames++;renderTimes.push(performance.now()-start);if(renderTimes.length>1200)renderTimes.shift();}
   let current=[],currentTime=0;
   function update(values,time=currentTime){current=values;currentTime=time;for(const s of values){const a=actors.get(s.id);if(!a)throw Error('Missing actor model');a.root.position.copy(toThree(s.position));a.root.rotation.y=s.orientation*Math.PI/180;
       const seated=s.pose==='work'||(s.pose==='wait'&&['working','reserved','unknown','delivered','new-session','blocked'].includes(s.phase));
@@ -127,6 +153,7 @@ export function createRenderer(host,{onSelect=()=>{},onFailure=()=>{}}={}){
         shoe.position.copy(knee.worldToLocal(foot));shoe.rotation.x=-leg.rotation.x-knee.rotation.x;
       }
     }
+    syncActorBatches();
     const selectedActor=values.find(v=>v.id===selected);if(selectedActor)selection.position.copy(toThree(selectedActor.position));draw();
   }
   const ray=new T.Raycaster();
@@ -139,8 +166,10 @@ export function createRenderer(host,{onSelect=()=>{},onFailure=()=>{}}={}){
   });
   listen(canvas,'webglcontextlost',e=>{e.preventDefault();if(disposed)return;lost=true;onFailure('context-lost');});
   listen(canvas,'webglcontextrestored',()=>{if(!disposed)onFailure('context-restored-retry');});
-  const resize=new ResizeObserver(fit);resize.observe(host);host.replaceChildren(canvas);fit();
-  return {update,draw,select(id){selected=id;update(current);},camera(action){if(action==='rotate')angle=(angle+1)%4;else if(action==='reset'){angle=0;zoom=1;pan={x:0,y:0};}else if(action==='in')zoom=Math.min(2.5,zoom*1.2);else if(action==='out')zoom=Math.max(.75,zoom/1.2);else if(action==='left')pan.x-=1;else if(action==='right')pan.x+=1;else if(action==='up')pan.y+=1;else if(action==='down')pan.y-=1;fit();},
+  const resized=()=>{fit();draw();};
+  listen(window,'resize',resized);
+  const resize=new ResizeObserver(resized);resize.observe(host);host.replaceChildren(canvas);fit();draw();
+  return {update,draw,select(id){selected=id;update(current);},camera(action){if(action==='rotate')angle=(angle+1)%4;else if(action==='reset'){angle=0;zoom=1;pan={x:0,y:0};}else if(action==='in')zoom=Math.min(2.5,zoom*1.2);else if(action==='out')zoom=Math.max(.75,zoom/1.2);else if(action==='left')pan.x-=1;else if(action==='right')pan.x+=1;else if(action==='up')pan.y+=1;else if(action==='down')pan.y-=1;fit();draw();},
     palette(value){if(!palettes[value])throw Error('Unknown palette');palette=value;Object.entries(materials).forEach(([role,m])=>m.color.set(palettes[palette][role]));scene.background=new T.Color(palettes[palette].background);draw();},
     debug(value){debug.visible=value;draw();},
     info(){return {version:T.REVISION,webgl2:true,frames,angle,palette,zoom,pan:{...pan},render: {...renderer.info.render},memory:{...renderer.info.memory},programs:renderer.info.programs?.length,renderMilliseconds:renderTimes.slice(),frameStamps:frameStamps.slice(),graphics:{vendor:gl.getParameter(gl.VENDOR),renderer:gl.getParameter(gl.RENDERER),version:gl.getParameter(gl.VERSION),unmaskedRenderer:gl.getExtension('WEBGL_debug_renderer_info')?gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info').UNMASKED_RENDERER_WEBGL):null},actors:actors.size,canvas:canvas.isConnected,disposed,lost,listeners:listeners.length};},

@@ -373,9 +373,10 @@ native Orca cross-command key/input persistence or OS preference delivery.
   컵은 책상 surface, 직원의 앉은 골반은 의자 seat 소켓을 사용합니다.
   없는 정의·소켓, 잘못된 치수·파트·관절은 오류이며 다른 모델로 대체하지 않습니다.
 - `voxel-renderer.mjs`: 로컬 ESM, 공유 BoxGeometry / 재질, 반복 정적 파트의
-  InstancedMesh, 관절 직원, 1024² 실 그림자와 바닥 아래의 단일 shadow catcher, 고정된 위쪽 왼쪽 광원과 주변광.
+  InstancedMesh, 관절 행렬을 그대로 쓰는 직원 재질별 InstancedMesh, 1024² 실 그림자와 바닥 아래의 단일 shadow catcher, 고정된 위쪽 왼쪽 광원과 주변광.
   Orthographic azimuth 45° / elevation 30°로 바닥 축은 2:1입니다. 90°씩 네 각도,
   확대/축소/이동/초기화, 월드 bounds 기반 fit과 카메라 쪽 벽 cutaway를 제공합니다.
+  그리기와 명시적 카메라 조작은 현재 CSS 크기·DPR(최대 1.5)·drawing buffer·투영을 함께 맞춥니다.
   **공간 규격 보기**는 격자·점유·기준점·소켓·높이선과 renderer 통계를 표시합니다.
 - `voxel-motion.js`: 네 직원의 **하나의 DEMO 시계**입니다. 같은 외출에서 작업과
   worktree/session은 유지합니다. 시작 요청 시각은 3/9/15/21초로 어긋나며 좁은 문,

@@ -56,3 +56,29 @@ async function runOfficeVoxelTests(w){
   assert([...d.querySelectorAll('[data-voxel-staff]')].every(b=>b.getBoundingClientRect().height>=44),'44px staff targets');
   return {passed:results.length,results,viewport:[w.innerWidth,w.innerHeight],source:'production DOM and actual renderer; scripted input, no frame-rate claim'};
 }
+
+// Exercise missed observer delivery in the same JS turn as a draw/control.
+async function runOfficeVoxelResizeTests(w){
+  const {createRenderer}=await import('./voxel-renderer.mjs'),d=w.document,results=[];
+  const assert=(v,label)=>{if(!v)throw Error(label);results.push(label);};
+  const host=d.createElement('div');host.style.cssText='position:fixed;left:0;top:0;width:915px;height:550px';d.body.append(host);
+  const r=createRenderer(host),c=host.querySelector('canvas'),g=c.getContext('webgl2');
+  const check=label=>{const b=host.getBoundingClientRect(),p=Math.min(w.devicePixelRatio||1,1.5);
+    assert(c.width===Math.floor(b.width*p)&&c.height===Math.floor(b.height*p),label+' CSS / current DPR / canvas agree');
+    assert(g.drawingBufferWidth===c.width&&g.drawingBufferHeight===c.height,label+' actual GL buffer agrees');
+    const point=r.project('momo');assert(point&&Number.isFinite(point.x)&&Number.isFinite(point.y),label+' projection finite');
+  };
+  try{
+    r.update(w.officeVoxelMotion.sample(0),0);check('969 initial');
+    for(const [width,height,label,paint] of [[356,390,'390 paused draw',()=>r.draw()],[915,550,'969 paused camera',()=>r.camera('rotate')],[356,390,'390 moving update',()=>r.update(w.officeVoxelMotion.sample(6),6)],[915,550,'969 moving update',()=>r.update(w.officeVoxelMotion.sample(7),7)]]){
+      host.style.width=width+'px';host.style.height=height+'px';paint();check(label);
+    }
+    const descriptor=Object.getOwnPropertyDescriptor(w,'devicePixelRatio');
+    try{Object.defineProperty(w,'devicePixelRatio',{configurable:true,value:2});r.draw();check('DPR cap1.5');
+      Object.defineProperty(w,'devicePixelRatio',{configurable:true,value:1});r.draw();check('DPR change1');
+    }finally{if(descriptor)Object.defineProperty(w,'devicePixelRatio',descriptor);else delete w.devicePixelRatio;}
+    const frames=r.info().frames;r.dispose();r.draw();w.dispatchEvent(new w.Event('resize'));
+    assert(r.info().frames===frames&&r.info().listeners===0,'disposed resize/draw fenced; listeners removed');
+    return {passed:results.length,results,scope:'scripted CSS bounds/DPR changes in isolated renderer; actual GPU buffer, no native-event claim'};
+  }finally{r.dispose();host.remove();}
+}
