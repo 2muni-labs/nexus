@@ -419,3 +419,7 @@ DOM/controller/팔레트/가져오기 보존을 검사합니다. 이 스크립�
 20초 네 직원 이동의 frame interval / renderer 통계와 스크린샷을 확인합니다.
 GPU가 그리지 않은 DOM 성공은 시각 검증 PASS가 아닙니다. 성능 수치는 실행한 호스트와
 viewport의 관찰이며 일반 하드웨어 보장은 아닙니다.
+
+`vendor/three/.gitattributes`는 원본 `three.core.js`의 혼합 들여쓰기 한 곳을
+Git whitespace 검사에서 제외합니다. 라이선스/원본 hash를 유지하기 위해 upstream
+파일을 재포맷하지 않습니다. 제품 JS의 whitespace 검사는 그대로 적용합니다.

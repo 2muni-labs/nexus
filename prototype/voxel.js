@@ -20,7 +20,7 @@
     $('voxel-play').textContent=state.playing?'일시정지':'재생';$('voxel-play').setAttribute('aria-pressed',String(state.playing));$('voxel-play').disabled=!!state.reason||!!blocked||state.time>=125;
     $('voxel-time').textContent=`DEMO ${state.time.toFixed(1)}초 · ${state.playing?'재생':'정지'}${state.reason?' · '+state.reason:''}`;
     const facts=JSON.stringify(state.actors.map(s=>[s.phase,s.session]));if(facts!==lastFacts){lastFacts=facts;detail();}
-    if($('voxel-debug').checked&&renderer){const i=renderer.info();$('voxel-stats').textContent=`WebGL2 · Three r${i.version} · ${i.render.calls} draws · ${i.render.triangles} triangles · ${i.memory.geometries} geometries · ${i.programs} programs · 4 actors · grid 1 / voxel ⅛ · staff 2 / desk .75 / wall 3`;} 
+    if($('voxel-debug').checked&&renderer){const i=renderer.info();$('voxel-stats').textContent=`WebGL2 · Three r${i.version} · ${i.render.calls} draws · ${i.render.triangles} triangles · ${i.memory.geometries} geometries · ${i.programs} programs · 4 actors · grid 1 / voxel ⅛ · staff 2 / desk .75 / wall 3`;}
   }
   function suspend(){clock?.suspend(constraint());}
   function teardown(){generation++;clock?.dispose();clock=null;if(renderer){renderer.dispose();accounting.lastDisposed=renderer.info();renderer=null;accounting.disposed++;}$('voxel-host').replaceChildren();}
