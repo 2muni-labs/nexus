@@ -5,7 +5,8 @@
   const part = (role,x,y,z,w,d,h,extra={}) => ({role,position:point(x,y,z),size:point(w,d,h),...extra});
   const sockets = (extra={}) => ({ground:point(),...extra});
   function definition(id,w,d,h,parts,extra={}) {
-    return {id,footprint:{width:w,depth:d},height:h,anchor:point(),sockets:sockets(),parts,
+    const artBounds=parts.length?{min:point(...['x','y','z'].map(k=>Math.min(...parts.map(p=>p.position[k]-p.size[k]/2)))),max:point(...['x','y','z'].map(k=>Math.max(...parts.map(p=>p.position[k]+p.size[k]/2))))}:{min:point(-w/2,-d/2,0),max:point(w/2,d/2,h)};
+    return {id,footprint:{width:w,depth:d},height:h,anchor:point(),sockets:sockets(),parts,artBounds,
       hitAreas:[{min:point(-w/2,-d/2,0),max:point(w/2,d/2,h)}],...extra};
   }
   const deskParts = [part('wood',0,.25,.6875,2,1.25,.125),
@@ -35,8 +36,26 @@
     cup:definition('cup',.25,.25,.25,[part('ceramic',0,0,.125,.1875,.1875,.25),part('coffee',0,0,.25625,.125,.125,.0125),part('ceramic',.125,0,.125,.125,.0625,.125)]),
     sofa:definition('sofa',3,1.5,1.5,[part('woodDark',0,0,.1875,2.75,1.25,.375),part('sofa',0,0,.5625,2.75,1.25,.375),part('sofa',0,.5625,1,3,.25,1),...[-1.375,1.375].map(x=>part('sofa',x,0,.8125,.25,1.5,.875)),part('cushion',-.6875,.25,.875,.625,.25,.625),part('coral',.6875,.25,.875,.625,.25,.625)],{sockets:sockets({seat:point(0,-.125,.75)})}),
     coffeeTable:definition('coffeeTable',2,1,.5,[part('wood',0,0,.4375,2,1,.125),...[-.75,.75].flatMap(x=>[-.25,.25].map(y=>part('woodDark',x,y,.1875,.125,.125,.375))),part('bookBlue',.375,0,.5625,.625,.5,.125)],{sockets:sockets({surface:point(0,0,.5)})}),
-    staff:definition('staff',.75,.75,2,[],{sockets:sockets({seat:point(0,0,.5625),hand:point(.375,.375,.875),head:point(0,0,1.625)}),artBounds:{min:point(-.5,-.5,0),max:point(.5,.5,2)}})
+    staff:definition('staff',.75,.75,2,[],{sockets:sockets({seat:point(0,0,.6875),hand:point(.375,.375,.875),head:point(0,0,1.625)}),artBounds:{min:point(-.5,-.5,0),max:point(.5,.5,2)}})
   };
+  // Art registration is data too: renderer consumes joint-local cuboids, no identity inference.
+  const staffModel={joints:[{id:'head',parentId:null,position:point(0,0,1.625)},
+    ...[-1,1].flatMap(side=>[{id:side<0?'leftArm':'rightArm',parentId:null,position:point(side*.3125,0,1.1875)},
+      {id:side<0?'leftLeg':'rightLeg',parentId:null,position:point(side*.15625,0,.6875)},
+      {id:side<0?'leftKnee':'rightKnee',parentId:side<0?'leftLeg':'rightLeg',position:point(0,0,-.375)}])],
+    parts:[part('$outfit',0,0,1,.5,.375,.625),part('cream',0,.2,1.125,.125,.025,.25),
+      part('skin',0,0,0,.75,.625,.625,{joint:'head'}),part('$hair',0,-.0625,.3125,.875,.75,.125,{joint:'head'}),
+      part('$hair',0,-.3125,0,.875,.125,.625,{joint:'head'}),
+      ...[-1,1].map(side=>part('$hair',side*.375,.0625,.125,.125,.625,.375,{joint:'head'})),
+      ...[-.25,0,.25].map(x=>part('$hair',x,.3125,.1875,.25,.125,.25,{joint:'head'})),
+      ...[-.1875,.1875].map(x=>part('eye',x,.32,-.0625,.0625,.025,.125,{joint:'head'})),
+      part('skin',0,.375,-.125,.125,.125,.125,{joint:'head'}),
+      ...[-1,1].flatMap(side=>{const arm=side<0?'leftArm':'rightArm',leg=side<0?'leftLeg':'rightLeg',knee=side<0?'leftKnee':'rightKnee';return [
+        part('$outfit',0,0,-.1875,.1875,.25,.375,{joint:arm}),part('skin',0,0,-.4375,.1875,.1875,.1875,{joint:arm}),
+        part('pants',0,0,-.1875,.1875,.25,.375,{joint:leg}),part('pants',0,0,-.125,.1875,.25,.25,{joint:knee}),part('shoe',0,.0625,-.25,.25,.375,.125,{joint:knee})];})]};
+  definitions.staff.parts=staffModel.parts;definitions.staff.model={kind:'articulated',joints:staffModel.joints};
+  function actorModel(appearance){const extra=appearance.hair==='pink'?[part('pink',.4375,-.1875,.1875,.25,.375,.375,{joint:'head'}),part('coral',.4375,-.0625,.3125,.25,.125,.125,{joint:'head'})]:appearance.hair==='orange'?[part('orange',0,-.375,.0625,.625,.25,.5,{joint:'head'})]:[];
+    return {joints:staffModel.joints,parts:[...definitions.staff.parts,...extra].map(p=>({...p,role:p.role==='$outfit'?appearance.outfit:p.role==='$hair'?appearance.hair:p.role}))};}
   const instances=[];
   function add(id,definitionId,x,y,z=0,extra={}) {instances.push({id,definitionId,parentId:null,position:point(x,y,z),orientation:0,...extra});}
   add('mint-room','room',-4.75,3); add('blue-room','room',4.75,3);
@@ -78,6 +97,7 @@
       if(!d.id||![d.footprint?.width,d.footprint?.depth,d.height].every(n=>Number.isFinite(n)&&n>0)||!d.sockets?.ground||!d.anchor)throw Error('Invalid definition dimensions/anchor/ground');
       [...Object.values(d.sockets),d.anchor].forEach(p=>{if(![p.x,p.y,p.z].every(Number.isFinite))throw Error(`Invalid socket: ${d.id}`);});
       if(!Array.isArray(d.parts)||!Array.isArray(d.hitAreas)||!d.hitAreas.length)throw Error(`Invalid model: ${d.id}`);
+      if(d.model){const joints=new Set(d.model.joints.map(j=>j.id));if(d.model.kind!=='articulated'||joints.size!==d.model.joints.length||d.model.joints.some(j=>j.parentId&&!joints.has(j.parentId))||d.parts.some(p=>p.joint&&!joints.has(p.joint)))throw Error(`Invalid articulated model: ${d.id}`);}
       d.parts.forEach(p=>{if(!p.role||![p.size.x,p.size.y,p.size.z].every(n=>Number.isFinite(n)&&n>0)||![p.position.x,p.position.y,p.position.z].every(Number.isFinite))throw Error(`Invalid model part: ${d.id}`);});
     });
     items.forEach(i=>{if(ids.has(i.id))throw Error(`Duplicate instance: ${i.id}`);ids.add(i.id);if(!Number.isFinite(i.orientation)||![i.position.x,i.position.y,i.position.z].every(Number.isFinite))throw Error(`Invalid transform: ${i.id}`);transform(i,items,defs);});
@@ -86,6 +106,7 @@
   const bounds={min:point(-8,-6,-.375),max:point(8,6,3)};
   function occupancy(id,padding=0){const i=instances.find(v=>v.id===id),d=definitions[i.definitionId],t=transform(i);const corners=[[-1,-1],[-1,1],[1,-1],[1,1]].map(([x,y])=>plus(t.position,rotate(point(x*d.footprint.width/2,y*d.footprint.depth/2),t.orientation)));return {min:point(Math.min(...corners.map(p=>p.x))-padding,Math.min(...corners.map(p=>p.y))-padding),max:point(Math.max(...corners.map(p=>p.x))+padding,Math.max(...corners.map(p=>p.y))+padding)};}
   function blocked(p,r=.3){if(p.x-r<-8||p.x+r>8||p.y-r<-6||p.y+r>6)return true;
+    if(p.x>1.5-r&&p.x<8&&Math.abs(p.y+.125)<r+.125)return true;
     if(p.y>0&&p.y<6&&Math.abs(Math.abs(p.x)-1.5)<r+.125&&(p.y<.5+r||p.y>2-r))return true;
     return instances.filter(i=>['desk','sofa','coffeeTable','shelf','plant'].includes(i.definitionId)).some(i=>{const b=occupancy(i.id,r);if(i.definitionId==='desk'){b.min.y=i.position.y-.375-r;b.max.y=i.position.y+.875+r;}return p.x>b.min.x&&p.x<b.max.x&&p.y>b.min.y&&p.y<b.max.y;});
   }
@@ -102,6 +123,6 @@
   function route(ids,graph=edges){const out=[];for(let i=1;i<ids.length;i++){const e=graph[`${ids[i-1]}>${ids[i]}`];if(!e)return {points:[],reason:`경로 없음: ${ids[i-1]} → ${ids[i]}`};out.push(...e.slice(i===1?0:1));}return {points:out,reason:''};}
   function interpolate(points,distance){if(!points.length)return null;let rest=distance;for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],len=Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z);if(rest<len&&len>0){const f=rest/len;return {position:point(a.x+(b.x-a.x)*f,a.y+(b.y-a.y)*f,a.z+(b.z-a.z)*f),orientation:Math.atan2(-(b.x-a.x),b.y-a.y)*180/Math.PI,direction:(Math.round(Math.atan2(b.x-a.x,b.y-a.y)/ (Math.PI/4))+8)%8,arrived:false};}rest-=len;}return {position:{...points.at(-1)},orientation:0,direction:0,arrived:true};}
   const length=points=>points.slice(1).reduce((n,p,i)=>n+Math.hypot(p.x-points[i].x,p.y-points[i].y,p.z-points[i].z),0);
-  const api={cell:1,voxel:1/8,point,part,definitions,instances,staff,bounds,nodes,edges,rotate,plus,transform,socket,validate,occupancy,blocked,route,interpolate,length};
+  const api={actorModel,cell:1,voxel:1/8,point,part,definitions,instances,staff,bounds,nodes,edges,rotate,plus,transform,socket,validate,occupancy,blocked,route,interpolate,length};
   if(typeof module!=='undefined')module.exports=api;else root.officeVoxelWorld=api;
 })(typeof window!=='undefined'?window:globalThis);

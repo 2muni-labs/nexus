@@ -7,7 +7,7 @@
   let roomURL = '';
   let projectURL = '';
   const roomSample = window.officeSnapshot.parseView(JSON.stringify(window.officeRoomSample));
-  let mode = new URLSearchParams(window.location.search).get('view') === 'campus' ? 'campus' : 'demo';
+  let mode = new URLSearchParams(window.location.search).get('view') === 'campus' ? 'campus' : new URLSearchParams(window.location.search).get('view') === 'voxel' && window.officeVoxel ? 'voxel' : 'demo';
   let importGeneration = 0;
   const byId = id => document.getElementById(id);
   const svgNS = 'http://www.w3.org/2000/svg';
@@ -201,6 +201,10 @@
   }
   const desks = document.getElementById('desks');
   function render() {
+    if (window.officeVoxel) {
+      window.officeVoxel.mode(mode);
+      if (mode === 'voxel') { clearTimeout(expressionTimer); expressionTimer = null; return; }
+    }
     const focusedDesk = document.activeElement?.dataset.id;
     desks.replaceChildren();
     byId('legend-items').replaceChildren();
