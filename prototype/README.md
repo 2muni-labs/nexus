@@ -340,3 +340,80 @@ native Orca cross-command key/input persistence or OS preference delivery.
 `campus.browser.test.js`를 읽고 `runOfficeCampusTests(window)`를 호출합니다.
 이는 스크립트로 입력 이벤트를 주입하는 검사이며 실제 키보드/포인터 입력 증거와는
 구분합니다. 기존 `refresh.test.cjs`는 campus 선택 이후 늦게 도착한 파일 콜백도 검사합니다.
+
+## 실제 3D 복셀 오피스 (Issue48)
+
+표시 메뉴의 **3D 복셀 오피스**, 또는 `index.html?view=voxel`로 엽니다.
+이 보기만 HTTP와 WebGL2가 필요합니다. 예를 들어 저장소 루트에서
+`python3 -m http.server 8818 --bind 127.0.0.1 --directory prototype`를 실행하고
+`http://127.0.0.1:8818/index.html?view=voxel`로 접속합니다. 기존 단일 방,
+2D 건물, 세 스킨, v1/v2/방·Project 가져오기는 계속 `file://`로도 동작합니다.
+3D 실패 시 명시적인 오류, **3D 다시 시도**, **기존 2D 건물 보기**를 제공합니다.
+컨텍스트 복원 후에도 다시 시도를 눌러 새 renderer를 만들어야 합니다.
+외부 CDN, 원격 자산, 프레임워크, 빌드, 저장소, 수집기 또는 서버 제품은 없습니다.
+
+3D는 원본 cuboid 모델을 실제 opaque Three.js Mesh / InstancedMesh로 렌더링합니다.
+승인된 시각 참고 이미지는 제품에 포함하지 않습니다. 지붕 없는 민트·블루 작업실,
+각 두 책상, 연결 문/복도와 따뜻한 공유 라운지는 한 공간 규격을 사용합니다.
+화면 Y 정렬이나 평면 SVG를 3D로 가장하지 않으며 WebGL의 depth buffer와 가장 가까운
+보이는 표면의 Raycaster 결과를 사용합니다. 벽과 가구 뒤의 직원은 가려질 수 있으므로
+동일한 안정 ID의 **직원 HTML 버튼 네 개**로도 선택할 수 있습니다. 이름/상태와 상세
+설명은 HTML에 있습니다. 버튼은 최소 44 CSS px이고 작은 화면에서는 상세가 아래로 옵니다.
+
+- `voxel-world.js`: 순수 JS 카테고리 정의, cuboid 파트/재질 역할, 관절 모델,
+  인스턴스와 가상 작업 연결, 명시적 노드/간선. 논리 X/Y는 바닥, Z는 위,
+  cell=1, 기본 voxel=⅛입니다. 모델 면/중심과 얇은 화면·키보드 등 아트 세부는
+  이 격자에서 파생한 더 작은 치수를 사용합니다. 직원 높이 2, 책상 점유 2×2와
+  표면 .75, 벽 높이 3입니다. 장식 art bounds, 점유 footprint, 실제 충돌 몸체는
+  분리됩니다. 책상 apron 아래의 비어 있는 공간은 단단한 몸체로 취급하지 않습니다.
+- 인스턴스의 `id/definitionId/parentId/position/orientation`과 정의의
+  `footprint/height/anchor/sockets/parts/hitAreas`가 계약입니다. orientation은
+  +Z에서 볼 때 반시계 방향 degree, 로컬 +Y가 앞입니다. 부모 회전/소켓은 순수
+  월드 좌표에서 합성되고 renderer 경계에서만 `(x,y,z) → (x,z,-y)`로 바뀝니다.
+  컵은 책상 surface, 직원의 앉은 골반은 의자 seat 소켓을 사용합니다.
+  없는 정의·소켓, 잘못된 치수·파트·관절은 오류이며 다른 모델로 대체하지 않습니다.
+- `voxel-renderer.mjs`: 로컬 ESM, 공유 BoxGeometry / 재질, 반복 정적 파트의
+  InstancedMesh, 관절 직원, 1024² 실 그림자와 바닥 아래의 단일 shadow catcher, 고정된 위쪽 왼쪽 광원과 주변광.
+  Orthographic azimuth 45° / elevation 30°로 바닥 축은 2:1입니다. 90°씩 네 각도,
+  확대/축소/이동/초기화, 월드 bounds 기반 fit과 카메라 쪽 벽 cutaway를 제공합니다.
+  **공간 규격 보기**는 격자·점유·기준점·소켓·높이선과 renderer 통계를 표시합니다.
+- `voxel-motion.js`: 네 직원의 **하나의 DEMO 시계**입니다. 같은 외출에서 작업과
+  worktree/session은 유지합니다. 시작 요청 시각은 3/9/15/21초로 어긋나며 좁은 문,
+  복도, 커피 상호작용 공간 전체를 한 번에 한 직원이 예약합니다. 같은 요청 시각은
+  stable ID 순서입니다. 다른 직원은 자기 의자에서 이유를 표시하며 기다립니다.
+  경로가 없거나 가구 몸체에 막히면 마지막 유효 의자 위치에서 대기합니다.
+  고정 경유점과 거리 보간만 사용하며 경로 탐색/물리 엔진은 없습니다.
+- 재생은 경과 시간을 유지하며 그림 갱신을 최대 약 30fps로 제한합니다. 정지 시
+  RAF가 없으며 카메라·선택은 요청할 때만 그립니다. 일시정지는 정확한 진행을 유지,
+  다음 단계는 일시정지한 정적 화면, 초기화는 0초 정지입니다. 숨김·동작 줄이기·
+  모드/팔레트/스킨·선택한 가져오기는 취소하고 재생을 직접 다시 눌러야 합니다.
+  generation이 이전 콜백을 무효화하며 모드 종료는 RAF, listener, ResizeObserver,
+  geometry/material/shadow/renderer와 컨텍스트를 정리합니다.
+- 125초는 **생존 미확인** 정지 화면입니다. 다음 단계의 130초 결과 전달도 종료나
+  Done이 아닙니다. 140초는 명시적 가상 이전 세션 종료와 NEW task/worktree/session을
+  함께 표시합니다. 외형은 신원이 아닙니다. 실제 v1/v2/보기 관찰을 애니메이션하거나
+  덮어쓰지 않으며 이 건물은 전부 가상의 시나리오입니다.
+- **데이라이트 / 소르베**는 동일 geometry, 소켓, route, logical ID의 두 재질 팔레트입니다.
+  모델/관절 파트는 world 등록에서, 색은 renderer의 재질 역할에서 교체합니다.
+  팔레트 변경은 좌표·선택·작업 사실을 바꾸지 않고 이동을 정지합니다. 기존 2D 스킨과
+  별도입니다. 수천 에이전트나 일반 내비게이션을 검증한 제품은 아닙니다.
+
+Three.js는 공식 [r186 release](https://github.com/mrdoob/three.js/releases/tag/r186)의
+원본 ESM 두 파일을 `vendor/three/`에 고정합니다. MIT `LICENSE`와
+`provenance.json`에 정확한 upstream commit, 원본 URL, byte 수와 SHA-256을 보존합니다.
+업데이트할 때 공식 immutable commit에서 같은 파일들을 내려받아 hash를 재계산하고
+이 보기를 다시 검증하세요. 내려받은 코드를 설치 스크립트로 실행하지 않습니다.
+사용 API의 공식 자료: [WebGLRenderer](https://threejs.org/docs/pages/WebGLRenderer),
+[OrthographicCamera](https://threejs.org/docs/pages/OrthographicCamera),
+[InstancedMesh](https://threejs.org/docs/pages/InstancedMesh),
+[Raycaster](https://threejs.org/docs/pages/Raycaster).
+
+검증은 기존 아홉 `prototype/*.test.cjs`와 추가 `voxel-world.test.cjs`,
+`voxel-motion.test.cjs`, `voxel-projection.test.cjs`를 각각 Node로 실행합니다.
+`voxel.browser.test.js`의 `runOfficeVoxelTests(window)`는 HTTP 실제 페이지의
+DOM/controller/팔레트/가져오기 보존을 검사합니다. 이 스크립트의 이벤트 주입은 실제
+키보드/포인터 증거와 구분해야 합니다. 실제 브라우저에서 969px / 390px의 두 팔레트,
+네 카메라, 선택/가림/키보드, WebGL 실패·컨텍스트 손실·명시적 복구, 20회 재진입 자원,
+20초 네 직원 이동의 frame interval / renderer 통계와 스크린샷을 확인합니다.
+GPU가 그리지 않은 DOM 성공은 시각 검증 PASS가 아닙니다. 성능 수치는 실행한 호스트와
+viewport의 관찰이며 일반 하드웨어 보장은 아닙니다.
