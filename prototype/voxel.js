@@ -8,7 +8,8 @@
   const accounting={created:0,disposed:0,failures:0};
   const hiddenOld=['.office-layout','.office-hud','.legend','#movement-controls','#view-controls'];
   function constraint(){return document.hidden?'숨김 · 돌아온 뒤 재생 필요':reduced.matches?'동작 줄이기 · 다음 단계로 정적 탐색':'';}
-  function message(value){$('voxel-message').textContent=value;}
+  function text(node,value){if(node.textContent!==value)node.textContent=value;}
+  function message(value){text($('voxel-message'),value);}
   function detail(){if(!active)return;const state=clock?.state(),s=state?.actors.find(v=>v.id===selected)||W.staff.find(v=>v.id===selected);
     $('voxel-detail-title').textContent=s.name;
     const values=[['방 / 저장소',`${s.room==='mint-room'?'민트 작업실':'블루 작업실'} · ${s.repository}`],['Work / Task',s.task],['worktree 별칭',s.worktree],['session 별칭',s.session],['책상 / 의자',`${s.desk} / ${s.chair}`],['배치 근거','고정된 가상 연결 · 외형/위치에서 배정 추론 안 함'],['현재 연출',s.reason||'자기 의자 소켓의 정지 화면'],['실행 / 수락','가상 DEMO · 결과 ≠ 종료 ≠ Done · 실제 생존 미확인']];
@@ -17,10 +18,12 @@
   }
   function select(id){if(!W.staff.some(s=>s.id===id))return;selected=id;renderer?.select(id);detail();}
   function paint(state){if(!active)return;renderer?.update(state.actors,state.time);
-    $('voxel-play').textContent=state.playing?'일시정지':'재생';$('voxel-play').setAttribute('aria-pressed',String(state.playing));$('voxel-play').disabled=!!state.reason||!!blocked||state.time>=125;
-    $('voxel-time').textContent=`DEMO ${state.time.toFixed(1)}초 · ${state.playing?'재생':'정지'}${state.reason?' · '+state.reason:''}`;
+    // Motion renders at its native cadence; unchanged control labels need no DOM mutation.
+    const play=$('voxel-play'),pressed=String(state.playing),disabled=!!state.reason||!!blocked||state.time>=125;
+    text(play,state.playing?'일시정지':'재생');if(play.getAttribute('aria-pressed')!==pressed)play.setAttribute('aria-pressed',pressed);if(play.disabled!==disabled)play.disabled=disabled;
+    text($('voxel-time'),`DEMO ${state.time.toFixed(1)}초 · ${state.playing?'재생':'정지'}${state.reason?' · '+state.reason:''}`);
     const facts=JSON.stringify(state.actors.map(s=>[s.phase,s.session]));if(facts!==lastFacts){lastFacts=facts;detail();}
-    if($('voxel-debug').checked&&renderer){const i=renderer.info();$('voxel-stats').textContent=`WebGL2 · Three r${i.version} · ${i.render.calls} draws · ${i.render.triangles} triangles · ${i.memory.geometries} geometries · ${i.programs} programs · 4 actors · grid 1 / voxel ⅛ · staff 2 / desk .75 / wall 3`;}
+    if($('voxel-debug').checked&&renderer){const i=renderer.info();text($('voxel-stats'),`WebGL2 · Three r${i.version} · ${i.render.calls} draws · ${i.render.triangles} triangles · ${i.memory.geometries} geometries · ${i.programs} programs · 4 actors · grid 1 / voxel ⅛ · staff 2 / desk .75 / wall 3`);}
   }
   function suspend(){clock?.suspend(constraint());}
   function teardown(){generation++;clock?.dispose();clock=null;if(renderer){renderer.dispose();accounting.lastDisposed=renderer.info();renderer=null;accounting.disposed++;}$('voxel-host').replaceChildren();}
