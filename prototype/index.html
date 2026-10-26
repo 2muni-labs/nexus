@@ -18,6 +18,7 @@
   <script defer src="campus.js"></script>
   <script defer src="voxel-world.js"></script>
   <script defer src="voxel-motion.js"></script>
+  <script defer src="observed-office.js"></script>
   <script defer src="voxel.js"></script>
   <script defer src="app.js"></script>
 </head>
@@ -26,7 +27,7 @@
   <main>
     <h1 id="page-title" class="office-heading">LITTLE OFFICE <span>작은 팀의 작업실</span></h1>
     <section class="import-bar" aria-label="표시 데이터 선택">
-      <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="voxel">3D 복셀 오피스</option><option value="campus">건물 데모 · 두 작업실과 라운지</option><option value="rooms">방·Project 보기 · 가상 2개 방</option><option value="view-import">방·Project 보기 · 수동 가져오기</option><option value="movement">이동 DEMO · 세션 배정</option><option value="snapshot">관찰 스냅샷 · 단일 기록</option></select>
+      <label for="display-mode">표시</label><select id="display-mode"><option value="demo">데모 · 4개 책상</option><option value="voxel-observed">3D observed copy · 실제 관찰 사본</option><option value="voxel">3D 복셀 오피스</option><option value="campus">건물 데모 · 두 작업실과 라운지</option><option value="rooms">방·Project 보기 · 가상 2개 방</option><option value="view-import">방·Project 보기 · 수동 가져오기</option><option value="movement">이동 DEMO · 세션 배정</option><option value="snapshot">관찰 스냅샷 · 단일 기록</option></select>
       <label for="skin-select">오피스 스킨</label><select id="skin-select"><option value="simulation">시뮬레이션 · 기본</option><option value="illustration">일러스트</option><option value="pixel">픽셀 · 방 전체</option></select>
       <label class="file-label" for="snapshot-file">JSON 가져오기 <input id="snapshot-file" type="file" accept=".json,application/json"></label>
       <button id="refresh-file" type="button">파일로 관찰 갱신</button>
@@ -61,6 +62,14 @@
         <label>3D 팔레트 <select id="voxel-palette"><option value="daylight">데이라이트 · 기본 복셀</option><option value="sorbet">소르베 · 파스텔 모델</option></select></label>
         <label><input id="voxel-debug" type="checkbox"> 공간 규격 보기</label>
       </div>
+      <div id="observed-controls" hidden>
+        <p>Observed copy · explicit refresh · not real-time · 위치와 외형은 그림입니다. 두 번째 방은 관찰하지 않은 장식입니다.</p>
+        <button id="observed-refresh" type="button">관찰 파일 Refresh</button><button id="observed-import" type="button">관찰 파일 Import</button><input id="observed-file" type="file" accept="application/json,.json" hidden>
+        <p id="observed-status" role="status"></p><p id="observed-history"></p>
+        <button id="observed-prev" type="button">이전 책상</button><span id="observed-page"></span><button id="observed-next" type="button">다음 책상</button>
+        <label>표시 세션 <select id="observed-session"><option value="">연결 세션 없음</option></select></label>
+        <details><summary>출처 · 범위 · 연결되지 않은 기록</summary><div id="observed-lists"></div></details>
+      </div>
       <div class="voxel-layout"><div class="voxel-scene">
         <p class="voxel-help">직원은 클릭 또는 아래 버튼으로 선택 · 왼쪽 드래그로 이동 · 휠로 화면 중심 확대/축소</p>
         <div id="voxel-host"></div><p id="voxel-message" role="status"></p>
@@ -68,7 +77,7 @@
         <p id="voxel-stats" hidden></p>
         <div class="voxel-clock" aria-label="네 동료 공통 DEMO 시계"><button id="voxel-play" type="button" aria-pressed="false">재생</button><button id="voxel-next" type="button">다음 단계</button><button id="voxel-reset" type="button">처음으로</button><span id="voxel-time">DEMO 0.0초 · 정지</span></div>
         <p class="voxel-note">정지 화면으로 시작합니다. 같은 작업의 외출과 복귀 · 문/복도 예약 대기 · 생존 미확인 시 위치 고정. 숨김·동작 줄이기·팔레트·가져오기 전환은 정지하며 다시 재생해야 합니다.</p>
-      </div><aside class="voxel-detail" aria-labelledby="voxel-detail-title"><p class="eyebrow">FICTIONAL DESK NOTE</p><h3 id="voxel-detail-title">동료 선택</h3><div id="voxel-staff" aria-label="가상 동료 선택"></div><dl id="voxel-fields"></dl><p>네 동료의 이름과 신원은 그림과 분리되어 있습니다. 이 화면은 실시간 배정, 실행, 승인 또는 수락 증거를 제공하지 않습니다.</p></aside></div>
+      </div><aside class="voxel-detail" aria-labelledby="voxel-detail-title"><p class="eyebrow" id="voxel-detail-kind">FICTIONAL DESK NOTE</p><h3 id="voxel-detail-title">동료 선택</h3><div id="voxel-staff" aria-label="가상 동료 선택"></div><dl id="voxel-fields"></dl><p id="voxel-disclaimer">네 동료의 이름과 신원은 그림과 분리되어 있습니다. 이 화면은 실시간 배정, 실행, 승인 또는 수락 증거를 제공하지 않습니다.</p></aside></div>
     </section>
     <section class="office-hud" aria-label="현재 보이는 작업과 관찰 출처"><strong id="work-count"></strong><span id="data-source"></span><span id="observation-time"></span></section>
     <div class="office-layout">

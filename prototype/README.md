@@ -429,3 +429,88 @@ viewport의 관찰이며 일반 하드웨어 보장은 아닙니다.
 `vendor/three/.gitattributes`는 원본 `three.core.js`의 혼합 들여쓰기 한 곳을
 Git whitespace 검사에서 제외합니다. 라이선스/원본 hash를 유지하기 위해 upstream
 파일을 재포맷하지 않습니다. 제품 JS의 whitespace 검사는 그대로 적용합니다.
+
+## Explicit observed 3D copy
+
+Choose **3D observed copy**, then Refresh the already collected static
+`observed-office.json`, or Import a new local file. This mode uses the accepted
+scene, two visual desk slots in its first room and pages every selected workspace.
+The second room is unobserved decoration. Positions, appearances and poses are
+illustrations; the copy has no demo clock, typing, travel or live control.
+
+Use `python3 -B scripts/office-observe.py --scope PRIVATE_SCOPE --output OUTPUT`
+from the repository root. Both arguments are literal private paths; output must
+be an ignored `.runtime/` JSON file in an owned 0700 directory, separate from the
+scope directory. Scope is 0600 strict JSON: `version:1`,
+`logical_repository:"nexus"`, `provider_repository:"2muni-labs/nexus"`,
+`scope_alias:"display-scope-<16hex>"`, `host:"local"`, exact `runtime_id`, `repo_id`,
+a private random 64hex `alias_salt`, `issues` (positive numbers), `runs` (native
+IDs), `workspaces` (`selector`, `id`, `instance_id`) and `bindings`.
+Each optional operator declaration has exactly `issue_url`, `run`, `task`,
+`dispatch`, `workspace`, `terminal`, `incarnation`, `evidence`. The declaration
+must match the observed native identity edges and is visibly **operator-declared**;
+it never changes native `linked:false`, establishes acceptance or proves authority.
+No names, branches, titles, task prose or visual slots establish relationships.
+
+The independent presentation grammar is `kind:"nexus-office-presentation"`,
+`office_version:1`. It never enters the legacy v1/v2/view parser.
+Exact allowed keys are exported as `officeObserved.fields` in
+[observed-office.js](observed-office.js):
+
+| Object | Exact keys |
+| --- | --- |
+| Root | kind, office_version, scope_alias, capture_alias, started_at, observed_at, collection_state, repository, selection, sources, work_items, workspaces, tasks, sessions, relations, coverage, diagnostics |
+| Source | alias, kind, started_at, observed_at, result, read_complete, inventory_complete, reason |
+| Work | alias, url, number, label, record_state, workflow, source, workflow_source, observed_at |
+| Workspace | alias, label, board, source, observed_at |
+| Task/attempt | alias, task_alias, workspace, stage, result, source, observed_at |
+| Session | alias, label, kind, workspace, agent_liveness, pty_liveness, continuity, source, observed_at |
+| Relation | alias, workspace, work_item, session, task, kind, status, source, observed_at |
+| Coverage | selected_work_items, selected_workspaces, selected_runs, observed_work_items, observed_workspaces, observed_tasks, observed_sessions, omitted_tasks, omitted_sessions, omitted_workspaces, global_complete |
+
+Collection states: `collecting/observed/partial/unavailable`; source kinds:
+`github-issue/github-project/orca-workspace/orca-task-index/orca-worker/orca-terminal/orca-reference/operator-binding`;
+source results `ok/unavailable/conflict/overflow`, reasons
+`selected/unknown/truncated/unsupported/failed/identity/time`.
+Workflow uses `Backlog/Ready/In Progress/Blocked/Review/Done` or null, independently
+from Issue `open/closed/unknown` and native board
+`todo/in-progress/in-review/completed/unknown`. Task stages are
+`pending/dispatched/completed/blocked/unknown`, results
+`in-progress/succeeded/failed/superseded/unknown`. Session kind is `terminal-agent`,
+conversation continuity is `unknown`, agent and PTY liveness separately use
+`live/exited/unknown`. Relation kinds are `native-linked/operator-declared`, statuses
+`observed/conflict/unknown`. Fixed diagnostics are
+`unavailable/identity/conflict/overflow/time/unsupported/collecting/partial`.
+
+Bounds are 256 KiB decoded UTF-8, one repository, 16 selected Issues, 16 workspaces,
+32 attempts, 32 sessions, 64 relations, 128 sources, 16 diagnostics, exact UTC
+millisecond timestamps, safe integer counts and keyed `display-<type>-<16hex>`
+aliases (maximum 48 characters). Labels are generated only. Duplicate JSON keys,
+extra keys, unsafe URLs, undeclared references and invalid ownership fail parsing.
+Source/time contradictions suppress staff pairing. Five minutes marks a saved copy
+historical; younger data never proves current activity. Exited sessions stay in the
+list without a figure; unknown/stale associations use `? historical`. All workspace,
+work, session, attempt, source and coverage records remain reachable in the list.
+
+Refresh clears prior facts before reading; no new capture, failed reads and malformed
+copies leave no old staff or evidence. One generation fences fetch/import/mode
+callbacks; same-capture collecting→final may advance once. Scope changes reset
+selection; surviving aliases preserve page/workspace/session selection. Source reads,
+GitHub workflow, task result, agent liveness, PTY liveness, acceptance and Done are
+independent. CI/review/validation/acceptance are **not collected**.
+
+For an actual preview, freeze the candidate and inspect its prototype tree for
+symlinks, then archive **only its tracked prototype files** into a new ignored 0700
+site directory. Collect sanitized JSON there; keep scope/config/raw inputs outside
+that directory. Serve it with `python3 -m http.server PORT --bind 127.0.0.1
+--directory SITE`. Never serve the repository, `.runtime` root or a checkout symlink;
+never copy App keys/config. Preserve other previews and ports. The browser fetches
+only `./observed-office.json` explicitly with no credentials, redirects, polling,
+upload or collection endpoint. Imported files and source labels are unverified
+claims, not authenticated workflow evidence.
+
+Focused checks: `python3 -B -m unittest discover -s tests -p test_office_observations.py`,
+`node prototype/observed-office.test.cjs`, existing affected parser/view/refresh/evidence/
+world/motion/projection tests, and `runOfficeObservedTests(window)` from
+`voxel-observed.browser.test.js` in a production HTTP page. The browser helper injects
+controlled copies/read failures; record actual captures and native input separately.

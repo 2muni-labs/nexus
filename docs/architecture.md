@@ -134,3 +134,11 @@ Runtime plans/results are ignored; generated reviews remain ignored. Curated dur
 rationale belongs in docs/config only when explicitly requested. Scripts are read-only
 preflight/status tools and do not dispatch or write runtime state. Human approval governs
 merge, publishing, destructive operations and ownership policy changes.
+
+The bounded office presentation path adds a presentation-only Orca read adapter
+(`scripts/adapters/orca-office.py`) and stdlib one-shot composition
+(`scripts/office-observe.py`), producing a sanitized static copy for explicit browser
+refresh/import. Native interpretation stays in that adapter; the browser uses only
+the separate bounded presentation grammar. It adds no workflow control, core schema,
+provider internals, background runtime, database or scheduler. See
+[the office copy contract](../prototype/README.md#explicit-observed-3d-copy).

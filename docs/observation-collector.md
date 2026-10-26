@@ -102,3 +102,28 @@ They may contain full normalized Issue/PR/comment source content. Review and san
 before any separately authorized publication; never publish credentials, private
 reports, host paths or transcript archives. No collector output grants publication,
 merge or checkout deletion authority.
+
+## Separate office presentation copy
+
+`scripts/office-observe.py` composes the existing App-authenticated Issue/Project
+read ports with the presentation-only `scripts/adapters/orca-office.py`. Its strict
+private selection and public presentation grammar are documented in
+[the prototype guide](../prototype/README.md#explicit-observed-3d-copy).
+This does not alter `observe.sh`: that private bundle remains always partial with
+exit 2 and must never be served as browser JSON.
+
+The office collector obtains an exclusive output lock, atomically installs an empty
+`collecting` envelope before source reads and atomically replaces it with validated
+field-by-field observations or a zero-fact failure. Writes use a same-directory 0600
+temporary file, flush/fsync and replace; no lock stealing or retries. Exit 0 means
+selected observations installed, exit 2 means partial/unavailable installed, and exit
+1 means invocation/output failure. Before invalidation, failure means **no update
+installed**; an unwritable directory cannot invalidate an old copy. Interrupted
+reads leave pending/failure rather than stale success. Browser Refresh also clears
+old facts and explicitly identifies unchanged captures. No state implies fleet
+completeness, approval, exit, acceptance or Done.
+
+Scope/config references remain outside the static serving root. Child provider
+environments scrub injected `GIT_CONFIG*`; App config remains at the operator-owned
+external path. No provider authentication internals, core observations or policies
+are changed, and no raw response/transcript/preview is persisted by this collector.
