@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import tempfile
 import time
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -80,7 +81,10 @@ class OfficeTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name)
         self.config=self.root/'config.json';self.config.write_text(json.dumps({'repositories':{'nexus':{'repository':'2muni-labs/nexus'}}}))
-        self.env=patch.dict(os.environ,{'NEXUS_GITHUB_CONFIG':str(self.config),'GIT_CONFIG_COUNT':'99'})
+        # Every fixture contract runs without a discoverable host Orca executable.
+        empty_bin=self.root/'empty-bin';empty_bin.mkdir()
+        self.env=patch.dict(os.environ,{'NEXUS_GITHUB_CONFIG':str(self.config),'GIT_CONFIG_COUNT':'99',
+            'PATH':str(empty_bin),'ORCA_CLI_COMMAND':'','ORCA_DEV_REPO_ROOT':''})
         self.env.start();self.addCleanup(self.env.stop)
         self.fixture=Fixture()
 
@@ -88,6 +92,45 @@ class OfficeTests(unittest.TestCase):
         capture=O.Capture(s or scope())
         capture.collect(runner=self.fixture.read,native_runner=self.fixture.read)
         return capture, O.validate(capture.data)
+
+    def test_missing_native_executable_is_sanitized_failed_source(self):
+        # Use the real native reader, with only the provider replaced by a fixture.
+        with patch.dict(os.environ,{'ORCA_CLI_COMMAND':str(self.root/CANARY)}):
+            capture=O.Capture(scope())
+            capture.collect(runner=self.fixture.read)
+        raw=O.validate(capture.data)
+        self.assertEqual(capture.data['collection_state'],'partial')
+        self.assertEqual(len(capture.data['work_items']),1)
+        for key in ('workspaces','tasks','sessions','relations'):
+            self.assertEqual(capture.data[key],[])
+        native=[s for s in capture.data['sources'] if s['kind'].startswith('orca-')]
+        self.assertEqual(len(native),1)
+        self.assertEqual(native[0]['result'],'unavailable')
+        self.assertEqual(native[0]['reason'],'failed')
+        self.assertFalse(native[0]['read_complete'])
+        self.assertIsNotNone(native[0]['observed_at'])
+        self.assertIn('failed',capture.data['diagnostics'])
+        self.assertFalse(capture.data['coverage']['global_complete'])
+        for private in (CANARY,str(self.root),'FileNotFoundError'):
+            self.assertNotIn(private.encode(),raw)
+
+    def test_executable_selection_has_no_fallback(self):
+        cases=[('Darwin',{},'orca'),
+            ('Darwin',{'ORCA_DEV_REPO_ROOT':'/dev'},'orca-dev'),
+            ('Linux',{},'orca-ide'),
+            ('Linux',{'ORCA_DEV_REPO_ROOT':'/dev'},'orca-ide'),
+            ('Linux',{'ORCA_SESSION_ID':'session'},'orca'),
+            ('Linux',{'ORCA_SESSION_ID':'session','ORCA_DEV_REPO_ROOT':'/dev'},'orca-dev'),
+            ('Linux',{'ORCA_CLI_COMMAND':'/selected/missing-orca'},'/selected/missing-orca')]
+        for platform,env,expected in cases:
+            with self.subTest(platform=platform,env=env), patch.dict(os.environ,env,clear=True), \
+                    patch.object(O.ORCA.os,'uname',return_value=SimpleNamespace(sysname=platform)):
+                self.assertEqual(O.ORCA.executable(),expected)
+
+    def test_native_spawn_failure_uses_fixed_error(self):
+        with self.assertRaises(O.ORCA.ReadError) as error:
+            O.ORCA.read([str(self.root/CANARY),'status','--json'])
+        self.assertEqual(str(error.exception),'failed')
 
     def test_unpaired_real_edges_private_fields_discarded(self):
         capture,raw=self.collect()

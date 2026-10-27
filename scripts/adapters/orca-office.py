@@ -1,7 +1,6 @@
 """Presentation-only Orca metadata boundary. Never performs lifecycle/control calls."""
 import json
 import os
-import shutil
 import subprocess
 import time
 
@@ -26,8 +25,12 @@ def literal(raw):
 def read(argv, env=None):
     """Bound memory while reading; fixed diagnostics never forward stderr."""
     import selectors
-    with subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                          env=env, start_new_session=True) as child:
+    try:
+        child = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                 env=env, start_new_session=True)
+    except OSError:
+        raise ReadError('failed') from None
+    with child:
         output = bytearray()
         selector = selectors.DefaultSelector()
         selector.register(child.stdout, selectors.EVENT_READ)
@@ -58,13 +61,12 @@ def read(argv, env=None):
 
 
 def executable():
+    """Select once without host discovery; the real reader handles launch failures."""
     command = os.environ.get('ORCA_CLI_COMMAND')
     if not command:
         command = 'orca-dev' if os.environ.get('ORCA_DEV_REPO_ROOT') else 'orca'
         if os.uname().sysname == 'Linux' and not os.environ.get('ORCA_SESSION_ID'):
             command = 'orca-ide'
-    if not shutil.which(command):
-        raise ReadError('failed')
     return command
 
 
