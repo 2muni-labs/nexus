@@ -27,6 +27,49 @@ for(const diagnostics of [['failed','identity'],['unknown'],['unavailable','unav
  const bad=structuredClone(partial);bad.diagnostics=diagnostics;
  assert.throws(()=>parse(bad),undefined,'diagnostic normalization must not weaken strict consumer vocabulary or uniqueness');
 }
+// Cross the real Python producer -> strict consumer boundary without editing its
+// payload. Gather every failure case before asserting, so one mismatch hides none.
+const produced=require('node:child_process').spawnSync('python3',['-B','-c',`
+import importlib.util,json
+from pathlib import Path
+p=Path('tests/test_office_observations.py')
+s=importlib.util.spec_from_file_location('office_cases',p)
+T=importlib.util.module_from_spec(s);s.loader.exec_module(T)
+rows=[]
+for name,error,result,reason,diagnostics in T.NATIVE_FAILURES:
+ t=T.OfficeTests();t.setUp()
+ try:
+  _,raw=t.collect_native_failure(error)
+  rows.append(dict(case=name,result=result,reason=reason,diagnostics=diagnostics,raw=raw.decode()))
+ except Exception as e:rows.append(dict(case=name,error=type(e).__name__))
+ finally:t.doCleanups()
+print(json.dumps(rows))
+`],{cwd:require('node:path').join(__dirname,'..'),encoding:'utf8'});
+assert.equal(produced.status,0,produced.stderr||String(produced.error));
+const nativeFailures=JSON.parse(produced.stdout),boundaryFailures=[];
+assert.equal(nativeFailures.length,9);
+for(const row of nativeFailures){
+ try{
+  assert.ok(!row.error,row.error);
+  const data=O.parse(row.raw),native=data.sources.filter(s=>s.kind.startsWith('orca-')),view=O.project(data,{},Date.parse(data.observed_at));
+  assert.equal(native.length,1);assert.equal(native[0].result,row.result);assert.equal(native[0].reason,row.reason);
+  assert.equal(native[0].read_complete,false);assert.equal(native[0].inventory_complete,null);
+  assert.deepEqual(data.diagnostics,row.diagnostics);assert.equal(data.collection_state,'partial');
+  assert.equal(data.work_items.length,1);assert.equal(data.work_items[0].workflow,'In Progress');
+  assert.equal(data.work_items[0].url,partial.work_items[0].url);
+  assert.ok(data.sources.filter(s=>s.kind.startsWith('github-')).every(s=>s.result==='ok'&&s.read_complete));
+  assert.equal(data.coverage.selected_workspaces,1);assert.equal(data.coverage.observed_workspaces,0);
+  assert.equal(data.coverage.observed_work_items,1);assert.equal(data.coverage.global_complete,false);
+  for(const key of ['omitted_workspaces','omitted_tasks','omitted_sessions'])assert.equal(data.coverage[key],null);
+  assert.equal(view.unmapped_work.length,1);assert.equal(view.desks.length,0);
+  for(const key of ['workspaces','tasks','sessions','relations'])assert.deepEqual(data[key],[]);
+ }catch(error){boundaryFailures.push({case:row.case,error:error.message});}
+}
+assert.deepEqual(boundaryFailures,[],'all production native failure captures must reach strict presentation');
+for(const reason of ['overflow','unknown-reason']){
+ const bad=structuredClone(partial);bad.sources[1].result='overflow';bad.sources[1].reason=reason;
+ assert.throws(()=>parse(bad),undefined,'normalizing the producer must preserve strict reason grammar');
+}
 let v=fixture();assert.equal(O.project(parse(v),{},now).desks[0].session,null);assert.equal(O.project(v,{},now).unmapped_sessions.length,1);
 function pair(v){v.relations[0].session=v.sessions[0].alias;v.relations[0].task=v.tasks[0].alias;return v;}
 v=pair(fixture());assert.ok(O.project(parse(v),{},now).desks[0].session);assert.ok(!O.project(v,{},now).desks[0].historical);
@@ -82,6 +125,9 @@ async function controllerRegression(){
  const first=node('observed-refresh').click(),r1=requests.at(-1),second=node('observed-refresh').click(),r2=requests.at(-1);assert.equal(r1.options.signal.aborted,true);r2.resolve(response(raw));await second;r1.resolve(response(JSON.stringify(changed)));await first;assert.ok(state.painted.desks[0].session,'late read cannot erase newer identical result');
  const late=startImport(raw);state.observedMode=false;state.observedGeneration++;state.painted='new demo view';complete(late,raw);late.onerror();late.onabort();assert.equal(state.painted,'new demo view','obsolete callbacks cannot mutate newer mode');
  state.observedMode=true;const newer=structuredClone(value);newer.capture_alias='display-capture-0000000000000002';newer.started_at='2026-10-26T12:00:02.000Z';await refresh(JSON.stringify(newer));await refresh();assert.equal(state.observed,null,'previous identical capture remains fenced after newer capture');
+ state.order=O.createOrder();const overflow=nativeFailures.find(row=>row.case==='overflow');await refresh(overflow.raw);
+ assert.equal(state.observed.collection_state,'partial');assert.equal(state.painted.unmapped_work.length,1);assert.equal(state.painted.desks.length,0);
+ assert.deepEqual(Array.from(state.observed.diagnostics),['overflow','identity']);assert.equal(state.observed.sources.at(-1).reason,'truncated');
  console.log('PASS production controller: load/refresh twice, original age/history, failed transport and invalid import retry, immutable same-ID mutation, generation/mode/older fences and selection');
 }
 controllerRegression().catch(error=>{console.error(error);process.exitCode=1;});

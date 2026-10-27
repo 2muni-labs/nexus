@@ -19,6 +19,20 @@ UUID = '11111111-1111-1111-1111-111111111111'
 WID = UUID+'::/workspace'
 URL = 'https://github.com/2muni-labs/nexus/issues/50'
 
+# Each exception class/code handled by the native source boundary, plus a real
+# missing-process launch. The Node contract test consumes these same captures.
+NATIVE_FAILURES = [
+    ('missing-launch', None, 'unavailable', 'failed', ['unavailable', 'identity']),
+    ('failed', O.ORCA.ReadError('failed'), 'unavailable', 'failed', ['unavailable', 'identity']),
+    ('overflow', O.ORCA.ReadError('overflow'), 'overflow', 'truncated', ['overflow', 'identity']),
+    ('identity', O.ORCA.ReadError('identity'), 'unavailable', 'identity', ['identity']),
+    ('unsupported', O.ORCA.ReadError('unsupported'), 'unavailable', 'unsupported', ['unsupported', 'identity']),
+    ('unknown', O.ORCA.ReadError(CANARY), 'unavailable', 'unsupported', ['unsupported', 'identity']),
+    ('KeyError', KeyError(CANARY), 'unavailable', 'unsupported', ['unsupported', 'identity']),
+    ('TypeError', TypeError(CANARY), 'unavailable', 'unsupported', ['unsupported', 'identity']),
+    ('ValueError', ValueError(CANARY), 'unavailable', 'unsupported', ['unsupported', 'identity']),
+]
+
 
 def scope():
     return dict(version=1, logical_repository='nexus', provider_repository='2muni-labs/nexus',
@@ -92,6 +106,45 @@ class OfficeTests(unittest.TestCase):
         capture=O.Capture(s or scope())
         capture.collect(runner=self.fixture.read,native_runner=self.fixture.read)
         return capture, O.validate(capture.data)
+
+    def collect_native_failure(self, error):
+        capture=O.Capture(scope())
+        if error is None:
+            with patch.dict(os.environ,{'ORCA_CLI_COMMAND':str(self.root/CANARY)}):
+                capture.collect(runner=self.fixture.read)
+        else:
+            def fail(argv):
+                raise error
+            capture.collect(runner=self.fixture.read,native_runner=fail)
+        return capture, O.validate(capture.data)
+
+    def test_native_failure_vocabulary_matrix(self):
+        for name,error,result,reason,diagnostics in NATIVE_FAILURES:
+            with self.subTest(case=name):
+                capture,raw=self.collect_native_failure(error)
+                data=capture.data
+                native=[s for s in data['sources'] if s['kind'].startswith('orca-')]
+                self.assertEqual(len(native),1)
+                self.assertEqual((native[0]['result'],native[0]['reason']),(result,reason))
+                self.assertFalse(native[0]['read_complete'])
+                self.assertIsNone(native[0]['inventory_complete'])
+                self.assertIsNotNone(native[0]['observed_at'])
+                self.assertEqual(data['diagnostics'],diagnostics)
+                self.assertEqual(data['collection_state'],'partial')
+                self.assertEqual(len(data['work_items']),1)
+                self.assertEqual(data['work_items'][0]['url'],URL)
+                self.assertEqual(data['work_items'][0]['workflow'],'In Progress')
+                self.assertTrue(all(s['result']=='ok' and s['read_complete'] for s in
+                                    data['sources'] if s['kind'].startswith('github-')))
+                for key in ('workspaces','tasks','sessions','relations'):
+                    self.assertEqual(data[key],[])
+                self.assertEqual(data['coverage']['selected_workspaces'],1)
+                self.assertEqual(data['coverage']['observed_workspaces'],0)
+                self.assertEqual(data['coverage']['observed_work_items'],1)
+                self.assertFalse(data['coverage']['global_complete'])
+                self.assertIsNone(data['coverage']['omitted_workspaces'])
+                for private in (CANARY,str(self.root),UUID,'FileNotFoundError'):
+                    self.assertNotIn(private.encode(),raw)
 
     def test_missing_native_executable_is_sanitized_failed_source(self):
         # Use the real native reader, with only the provider replaced by a fixture.

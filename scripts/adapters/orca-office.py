@@ -91,7 +91,8 @@ def collect(scope, source, diagnostic, runner=read):
             return value, src['alias']
         except (ReadError, KeyError, TypeError, ValueError) as error:
             code = str(error) if str(error) in ('identity', 'overflow', 'failed') else 'unsupported'
-            src.update(result='overflow' if code == 'overflow' else 'unavailable', reason=code)
+            src.update(result='overflow' if code == 'overflow' else 'unavailable',
+                       reason='truncated' if code == 'overflow' else code)
             diagnostic(code)
             return None, src['alias']
         finally:
