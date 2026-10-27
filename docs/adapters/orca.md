@@ -244,7 +244,10 @@ official `/status` and `/debug-config` sources and evidence limits.
 `scripts/adapters/orca-office.py` owns native interpretation for the bounded one-shot
 [office presentation copy](../../prototype/README.md#explicit-observed-3d-copy).
 It is separate from the execution policy/evaluator port. The inspected binding is
-Orca 1.4.240 on a selected local host; other versions/hosts fail closed. It resolves
+Orca 1.4.240 and 1.4.241 on a selected local host; other versions/hosts fail closed.
+The version allowlist does not waive runtime/epoch, workspace, attempt or terminal
+identity checks; a restored attempt from an earlier runtime remains unverified.
+It resolves
 one executable from the installed skill rule and reads status/guides, exact selected
 workspaces, Run task/worker indexes, exact worker details, workspace terminal metadata
 and selected Issue reference metadata, then rechecks runtime/workspace identities.

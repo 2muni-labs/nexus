@@ -99,7 +99,7 @@ def collect(scope, source, diagnostic, runner=read):
         value, _ = call('orca-workspace', 'runtime', ['status'])
         return bool(value and value.get('runtime', {}).get('runtimeId') == runtime and
                     value.get('runtime', {}).get('state') == 'ready' and
-                    value.get('runtime', {}).get('appVersion') == '1.4.240')
+                    value.get('runtime', {}).get('appVersion') in ('1.4.240', '1.4.241'))
 
     if not status():
         diagnostic('identity')

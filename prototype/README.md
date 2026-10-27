@@ -492,10 +492,17 @@ historical; younger data never proves current activity. Exited sessions stay in 
 list without a figure; unknown/stale associations use `? historical`. All workspace,
 work, session, attempt, source and coverage records remain reachable in the list.
 
-Refresh clears prior facts before reading; no new capture, failed reads and malformed
-copies leave no old staff or evidence. One generation fences fetch/import/mode
-callbacks; same-capture collecting→final may advance once. Scope changes reset
-selection; surviving aliases preserve page/workspace/session selection. Source reads,
+Refresh clears prior facts while reading. Reloading the identical validated saved
+capture restores its facts, desks, staff and details at the **original observation
+time**, with “새 수집 없음 · 같은 저장 사본 다시 표시”. Age is recomputed from that
+time; historical data never proves current activity or authenticates the claimed
+source. This also permits retrying the same valid file after a failed read/import.
+Failed reads and malformed copies leave no old staff or evidence. Older captures and
+changed content under the same capture ID remain rejected; JSON object key order
+alone is immaterial. One generation fences fetch/import/mode callbacks; same-capture
+collecting→final may advance once. Scope changes reset selection; surviving aliases
+preserve page/workspace/session/detail selection and logical focus without taking
+focus from a control used during the read. Camera and palette persist. Source reads,
 GitHub workflow, task result, agent liveness, PTY liveness, acceptance and Done are
 independent. CI/review/validation/acceptance are **not collected**.
 

@@ -70,9 +70,13 @@
       unmapped_sessions:v.sessions.filter(s=>!safe.some(r=>r.session===s.alias)),
       selection:scopeChanged?null:selection.workspace&&v.workspaces.some(w=>w.alias===selection.workspace)?selection.workspace:null};
   }
-  // Capture watermarks survive failed reads. A same-capture pending -> final is the only same-ID advance.
+  // Compare validated payloads, ignoring object key order but retaining array order and every fact.
+  function identity(v){if(Array.isArray(v))return '['+v.map(identity).join(',')+']';if(v&&typeof v==='object')return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+identity(v[k])).join(',')+'}';return JSON.stringify(v);}
+  // Watermarks survive failed reads. Identical copies may reload; pending -> final is the only same-ID advance.
   function createOrder(){const scopes=new Map();return {accept(v){const prior=scopes.get(v.scope_alias),time=Date.parse(v.started_at),rank=v.collection_state==='collecting'?0:1;
-    if(prior&&(time<prior.time||v.capture_alias===prior.capture&&(rank<=prior.rank||time!==prior.time)||time===prior.time&&v.capture_alias!==prior.capture))return false;
-    scopes.set(v.scope_alias,{time,rank,capture:v.capture_alias});return true;}};}
+    const payload=identity(v);
+    if(prior){if(time<prior.time||time===prior.time&&v.capture_alias!==prior.capture)return false;
+      if(v.capture_alias===prior.capture){if(time!==prior.time||rank<prior.rank)return false;if(rank===prior.rank)return payload===prior.payload?'unchanged':false;}}
+    scopes.set(v.scope_alias,{time,rank,capture:v.capture_alias,payload});return true;}};}
   const api={MAX_BYTES,AGE,fields,enums,parse,project,createOrder};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.officeObserved=api;
 })(typeof window!=='undefined'?window:globalThis);

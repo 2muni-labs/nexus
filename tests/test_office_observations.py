@@ -98,6 +98,33 @@ class OfficeTests(unittest.TestCase):
             self.assertNotIn(private.encode(),raw)
         self.assertTrue(all(not any(v in ('send','read','worker-stop','worker-release','dispatch','exec') for v in argv[1:3]) for argv in self.fixture.calls if argv[0]!='bash'))
 
+    def test_exact_inspected_runtime_versions_only(self):
+        for version in ('1.4.240', '1.4.241', '1.4.242', '1.4.241-beta', '1.5.0', None):
+            with self.subTest(version=version):
+                self.fixture.mutate=lambda args,v: v['runtime'].update(appVersion=version) if args[0]=='status' else None
+                capture,_=self.collect()
+                supported=version in ('1.4.240', '1.4.241')
+                self.assertEqual(capture.data['collection_state'], 'observed' if supported else 'partial')
+                self.assertEqual(len(capture.data['workspaces']), 1 if supported else 0)
+                self.assertEqual(len(capture.data['tasks']), 1 if supported else 0)
+                if not supported:
+                    self.assertIn('identity', capture.data['diagnostics'])
+
+    def test_uninspected_version_at_final_recheck_clears_native_facts(self):
+        status_reads=0
+        def mutate(args, value):
+            nonlocal status_reads
+            if args[0]=='status':
+                status_reads+=1
+                value['runtime']['appVersion']='1.4.241' if status_reads==1 else '1.4.242'
+        self.fixture.mutate=mutate
+        capture,_=self.collect()
+        self.assertEqual(status_reads, 2)
+        self.assertEqual(capture.data['collection_state'], 'partial')
+        self.assertIn('identity', capture.data['diagnostics'])
+        for key in ('workspaces', 'tasks', 'sessions', 'relations'):
+            self.assertEqual(capture.data[key], [])
+
     def test_operator_and_native_pairing_distinct(self):
         s=scope();s['bindings']=[binding()]
         capture,_=self.collect(s)

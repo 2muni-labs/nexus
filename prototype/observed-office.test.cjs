@@ -21,6 +21,46 @@ v=pair(fixture());v.relations[0].status='conflict';assert.equal(O.project(v,{},n
 v=pair(fixture());v.sources[0].result='unavailable';v.sources[0].read_complete=false;assert.equal(O.project(parse(v),{},now).desks[0].session,null);
 v=fixture();for(let i=2;i<=16;i++){v.workspaces.push({...v.workspaces[0],alias:'display-workspace-'+i.toString(16).padStart(16,'0'),label:'Workspace '+i});}v.coverage.selected_workspaces=v.coverage.observed_workspaces=16;parse(v);let all=[];for(let page=0;page<8;page++)all.push(...O.project(v,{page},now).desks.map(d=>d.workspace.alias));assert.equal(new Set(all).size,16);assert.equal(O.project(v,{scope:'other',page:7},now).page,0);
 v=pair(fixture());const s={...v.sessions[0],alias:'display-session-0000000000000002',label:'Agent 2'};v.sessions.push(s);v.coverage.observed_sessions++;v.relations.push({...v.relations[0],alias:'display-relation-0000000000000002',session:s.alias});assert.equal(O.project(parse(v),{session:s.alias},now).desks[0].session.alias,s.alias);assert.equal(O.project(v,{},now).desks[0].candidates.length,2);
-const order=O.createOrder();v=fixture();const pending=structuredClone(v);pending.collection_state='collecting';assert.ok(order.accept(pending));assert.ok(order.accept(v));assert.ok(!order.accept(pending));assert.ok(!order.accept(v));const old=structuredClone(v);old.capture_alias='display-capture-0000000000000002';old.started_at='2026-10-26T11:59:59.000Z';assert.ok(!order.accept(old));old.started_at='2026-10-26T12:00:02.000Z';assert.ok(order.accept(old));
+const order=O.createOrder();v=fixture();const pending=fixture();pending.collection_state='collecting';for(const k of ['work_items','workspaces','tasks','sessions','relations'])pending[k]=[];for(const k of ['work_items','workspaces','tasks','sessions'])pending.coverage['observed_'+k]=0;
+assert.equal(order.accept(parse(pending)),true);assert.equal(order.accept(parse(pending)),'unchanged');assert.equal(order.accept(parse(v)),true);assert.equal(order.accept(parse(pending)),false);
+for(let i=0;i<2;i++)assert.equal(order.accept(parse(v)),'unchanged','identical validated saved copy can reload repeatedly');
+function reverseKeys(v){return Array.isArray(v)?v.map(reverseKeys):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).reverse().map(([k,n])=>[k,reverseKeys(n)])):v;}
+assert.equal(order.accept(parse(reverseKeys(v))),'unchanged','JSON object key order is not capture content');
+for(const mutate of [v=>v.workspaces[0].board='completed',v=>v.sessions[0].agent_liveness='exited',v=>v.observed_at='2026-10-26T12:00:01.000Z',v=>v.started_at='2026-10-26T12:00:01.000Z',v=>v.collection_state='partial']){const changed=fixture();mutate(changed);assert.equal(order.accept(parse(changed)),false,'changed same-ID facts/time/state rejected');assert.equal(order.accept(parse(v)),'unchanged','rejected mutation does not poison installed identity');}
+const immutable=O.createOrder(),mutable=parse(fixture());assert.equal(immutable.accept(mutable),true);mutable.workspaces[0].board='completed';assert.equal(immutable.accept(mutable),false,'guard retains immutable content, not a mutable object reference');
+const old=structuredClone(v);old.capture_alias='display-capture-0000000000000002';old.started_at='2026-10-26T11:59:59.000Z';assert.equal(order.accept(parse(old)),false);old.started_at=v.started_at;assert.equal(order.accept(parse(old)),false);old.started_at='2026-10-26T12:00:02.000Z';assert.equal(order.accept(parse(old)),true);assert.equal(order.accept(parse(v)),false,'identical old capture cannot roll back a newer watermark');
 console.log('PASS observed contract: strict grammar/privacy/types/counts, references, chronology, unpaired/conflict/stale/exit, 16 desks/paging and multi-session projection');
 module.exports={fixture,pair};
+
+// Run the actual production read/import controller with controlled transport and painting.
+// Browser checks separately verify real DOM, focus and WebGL pixels.
+async function controllerRegression(){
+ const fs=require('node:fs'),vm=require('node:vm'),source=fs.readFileSync(require('node:path').join(__dirname,'voxel.js'),'utf8');
+ const nodes=new Map(),requests=[],readers=[],timers=new Map();let timer=0,current=now;
+ const doc={body:{},activeElement:null};doc.activeElement=doc.body;
+ function node(id){if(!nodes.has(id))nodes.set(id,{value:'',textContent:'',children:[],handlers:{},addEventListener(k,fn){this.handlers[k]=fn;},click(){return this.handlers.click?.();}});return nodes.get(id);}
+ const state={O,order:O.createOrder(),active:true,observedMode:true,observedGeneration:0,observed:null,observationSelection:{},selectedRecord:null,restoreFocus:null,lastSuccess:null,ownedFetch:null,ownedReader:null,ageTimer:null,readTimer:null,
+  document:doc,$:node,AbortController,TextDecoder,URL,location:{href:'http://127.0.0.1/preview/index.html'},Date:class extends Date{static now(){return current;}},
+  setTimeout(fn){timers.set(++timer,fn);return timer;},clearTimeout(id){timers.delete(id);},fetch(url,options){return new Promise((resolve,reject)=>requests.push({url,options,resolve,reject}));},
+  FileReader:class{constructor(){readers.push(this);}readAsText(){}abort(){this.onabort?.();}},
+  projection(){return state.observed&&O.project(state.observed,state.observationSelection,current);},
+  paintObserved(){state.painted=state.projection();}
+ };
+ vm.createContext(state);vm.runInContext(source.slice(source.indexOf('  function cancelObserved()'),source.indexOf('  const reduced='))+source.slice(source.indexOf('  function beginRead()'),source.indexOf("  $('observed-prev')")),state);
+ const value=pair(fixture()),raw=JSON.stringify(value),response=text=>({ok:true,redirected:false,url:new URL('./observed-office.json',state.location.href).href,headers:new Headers(),body:new ReadableStream({start(c){c.enqueue(new TextEncoder().encode(text));c.close();}})});
+ async function refresh(text=raw){const work=node('observed-refresh').click();assert.equal(state.observed,null,'every read initially clears facts');requests.at(-1).resolve(response(text));await work;}
+ function startImport(text){node('observed-file').handlers.change({target:{files:[{size:text.length}],value:''}});return readers.at(-1);}
+ function complete(reader,text){reader.result=text;reader.onload();}
+ await refresh();const history=node('observed-history').textContent;
+ state.observationSelection={scope:value.scope_alias,workspace:value.workspaces[0].alias,session:value.sessions[0].alias,page:0};state.selectedRecord={kind:'sessions',alias:value.sessions[0].alias};
+ for(let i=0;i<2;i++){await refresh();assert.ok(state.painted.desks[0].session,'first load then refresh twice retains actual facts');assert.equal(state.observed.observed_at,value.observed_at);assert.match(node('observed-status').textContent,/새 수집 없음/);assert.equal(state.observationSelection.workspace,value.workspaces[0].alias);assert.equal(state.selectedRecord.alias,value.sessions[0].alias);}
+ current=Date.parse(value.observed_at)+O.AGE+1;await refresh();assert.equal(state.painted.historical,true);assert.match(node('observed-status').textContent,/과거 관찰/);assert.equal(node('observed-history').textContent,history,'reload does not fabricate a fresh timestamp');
+ const failed=node('observed-refresh').click();requests.at(-1).reject(Error('private transport'));await failed;assert.equal(state.observed,null);assert.equal(state.painted,null);assert.equal(node('observed-history').textContent,history);await refresh();assert.ok(state.painted.desks[0].session,'same valid file restores after transport failure');
+ complete(startImport('{}'),'{}');assert.equal(state.observed,null);complete(startImport(raw),raw);assert.ok(state.painted.desks[0].session,'same valid import restores after invalid import');
+ const changed=structuredClone(value);changed.sessions[0].agent_liveness='exited';complete(startImport(JSON.stringify(changed)),JSON.stringify(changed));assert.equal(state.observed,null,'valid mutated same ID is rejected');assert.match(node('observed-status').textContent,/변경된 사본 거부/);await refresh();
+ const first=node('observed-refresh').click(),r1=requests.at(-1),second=node('observed-refresh').click(),r2=requests.at(-1);assert.equal(r1.options.signal.aborted,true);r2.resolve(response(raw));await second;r1.resolve(response(JSON.stringify(changed)));await first;assert.ok(state.painted.desks[0].session,'late read cannot erase newer identical result');
+ const late=startImport(raw);state.observedMode=false;state.observedGeneration++;state.painted='new demo view';complete(late,raw);late.onerror();late.onabort();assert.equal(state.painted,'new demo view','obsolete callbacks cannot mutate newer mode');
+ state.observedMode=true;const newer=structuredClone(value);newer.capture_alias='display-capture-0000000000000002';newer.started_at='2026-10-26T12:00:02.000Z';await refresh(JSON.stringify(newer));await refresh();assert.equal(state.observed,null,'previous identical capture remains fenced after newer capture');
+ console.log('PASS production controller: load/refresh twice, original age/history, failed transport and invalid import retry, immutable same-ID mutation, generation/mode/older fences and selection');
+}
+controllerRegression().catch(error=>{console.error(error);process.exitCode=1;});
