@@ -6,6 +6,27 @@ function fixture(){
 }
 function parse(v){return O.parse(JSON.stringify(v));}
 const now=Date.parse('2026-10-26T12:00:01.000Z');
+// Synthetic missing-native partial copy: retain provider facts and failed source detail.
+const partial=fixture(),github=partial.sources[0];
+github.kind='github-issue';
+partial.sources.push({...github,alias:'display-source-0000000000000002',kind:'orca-workspace',result:'unavailable',read_complete:false,reason:'failed'});
+partial.collection_state='partial';partial.diagnostics=['unavailable','identity'];
+for(const key of ['workspaces','tasks','sessions','relations'])partial[key]=[];
+for(const key of ['workspaces','tasks','sessions'])partial.coverage['observed_'+key]=0;
+const acceptedPartial=parse(partial),partialView=O.project(acceptedPartial,{},now);
+assert.equal(acceptedPartial.collection_state,'partial');
+assert.equal(acceptedPartial.work_items[0].workflow,'In Progress');
+assert.equal(acceptedPartial.sources[1].reason,'failed');
+assert.equal(acceptedPartial.sources[1].result,'unavailable');
+assert.equal(acceptedPartial.coverage.selected_workspaces,1);
+assert.equal(acceptedPartial.coverage.observed_workspaces,0);
+assert.equal(acceptedPartial.coverage.global_complete,false);
+assert.equal(acceptedPartial.coverage.omitted_workspaces,null);
+assert.equal(partialView.unmapped_work.length,1);assert.equal(partialView.desks.length,0);
+for(const diagnostics of [['failed','identity'],['unknown'],['unavailable','unavailable']]){
+ const bad=structuredClone(partial);bad.diagnostics=diagnostics;
+ assert.throws(()=>parse(bad),undefined,'diagnostic normalization must not weaken strict consumer vocabulary or uniqueness');
+}
 let v=fixture();assert.equal(O.project(parse(v),{},now).desks[0].session,null);assert.equal(O.project(v,{},now).unmapped_sessions.length,1);
 function pair(v){v.relations[0].session=v.sessions[0].alias;v.relations[0].task=v.tasks[0].alias;return v;}
 v=pair(fixture());assert.ok(O.project(parse(v),{},now).desks[0].session);assert.ok(!O.project(v,{},now).desks[0].historical);

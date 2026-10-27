@@ -101,6 +101,8 @@ class OfficeTests(unittest.TestCase):
         raw=O.validate(capture.data)
         self.assertEqual(capture.data['collection_state'],'partial')
         self.assertEqual(len(capture.data['work_items']),1)
+        self.assertEqual(capture.data['work_items'][0]['workflow'],'In Progress')
+        self.assertEqual(capture.data['work_items'][0]['url'],URL)
         for key in ('workspaces','tasks','sessions','relations'):
             self.assertEqual(capture.data[key],[])
         native=[s for s in capture.data['sources'] if s['kind'].startswith('orca-')]
@@ -109,10 +111,22 @@ class OfficeTests(unittest.TestCase):
         self.assertEqual(native[0]['reason'],'failed')
         self.assertFalse(native[0]['read_complete'])
         self.assertIsNotNone(native[0]['observed_at'])
-        self.assertIn('failed',capture.data['diagnostics'])
+        self.assertEqual(capture.data['diagnostics'],['unavailable','identity'])
+        self.assertEqual(capture.data['coverage']['selected_workspaces'],1)
+        self.assertEqual(capture.data['coverage']['observed_workspaces'],0)
         self.assertFalse(capture.data['coverage']['global_complete'])
+        self.assertIsNone(capture.data['coverage']['omitted_workspaces'])
         for private in (CANARY,str(self.root),'FileNotFoundError'):
             self.assertNotIn(private.encode(),raw)
+
+    def test_failed_diagnostic_normalizes_before_deduplication(self):
+        for codes in (('failed','unavailable','failed'),('unavailable','failed','unavailable')):
+            with self.subTest(codes=codes):
+                capture=O.Capture(scope())
+                capture.data['diagnostics']=[]
+                for code in (*codes,'identity','identity'):
+                    capture.diagnostic(code)
+                self.assertEqual(capture.data['diagnostics'],['unavailable','identity'])
 
     def test_executable_selection_has_no_fallback(self):
         cases=[('Darwin',{},'orca'),

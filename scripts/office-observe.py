@@ -114,6 +114,10 @@ class Capture:
         return value
 
     def diagnostic(self, code):
+        # Generic adapter failures use the presentation diagnostic vocabulary;
+        # the source's reason retains the operational detail 'failed'.
+        if code == 'failed':
+            code = 'unavailable'
         if code not in self.data['diagnostics']:
             self.data['diagnostics'].append(code)
 
