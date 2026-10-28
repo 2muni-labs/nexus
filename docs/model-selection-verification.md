@@ -146,6 +146,16 @@ Those approvals still require their own exact scopes. There is no new approval e
 See the [Orca binding](adapters/orca.md#model-and-effort-observation) for concrete
 receipt, rendered-screen and messaging mechanics.
 
+## Coordinator entry recommendation
+
+For the Coordinator entry session, [routing guidance](routing.md#versioned-codex-model-guidance)
+recommends GPT-6.1 Sol for complex coordinated work. An explicit user selection takes
+precedence; this recommendation does not change the installed CLI launch rule or the
+user's configured model. Treat it as a versioned candidate, not evidence that a model
+is available, authorized, or suitable for a particular floor. Observe the actual
+session model and effort and apply the same suitability and checkpoint procedure.
+Review guidance after provider, model/client, capability or task-scope changes.
+
 ## Effective evidence and limits
 
 Capture agent/model **and effort** from a documented current-session diagnostic or
