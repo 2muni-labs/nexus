@@ -56,7 +56,7 @@ function harness() {
   return {state,node,doc,readers,start,complete,timers,renders:()=>renders};
 }
 // A newer explicit mode choice owns the display, even when old reads settle later.
-for (const mode of ['demo', 'movement', 'campus']) {
+for (const mode of ['demo', 'movement', 'campus', 'voxel-observed']) {
   for (const completion of ['onload', 'onerror', 'onabort']) {
     const chosen = harness(), value = fixture();
     chosen.complete(chosen.start(value), value);

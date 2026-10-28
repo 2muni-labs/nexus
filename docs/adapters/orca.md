@@ -238,3 +238,28 @@ When an operator is authorized to change Codex settings, use the documented `/mo
 picker without arguments, verify the rendered selection and active model/effort before
 any work prompt; numeric paste alone is not selection proof. See the procedure's
 official `/status` and `/debug-config` sources and evidence limits.
+
+## Presentation-only office adapter
+
+`scripts/adapters/orca-office.py` owns native interpretation for the bounded one-shot
+[office presentation copy](../../prototype/README.md#explicit-observed-3d-copy).
+It is separate from the execution policy/evaluator port. The inspected binding is
+Orca 1.4.240 and 1.4.241 on a selected local host; other versions/hosts fail closed.
+The version allowlist does not waive runtime/epoch, workspace, attempt or terminal
+identity checks; a restored attempt from an earlier runtime remains unverified.
+It resolves
+one executable from the installed skill rule and reads status/guides, exact selected
+workspaces, Run task/worker indexes, exact worker details, workspace terminal metadata
+and selected Issue reference metadata, then rechecks runtime/workspace identities.
+Only these fixed read argv are allowed; no transcript/terminal-read, global fallback,
+account/config inspection, `nextAction` execution or lifecycle/control operation.
+
+Worker indexes follow at most four 100-row pages with exact cursors. Presentation
+caps are 32 attempts and 32 sessions; terminal/reference limit 33 detects overflow.
+Truncation and omitted hosts never imply empty inventory; source completeness remains
+unknown beyond selected read scope. Discard task specs, titles, branch/path strings,
+previews and wait text immediately. Native identity fields remain private until keyed
+scope-local alias projection. Terminal-agent records prove process context only,
+never persistent provider-conversation continuity. Durable result, agent liveness and
+PTY status remain separate. Native `linked:false` never pairs staff; an exact matching
+operator declaration is a distinct visibly labelled presentation relationship.

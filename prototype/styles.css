@@ -74,3 +74,11 @@ body{background:#e9ece3}.topbar{height:48px;padding:0 20px;background:#f9f6ec;bo
 @media(max-width:500px) { .voxel-heading { display:block; } .voxel-heading h2 { font-size:24px; } .voxel-toolbar { gap:6px; padding:8px; } #voxel-host { height:390px; } #voxel-staff { grid-template-columns:1fr 1fr; } .voxel-clock { padding:8px 0; } }
 .voxel-mode .import-bar > :not(label[for="display-mode"]):not(#display-mode) { display:none; }
 .voxel-mode .import-bar { margin-bottom:12px; }
+/* Observed mode keeps the accepted scene and camera; only factual controls differ. */
+#observed-controls { margin:12px 0; padding:12px; border:1px solid var(--line,#d8d4c9); border-radius:12px; }
+#observed-controls button,#observed-controls select { min-height:44px; margin:4px; }
+#observed-controls p,#voxel-fields dd { overflow-wrap:anywhere; }
+#observed-lists { max-height:360px; overflow:auto; }
+#observed-lists p { font-size:12px; }
+.observed-mode .voxel-detail { min-width:0; }
+.observed-mode #voxel-staff button { min-height:44px; }

@@ -19,6 +19,7 @@ export function createRenderer(host,{onSelect=()=>{},onFailure=()=>{}}={}){
   renderer.outputColorSpace=T.SRGBColorSpace;
   const scene=new T.Scene(),camera=new T.OrthographicCamera(-10,10,8,-8,.1,100);
   const geometry=new T.BoxGeometry(1,1,1), materials={},batches=new Map(),walls=[],actors=new Map(),listeners=[];
+  let presentation=null;
   let palette='daylight',angle=0,zoom=1,pan={x:0,y:0},selected='momo',disposed=false,lost=false,frames=0,renderTimes=[],frameStamps=[];
   function mat(role){if(!palettes[palette][role])throw Error(`Unknown material role: ${role}`);return materials[role]??=new T.MeshLambertMaterial({color:palettes[palette][role]});}
   function box(parent,p,id=null){const m=new T.Mesh(geometry,mat(p.role));m.position.copy(toThree(p.position));m.scale.set(p.size.x,p.size.z,p.size.y);m.castShadow=true;m.receiveShadow=true;m.userData.logicalId=id;parent.add(m);return m;}
@@ -93,7 +94,7 @@ export function createRenderer(host,{onSelect=()=>{},onFailure=()=>{}}={}){
     mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);scene.add(mesh);actorBatches.set(role,{mesh,parts});
   }
   function syncActorBatches(){for(const {mesh,parts} of actorBatches.values()){
-    parts.forEach(({part},i)=>mesh.setMatrixAt(i,part.matrixWorld));
+    parts.forEach(({part,id},i)=>mesh.setMatrixAt(i,presentation&&!presentation.actors.has(id)?new T.Matrix4().makeScale(0,0,0):part.matrixWorld));
     mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingBox();mesh.computeBoundingSphere();
   }}
   actors.forEach(a=>a.root.updateMatrixWorld(true));syncActorBatches();
@@ -156,7 +157,7 @@ export function createRenderer(host,{onSelect=()=>{},onFailure=()=>{}}={}){
       a.root.updateMatrixWorld(true);
     }
     syncActorBatches();
-    const selectedActor=values.find(v=>v.id===selected);if(selectedActor)selection.position.copy(toThree(selectedActor.position));draw();
+    const selectedActor=values.find(v=>v.id===selected);const desk=presentation?.slots.has(selected)?W.socket(W.staff.find(s=>s.id===selected).desk,'ground'):null;selection.visible=!!selectedActor||!!desk;if(selectedActor||desk)selection.position.copy(toThree(selectedActor?.position||desk));draw();
   }
   const ray=new T.Raycaster(),floor=new T.Plane(new T.Vector3(0,1,0),0);
   let down=null;
@@ -185,7 +186,7 @@ export function createRenderer(host,{onSelect=()=>{},onFailure=()=>{}}={}){
     const r=canvas.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
     fit();ray.setFromCamera(new T.Vector2((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1),camera);
     const hits=ray.intersectObjects(scene.children,true).filter(h=>{let o=h.object;while(o){if(!o.visible||o.userData.ignorePick)return false;o=o.parent;}return true;});
-    const hit=hits[0];if(!hit)return;const id=hit.object.userData.ids?.[hit.instanceId]??hit.object.userData.logicalId;if(W.staff.some(s=>s.id===id))onSelect(id);
+    const hit=hits.find(h=>{const id=h.object.userData.ids?.[h.instanceId]??h.object.userData.logicalId;return !presentation||!W.staff.some(s=>s.id===id)||presentation.slots.has(id)&&(!h.object.isInstancedMesh||h.object.instanceMatrix.usage!==T.DynamicDrawUsage||presentation.actors.has(id));});if(!hit)return;const id=hit.object.userData.ids?.[hit.instanceId]??hit.object.userData.logicalId;if(W.staff.some(s=>s.id===id))onSelect(id);
   });
   for(const type of ['pointercancel','lostpointercapture'])listen(canvas,type,e=>{if(down?.id===e.pointerId)cancelInput();});
   listen(canvas,'wheel',e=>{if(disposed||lost||e.ctrlKey||e.metaKey||!Number.isFinite(e.deltaY)||!e.deltaY)return;
@@ -197,11 +198,11 @@ export function createRenderer(host,{onSelect=()=>{},onFailure=()=>{}}={}){
   const resized=()=>{cancelInput();fit();draw();};
   listen(window,'resize',resized);
   const resize=new ResizeObserver(resized);resize.observe(host);host.replaceChildren(canvas);fit();draw();
-  return {update,draw,select(id){selected=id;update(current);},camera(action){if(disposed||lost)return;cancelInput();if(action==='rotate')angle=(angle+1)%4;else if(action==='reset'){angle=0;zoom=1;pan={x:0,y:0};}else if(action==='in')zoom=Math.min(2.5,zoom*1.2);else if(action==='out')zoom=Math.max(.75,zoom/1.2);else if(action==='left')pan.x-=1;else if(action==='right')pan.x+=1;else if(action==='up')pan.y+=1;else if(action==='down')pan.y-=1;fit();draw();},
+  return {update,draw,present({slots,actors:values}){if(!Array.isArray(slots)||slots.length>2||!Array.isArray(values)||values.length>2||new Set(slots).size!==slots.length||slots.some(id=>!W.staff.slice(0,2).some(s=>s.id===id))||values.some(v=>!slots.includes(v.id)))throw Error('Invalid visual slots');presentation={slots:new Set(slots),actors:new Set(values.map(v=>v.id))};update(values,0);},select(id){selected=id;update(current);},camera(action){if(disposed||lost)return;cancelInput();if(action==='rotate')angle=(angle+1)%4;else if(action==='reset'){angle=0;zoom=1;pan={x:0,y:0};}else if(action==='in')zoom=Math.min(2.5,zoom*1.2);else if(action==='out')zoom=Math.max(.75,zoom/1.2);else if(action==='left')pan.x-=1;else if(action==='right')pan.x+=1;else if(action==='up')pan.y+=1;else if(action==='down')pan.y-=1;fit();draw();},
     palette(value){if(!palettes[value])throw Error('Unknown palette');palette=value;Object.entries(materials).forEach(([role,m])=>m.color.set(palettes[palette][role]));scene.background=new T.Color(palettes[palette].background);draw();},
     debug(value){debug.visible=value;draw();},
-    info(){return {version:T.REVISION,webgl2:true,frames,angle,palette,zoom,pan:{...pan},render: {...renderer.info.render},memory:{...renderer.info.memory},programs:renderer.info.programs?.length,renderMilliseconds:renderTimes.slice(),frameStamps:frameStamps.slice(),graphics:{vendor:gl.getParameter(gl.VENDOR),renderer:gl.getParameter(gl.RENDERER),version:gl.getParameter(gl.VERSION),unmaskedRenderer:gl.getExtension('WEBGL_debug_renderer_info')?gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info').UNMASKED_RENDERER_WEBGL):null},actors:actors.size,canvas:canvas.isConnected,disposed,lost,listeners:listeners.length};},
-    project(id){if(disposed||lost)return null;fit();const actor=current.find(v=>v.id===id);if(!actor)return null;const p=toThree(W.plus(actor.position,W.point(0,0,1.6))).project(camera),r=canvas.getBoundingClientRect();return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2};},
+    info(){return {version:T.REVISION,webgl2:true,frames,angle,palette,zoom,pan:{...pan},render: {...renderer.info.render},memory:{...renderer.info.memory},programs:renderer.info.programs?.length,renderMilliseconds:renderTimes.slice(),frameStamps:frameStamps.slice(),graphics:{vendor:gl.getParameter(gl.VENDOR),renderer:gl.getParameter(gl.RENDERER),version:gl.getParameter(gl.VERSION),unmaskedRenderer:gl.getExtension('WEBGL_debug_renderer_info')?gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info').UNMASKED_RENDERER_WEBGL):null},actors:presentation?presentation.actors.size:actors.size,slots:presentation?[...presentation.slots]:null,canvas:canvas.isConnected,disposed,lost,listeners:listeners.length};},
+    project(id){if(disposed||lost)return null;fit();const actor=current.find(v=>v.id===id),desk=presentation?.slots.has(id)?W.socket(W.staff.find(s=>s.id===id).desk,'ground'):null;if(!actor&&!desk)return null;const p=toThree(W.plus(actor?.position||desk,W.point(0,0,actor?1.6:.8))).project(camera),r=canvas.getBoundingClientRect();return {x:r.left+(p.x+1)*r.width/2,y:r.top+(1-p.y)*r.height/2};},
     loseContext(){gl.getExtension('WEBGL_lose_context')?.loseContext();},restoreContext(){gl.getExtension('WEBGL_lose_context')?.restoreContext();},
     dispose(){if(disposed)return;disposed=true;cancelInput();resize.disconnect();listeners.splice(0).forEach(fn=>fn());scene.traverse(o=>{if(o.isInstancedMesh)o.dispose();});geometry.dispose();debugGeometries.forEach(g=>g.dispose());debugMaterial.dispose();shadowCatcher.dispose();Object.values(materials).forEach(m=>m.dispose());light.shadow.dispose();renderer.renderLists.dispose();renderer.dispose();renderer.forceContextLoss();scene.clear();canvas.remove();current=[];actors.clear();}
   };
