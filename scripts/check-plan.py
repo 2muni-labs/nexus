@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Unsupported revisions HOLD rather than silently guessing new policy semantics.
 SUPPORTED = {
     'config/planning.yaml': '4e86d3d915684b00530956818358db5f33ba0bd424d1e0391da34703c83bf9a2',
-    'config/routing.yaml': 'dc348b2c1b2eb92234325179c36fc8b6d7253fdf3c97287880c3d7338c176cae',
+    'config/routing.yaml': '7db8c0e3cc33e40b6d1f42c3e64d661bf435781335b95f03efed70afda90d723',
     'config/review.yaml': '8dbe71e6ddeb73bd6c950b42c5229b6a2a179af04f9d2b64acc05437250efc6a',
     'config/repositories.yaml': '996a1c7a5d97d55fb646beaa6f47bef6704174d3f25b25f9823c7b8f26c626e4',
     'schemas/execution-plan.yaml': '6868484ba20e2af1dfdc046b3d112f9060f4e0e9b9a0146a6b8ccbd3657631be',

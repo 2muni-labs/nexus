@@ -24,6 +24,19 @@ model_profiles:
     reasoning: maximum
     quality_priority: highest
 
+# Advisory versioned use-case guidance; never an automatic model selector or floor.
+model_guidance:
+  reviewed_on: 2026-10-28
+  coordinator_recommendation: gpt-6.1-sol
+  use_cases:
+    coordinated_complex_coding: gpt-6.1-sol
+    visual_computer_use_and_scoped_fixes: gpt-6.1-terra
+    previous_coding_option: gpt-6-sol
+    most_demanding_tasks: gpt-6-astra
+    focused_low_risk_tasks: gpt-6-luna
+  review_triggers: [provider_guidance_change, model_or_client_change, capability_or_task_scope_change]
+  operation: advisory_only_user_selection_and_verified_floors_take_precedence
+
 routing:
   coordinator:
     agent: codex

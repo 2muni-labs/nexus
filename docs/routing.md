@@ -5,6 +5,33 @@ contract together. Task classification covers type, complexity, risk, context si
 parallelizability, repository, dependencies and mutation scope. Testing/documentation/
 integration tasks can write only when the plan explicitly declares that scope.
 
+## Versioned Codex model guidance
+
+As reviewed on 2026-10-28, Nexus recommends **GPT-6.1 Sol** for the Coordinator
+entry session and for complex coding and coordinated work. GPT-6.1 Terra is a
+candidate for visual reasoning, computer use and scoped fixes; GPT-6 Sol is a
+previous coding option, GPT-6 Astra for the most demanding tasks, and GPT-6 Luna
+for focused low-risk work. These are use-case recommendations, not fixed mappings
+from a logical purpose or a policy profile to a model. Apply the actual requirements
+and every matching profile and validation rule before considering a candidate.
+
+The declarative `model_guidance` in `config/routing.yaml` records these recommendations
+for Coordinator judgment. It does not select a model, change a user's configuration,
+pass a launch flag, or validate a capability. The existing checker pins the policy
+revision but does not interpret this advisory block; operators apply it manually.
+An explicit user-selected model takes precedence over the Coordinator recommendation;
+verify its suitability and actual model and effort in the exact session before work.
+An unsuitable or unknown high-risk capability holds rather than silently switching.
+Review the guidance when provider guidance, model/client, capabilities or task scope
+changes. Model names, availability and effort labels do not prove floor equivalence.
+
+Sources reviewed 2026-10-28: [model selection](https://developers.openai.com/api/docs/guides/model-selection),
+[latest model](https://developers.openai.com/api/docs/guides/latest-model),
+[GPT-6.1 Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra),
+[GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol), and
+[GPT-6 Sol](https://developers.openai.com/api/docs/models/gpt-6-sol).
+These versioned sources inform suitability, not account access or session evidence.
+
 ## Optional logical purpose
 
 `routing.logical_purpose` is an optional uppercase alias declared in

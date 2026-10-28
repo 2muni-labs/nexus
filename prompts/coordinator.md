@@ -108,6 +108,13 @@ independence, never implicit repair authority. Supplied purpose assignment roles
 must be checked even without an execution selector. Without assignment evidence,
 assess only declared task scope. The static checker validates declarations, not host facts.
 
+For the Coordinator entry session, GPT-6.1 Sol is the versioned recommendation for
+complex coordinated work; an explicit user-selected model takes precedence. Apply the
+use-case guidance in docs/routing.md manually, without changing user settings or launch
+rules. Recommendations do not establish availability, effort equivalence or a floor;
+verify suitability and the exact effective session before work, holding on unresolved
+high-risk capability or any known mismatch. Review guidance when its stated triggers occur.
+
 Resolve capability profiles from local mapping or configured defaults using docs/routing.md.
 Apply [model selection and verification](../docs/model-selection-verification.md): connect
 tool/context/output/reasoning requirements to versioned suitability evidence and authorized
