@@ -45,6 +45,15 @@
       "change_specific_test_plan_required": true,
       "native_required_checks": null
     },
+    "little-office": {
+      "inspection_revision": null,
+      "sources": ["config/repositories.yaml", "docs/little-office-contract.md", "schemas/little-office.yaml"],
+      "provenance": "Nexus v1 interface policy only; product source and native test commands must be inspected at an exact product revision before dispatch",
+      "local_validation": ["contract-only: relevant content, links, format and operation/recovery scenario checks", "product changes: owner-supplied affected type/build/tests and authentication, observation bounds, exact approval/question binding and duplicate/unknown recovery checks", "deployment: separately scoped private-network HTTPS, single-admin authentication and mobile/browser evidence when affected"],
+      "change_specific_test_plan_required": true,
+      "dispatch_precondition": "exact product baseline, instructions, test commands and acceptance provenance resolved; missing product inspection means HOLD product execution",
+      "native_required_checks": null
+    },
     "basecamp": {
       "inspection_revision": "9eae3c7721443a4e55a3cd61b395db917e26540d",
       "sources": ["Makefile", "README.md"],

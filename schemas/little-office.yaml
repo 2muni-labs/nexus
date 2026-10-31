@@ -1,0 +1,127 @@
+version: 1
+kind: little-office-interface-contract
+# Declarative v1 field/semantic contract, not executable JSON Schema or a service.
+# Product implements strict validation; docs/little-office-contract.md defines authority.
+owners:
+  product: little-office
+  policy: Nexus_Coordinator
+  project_truth: GitHub
+  execution: Orca
+limits:
+  encoding: UTF-8_JSON_no_duplicate_keys_unknown_fields_or_nonfinite_numbers
+  observation_bytes: 65536
+  command_bytes: 16384
+  receipt_bytes: 16384
+  records: 32
+  attempts_per_record: 32
+  text_chars: 2000
+  reference_chars: 160
+  timestamp: valid_UTC_ISO8601
+  overflow: explicit_partial_or_reject_never_silent_complete
+binding:
+  required: [id, generation, principal_ref, coordinator_ref, repository_scope, work_scope, observed_at, expires_at, evidence_ref]
+  id: opaque_product_reference
+  generation: positive_integer_changes_on_rebind
+  principal_ref: authenticated_single_admin_server_verified_never_client_asserted
+  coordinator_ref: private_adapter_mapping_to_exact_host_runtime_Run_terminal_and_process_incarnation
+  repository_scope: nonempty_logical_registry_keys
+  work_scope: explicit_canonical_Issue_URLs_or_explicit_intake_only_repository_scope
+  evidence_ref: explicit_human_binding_plus_current_Coordinator_identity_and_one_inbox_consumer_verification
+  validity: reobserve_before_delivery_and_effect_expiry_or_identity_change_HOLD
+observation:
+  required: [version, observed_at, scope, sources, records, completeness, errors]
+  scope: explicitly_selected_repository_and_Work_Item_set_no_global_fallback
+  sources: bounded_source_ref_timestamp_status_and_completeness_per_GitHub_or_backend_read
+  completeness: [complete_with_evidence, partial, unknown]
+  records:
+    each_required: [repository, work_url, workflow, attempts, acceptance]
+    repository: logical_registry_key
+    work_url: canonical_GitHub_Issue_URL_or_null_for_explicit_unassociated_environment
+    workflow: GitHub_status_with_source_and_timestamp_or_null
+    attempts: bounded_list_of_opaque_display_refs_with_separate_outcome_agent_liveness_PTY_retention_source_and_timestamp
+    acceptance: explicitly_sourced_claim_or_null_never_inferred_from_delivery_or_execution
+  errors: bounded_sanitized_codes_no_raw_transport_body
+command:
+  required: [version, operation_id, kind, binding_id, binding_generation, repository, work_url, task_ref, payload]
+  operation_id: opaque_product_id_1_to_80_ASCII_letters_digits_underscore_hyphen
+  kind: [request, approve-plan, answer, cancel-request]
+  binding_id: current_verified_binding_id
+  binding_generation: exact_current_positive_integer
+  repository: exactly_one_authorized_logical_registry_key
+  work_url: canonical_GitHub_Issue_URL_or_explicit_null_only_for_intake_and_answer_cancel_of_same_unbound_intake
+  task_ref: exact_Nexus_task_or_explicit_null_only_before_task_creation_for_same_intake
+  principal: added_by_server_from_authenticated_session_not_accepted_from_browser
+  payload:
+    request:
+      required: [objective, constraints]
+      objective: nonempty_text_within_text_chars
+      constraints: text_within_text_chars
+      effect: intake_only_no_execution_or_implicit_approval
+    approve-plan:
+      required: [plan_ref, plan_revision, plan_sha256, inputs, operation_scope, decision_ref]
+      plan_ref: exact_Coordinator_issued_plan_reference_bound_to_same_work_task_and_binding
+      plan_revision: immutable_plan_revision_not_latest
+      plan_sha256: lowercase_64_hex_of_exact_displayed_plan_bytes
+      inputs: exact_repository_base_revision_and_candidate_revision_or_artifact_digest_map_null_candidate_only_for_explicit_initial_work
+      operation_scope: exact_displayed_actions_and_bounds_no_merge_main_integration_or_deletion
+      decision_ref: server_verified_explicit_human_decision_bound_to_all_above_fields
+    answer:
+      required: [question_ref, question_revision, question_sha256, request_operation_id, origin, assignment_ref, attempt_ref, answer, decision_ref]
+      question_ref: Coordinator_issued_open_question_same_work_task_and_binding
+      question_revision: exact_immutable_revision
+      question_sha256: lowercase_64_hex_of_displayed_question_and_answer_constraints
+      request_operation_id: exact_original_request_in_same_principal_and_binding_scope
+      origin: [coordinator, worker]
+      assignment_ref: exact_originating_assignment_or_null_only_for_Coordinator_intake_question
+      attempt_ref: exact_originating_attempt_not_successor_or_null_only_for_Coordinator_intake_question
+      answer: literal_text_satisfying_the_original_question_constraints
+      decision_ref: server_verified_explicit_human_answer_reference
+    cancel-request:
+      required: [target_operation_id, attempt_ref, reason]
+      target_operation_id: existing_operation_same_principal_owner_work_and_binding
+      attempt_ref: exact_attempt_or_null_only_if_no_attempt_was_started
+      reason: bounded_literal_text
+      effect: cancellation_request_only_exit_and_settlement_require_separate_observation
+receipt:
+  required: [version, operation_id, principal_ref, binding_id, binding_generation, target, payload_sha256, recorded_at, transitions]
+  target: exact_command_kind_repository_work_task_and_operation_specific_target
+  payload_sha256: lowercase_64_hex_of_canonical_server_enriched_command
+  canonical_command: UTF8_JSON_sorted_object_keys_compact_separators_unescaped_Unicode_no_floats_preserve_array_order
+  visibility: private_server_record_browser_projection_omits_native_refs_and_host_identity
+  transitions:
+    each_required: [state, observed_at, source_ref, evidence_ref, effect, native_request_ref]
+    state: [recorded, delivered, accepted, applied, rejected, unknown]
+    source_ref: authenticated_product_or_bound_Coordinator_or_verified_adapter
+    evidence_ref: verifiable_exact_operation_evidence_not_a_boolean
+    effect: bounded_factual_description_not_inferred_task_success
+    native_request_ref: private_exact_native_receipt_or_null_not_product_operation_id
+  semantics:
+    recorded: persisted_before_delivery
+    delivered: positive_native_enqueue_or_input_acceptance_only
+    accepted: explicit_bound_Coordinator_processing_acknowledgment
+    applied: observed_named_operation_effect_with_evidence_never_workflow_acceptance
+    rejected: proven_refusal_with_effect_disposition_no_assumed_rollback
+    unknown: possible_delivery_or_effect_without_conclusive_evidence_HOLD
+coordinator_projection:
+  required: [version, kind, operation_id, binding_id, binding_generation, revision, payload, evidence_ref]
+  kind: [plan, question, outcome]
+  writer: explicit_active_Coordinator_via_private_product_interface_with_verified_source_identity
+  revision: immutable_revision_changes_when_content_or_scope_changes
+  payload: sanitized_displayed_plan_or_question_with_exact_command_binding_fields_or_factual_receipt_outcome
+  authority: product_does_not_mint_Coordinator_acknowledgment_APPROVED_PASS_or_native_lifecycle_evidence
+rules:
+  - same_principal_and_operation_id_same_payload_returns_existing_receipt_different_payload_conflicts
+  - product_and_Coordinator_serialize_and_deduplicate_before_effects
+  - changed_binding_plan_input_revision_or_question_identity_invalidates_prior_authority
+  - approval_and_answer_require_actual_human_identity_and_exact_decision_provenance
+  - no_approval_of_truncated_or_unavailable_plan_exact_displayed_content_required
+  - request_is_intake_answer_is_not_approval_cancel_is_not_exit_delivery_is_not_execution
+  - terminal_transport_fixed_validated_envelope_only_exact_preverified_Coordinator_no_shell_fallback
+  - service_must_not_impersonate_native_sender_or_consume_ack_Coordinator_inbox
+  - Coordinator_explicitly_emits_sanitized_plan_question_and_outcome_receipts_no_transcript_scraping
+  - unknown_outcome_requires_observation_and_explicit_recovery_no_auto_retry_restart_or_duplicate_editor
+  - history_survives_product_restart_no_silent_unknown_to_applied_or_deleted_receipts
+  - recovery_critical_project_associations_remain_authorized_sanitized_GitHub_records
+  - no_credentials_transcripts_host_paths_or_raw_native_identity_in_browser_payloads
+  - unsupported_service_mailbox_or_structured_chat_transport_disabled_pending_verified_support
+  - controls_disabled_until_separate_product_delivery_receipt_auth_and_recovery_validation
