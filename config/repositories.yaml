@@ -28,3 +28,13 @@ repositories:
       - project-bootstrap
       - development-runtime
       - worktree-isolation
+  little-office:
+    role: personal-web-product
+    responsibilities:
+      - office-ui
+      - authenticated-single-admin-web-server
+      - bounded-observation-presentation
+      - coordinator-request-bridge
+      - durable-operation-receipts
+    contract: docs/little-office-contract.md
+    # Logical ownership only; no source, remote, deployment or runtime provisioned here.

@@ -758,6 +758,22 @@ class ExecutionPlans(unittest.TestCase):
         p['dispatch_authority'] = True
         self.rejects(p, 'dispatch_authority')
 
+    def test_little_office_owner_preserves_policy_guard(self):
+        p = plan(task(repository='little-office'))
+        result = self.passes(p)
+        self.assertIn('config/acceptance.json', result['policy_provenance'])
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for name in CHECKER['SUPPORTED']:
+                destination = root / name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes((ROOT / name).read_bytes())
+            self.passes(p, root=root)
+            registry = root / 'config/repositories.yaml'
+            registry.write_text(registry.read_text().replace(
+                '    role: personal-web-product', '    role: control-plane'))
+            self.rejects(p, 'policy', root=root)
+
     def test_supported_policy_revision_required(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
